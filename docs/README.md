@@ -1,18 +1,20 @@
 # 문서 안내
 
-> **Last Updated**: 2026-11-05
+> **Last Updated**: 2026-11-06
 
 | 문서 | 내용 | 상태 |
 |---|---|---|
 | [ROADMAP.md](ROADMAP.md) | 단계별 진행 상황. **세션을 시작하면 먼저 읽는다** | 최신 |
-| [ideation.md](ideation.md) | 통합 허브 상위 기획안 (철학·컨셉·기술 스택·단계 계획), 사용자 작성 | 초안. Phase 1 입력 자료 |
-| [01_vision/PHILOSOPHY.md](01_vision/PHILOSOPHY.md) | 철학·미션·비전·핵심 가치·톤앤매너 | 작성 전 (Phase 1) |
-| [02_planning/SITEMAP.md](02_planning/SITEMAP.md) | 페이지 구성, 연결할 프로젝트 목록 | 가설 |
-| [03_design/DESIGN_SYSTEM.md](03_design/DESIGN_SYSTEM.md) | 디자인 토큰·UI 규칙 | 임시값 |
-| [04_architecture/ARCHITECTURE.md](04_architecture/ARCHITECTURE.md) | 시스템 구성, 소스 구조, 검사 항목 | 최신 |
-| [04_architecture/adr/](04_architecture/adr/README.md) | 결정 기록 (ADR) | 3건 |
+| [ideation.md](ideation.md) | 통합 허브 기획안 검토판: 네 구역, 원칙, 콘텐츠 모델, 리스크, 스택 도입 시점, 단계 계획, 열린 질문 | v2 (사용자 확인 전) |
+| [archive/](archive/) | 사용자 원안 보관본 | 보관 |
+| [01_vision/PHILOSOPHY.md](01_vision/PHILOSOPHY.md) | 한 문장 정의, 미션·비전, 핵심 가치, 대상, 톤앤매너 | 초안 v1 (사용자 확인 전) |
+| [02_planning/SITEMAP.md](02_planning/SITEMAP.md) | 페이지·메뉴·콘텐츠 목록 | Phase 1 + 회원 화면 반영 |
+| [02_planning/CONTENT_GUIDE.md](02_planning/CONTENT_GUIDE.md) | 작품·기록·문구를 추가하는 방법 (필드, 예시, 파일 올리기) | 최신 |
+| [03_design/DESIGN_SYSTEM.md](03_design/DESIGN_SYSTEM.md) | 다크 테마 토큰, 글꼴, 컴포넌트 | v1 (브랜드 색·로고 임시) |
+| [04_architecture/ARCHITECTURE.md](04_architecture/ARCHITECTURE.md) | 시스템 구성, 렌더링 원칙, 회원(매직 링크), 콘텐츠 파이프라인, 보안·캐시, 검사, 이후 구조 | 최신 |
+| [04_architecture/adr/](04_architecture/adr/README.md) | 결정 기록 (ADR) | 7건 |
 | [templates/](templates/) | ADR·작업 로그·기능 명세 템플릿 | |
-| [../deploy/README.md](../deploy/README.md) | 배포 가이드 | 서버 설정 전 |
+| [../deploy/README.md](../deploy/README.md) | 배포 가이드 (서버 설정, 회원 API, Tunnel, 일상 배포, 롤백, 출시 체크리스트) | 서버 설정 전 |
 
 ## 폴더 번호의 뜻
 

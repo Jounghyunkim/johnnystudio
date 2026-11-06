@@ -1,0 +1,24 @@
+# Life Log 마일스톤. 에셋(content/assets)은 따로 적지 않아도 날짜에 맞춰 타임라인에 들어간다.
+# 여기에는 에셋 하나로 표현되지 않는 사건(시작, 이름 변경, 이전, 출시 등)을 쓴다.
+# 형식: web/src/lib/schema.ts 의 LogEntry. kind: start | release | milestone | note
+
+- date: 2025-12-19
+  title: Arkurator 개발 시작
+  kind: start
+  asset: arkurator
+
+- date: 2026-06-01
+  title: Arkwave 에서 Arkurator 로 이름을 바꾸다
+  kind: milestone
+  asset: arkurator
+
+- date: 2026-10-03
+  title: Arkurator 서버를 Jetson Nano 에서 GMKtec M8 으로 이전
+  kind: milestone
+  description: 홈랩 서버를 ARM 보드에서 x86 미니 PC 로 바꿨습니다.
+  asset: arkurator
+
+- date: 2026-11-05
+  title: JohnnyStudio 개발 시작
+  kind: start
+  description: 흩어진 작업을 한곳에 모으는 허브를 만들기 시작했습니다.

@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.local.example
 *.key
 *.pem
 
@@ -19,6 +20,17 @@ Thumbs.db
 tmp/
 *.log
 
-# 나중에 빌드 도구를 도입할 경우 (ADR-0001 재검토 조건)
 node_modules/
-dist/
+
+# web/ (Next.js)
+web/node_modules/
+web/.next/
+web/out/
+web/next-env.d.ts
+*.tsbuildinfo
+
+# api/ (FastAPI)
+api/.venv/
+api/data/
+__pycache__/
+.pytest_cache/

@@ -1,0 +1,19 @@
+# Cloudflare Tunnel 설정 예시 (ADR-0006, deploy/README.md §4)
+#
+# 1. <TUNNEL_ID> 는 `cloudflared tunnel create johnnystudio` 가 알려 주는 값이다.
+# 2. __DOMAIN__ 을 실제 도메인으로 바꾼다.
+# 3. 서비스로 설치할 때는 이 파일을 /etc/cloudflared/config.yml 로 복사한다.
+#
+# 인증서 파일(credentials-file)은 비밀값이다. 저장소에 넣지 않는다.
+
+tunnel: <TUNNEL_ID>
+credentials-file: /etc/cloudflared/<TUNNEL_ID>.json
+
+ingress:
+  # 원래 Host 헤더를 그대로 넘기므로 nginx 의 server_name 과 맞아야 한다
+  - hostname: __DOMAIN__
+    service: http://127.0.0.1:8081
+  - hostname: www.__DOMAIN__
+    service: http://127.0.0.1:8081
+  # 그 밖의 호스트 이름은 거절한다
+  - service: http_status:404

@@ -1,6 +1,6 @@
 # ADR-0001: 포털은 빌드 없는 정적 HTML/CSS/JS 로 시작한다
 
-- **상태**: 채택됨
+- **상태**: 대체됨 (→ [ADR-0004](0004-nextjs-static-export.md)). 재검토 조건("로그인처럼 서버 처리가 필요한 기능")에 해당하는 기획(ideation v2)이 나왔다
 - **날짜**: 2026-11-05
 - **관련**: [ADR-0002](0002-deploy-home-server-nginx.md)
 

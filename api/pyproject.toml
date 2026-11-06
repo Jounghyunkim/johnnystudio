@@ -1,0 +1,31 @@
+# JohnnyStudio API: 회원(매직 링크 로그인). 구조와 결정 배경은 docs/04_architecture/adr/0007-magic-link-auth-api.md
+#
+# 의존성 규칙 (AGENTS.md §5): 정확한 버전으로 고정하고, 나온 지 2주 이상 된 버전 중 최신을 쓴다.
+# 새로 고를 때는 아래 exclude-newer 를 "오늘 - 14일" 로 옮기고 `uv lock --upgrade-package <이름>` 을 실행한다.
+[project]
+name = "johnnystudio-api"
+version = "0.1.0"
+description = "JohnnyStudio 포털 API: 매직 링크 회원 가입·로그인"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi==0.159.1",
+    "uvicorn==0.54.0",
+    "sqlalchemy==2.1.6",
+    "psycopg[binary]==3.3.6", # 운영 DB (PostgreSQL). 개발·테스트는 SQLite
+]
+
+[dependency-groups]
+dev = [
+    "pytest==9.1.1",
+    "httpx==0.28.1", # fastapi.testclient 가 쓴다
+]
+
+[tool.uv]
+exclude-newer = "2026-10-22T00:00:00Z"
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+# Starlette 가 httpx2 를 권하지만, httpx2 는 낯선 하위 패키지를 함께 들여와서 검증된 httpx 0.28 을 쓴다
+filterwarnings = ["ignore:Using `httpx` with `starlette.testclient` is deprecated"]

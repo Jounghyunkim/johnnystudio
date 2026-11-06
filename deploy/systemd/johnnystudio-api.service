@@ -1,0 +1,43 @@
+# JohnnyStudio 회원 API (FastAPI). 설치 방법: deploy/README.md §3
+#
+#   sudo install -m 644 deploy/systemd/johnnystudio-api.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now johnnystudio-api
+#
+# Arkurator 백엔드(arkurator-backend.service, 127.0.0.1:8000)와 같은 방식으로 작업 폴더의 .venv 에서 실행한다.
+# 포트(8082)와 DB(johnnystudio)가 따로라서 서로 영향을 주지 않는다.
+[Unit]
+Description=JohnnyStudio API (FastAPI/uvicorn)
+After=network-online.target postgresql.service
+Wants=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=jounghyun-kim
+Group=jounghyun-kim
+WorkingDirectory=/home/jounghyun-kim/workspace/JohnnyStudio/api
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+# 비밀값(DB 비밀번호, SMTP 비밀번호, JOHNNYSTUDIO_SECRET)은 저장소 밖 파일에 둔다 (예시: deploy/api.env.example)
+EnvironmentFile=/opt/johnnystudio/api.env
+# 127.0.0.1 에서만 듣는다. 외부 노출은 nginx(/api/)가 맡는다.
+# --no-proxy-headers: X-Forwarded-For 로 접속 IP 를 바꾸지 않는다 (앱이 nginx 의 X-Real-IP 만 믿는다)
+ExecStart=/home/jounghyun-kim/workspace/JohnnyStudio/api/.venv/bin/uvicorn --factory app.main:create_app --host 127.0.0.1 --port 8082 --workers 1 --no-proxy-headers --no-server-header
+Restart=always
+RestartSec=5
+TimeoutStopSec=20
+
+# 쓰기가 필요 없다 (DB 는 PostgreSQL). 시스템·홈 폴더를 읽기 전용으로 둔다
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

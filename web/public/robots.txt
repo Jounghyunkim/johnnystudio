@@ -1,0 +1,4 @@
+# TODO(launch): 출시 전에는 모든 검색엔진의 색인을 막는다.
+# 출시할 때 "Disallow: /" 를 "Allow: /" 로 바꾸고 Sitemap 줄을 추가한다. (deploy/README.md 출시 체크리스트)
+User-agent: *
+Disallow: /

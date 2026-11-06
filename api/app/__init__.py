@@ -1,0 +1,1 @@
+"""JohnnyStudio API (FastAPI)."""

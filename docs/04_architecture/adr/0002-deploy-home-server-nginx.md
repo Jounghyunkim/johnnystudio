@@ -1,6 +1,6 @@
 # ADR-0002: 홈 서버 M8 의 nginx 로 배포한다 (릴리스 폴더 + current 링크)
 
-- **상태**: 채택됨 (도메인 미결정)
+- **상태**: 일부 대체됨. 결정 1(80 포트 server_name 공유)·3(certbot)은 [ADR-0006](0006-cloudflare-tunnel.md) 으로 대체. 결정 2(릴리스 + current)는 유효
 - **날짜**: 2026-11-05
 - **관련**: [ADR-0001](0001-static-html-stack.md), [deploy/README.md](../../../deploy/README.md)
 
