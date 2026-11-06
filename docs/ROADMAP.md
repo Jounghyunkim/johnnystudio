@@ -7,6 +7,7 @@
 
 **Phase 1 (공개 허브) 구현 완료, 공개 준비 중.** 화면·뷰어·콘텐츠 체계·검사·배포 도구는 갖췄다.
 **Phase 2 의 회원 가입(이메일 인증)·로그인(이메일 + 비밀번호)을 먼저 구현했다** ([ADR-0007](04_architecture/adr/0007-magic-link-auth-api.md), [ADR-0008](04_architecture/adr/0008-password-login.md)). 로컬에서 동작을 확인했고, 서버 설정과 메일 발송 설정이 남았다.
+코드는 GitHub `Jounghyunkim/johnnystudio` 에 올렸다 (2026-11-06). CI 는 아직 없다.
 남은 일은 다음 네 가지다.
 
 1. ideation §9 열린 질문에 답한다
@@ -58,7 +59,8 @@
 - [ ] 도메인 결정 → DNS 를 Cloudflare 로 ([ADR-0006](04_architecture/adr/0006-cloudflare-tunnel.md))
 - [ ] 서버 1회 설정 + Tunnel ([deploy/README.md](../deploy/README.md) §2, §4, sudo 필요: 사용자)
 - [ ] 출시 체크리스트 ([deploy/README.md](../deploy/README.md) §7): 색인 허용, sitemap, canonical, OG 이미지
-- [ ] GitHub 원격 저장소 연결, CI 로 `scripts/check.sh` 실행
+- [x] GitHub 원격 저장소 연결 (2026-11-06, `Jounghyunkim/johnnystudio`, `main` push 완료. 공개 여부 확인 전)
+- [ ] CI 로 `scripts/check.sh` 실행
 
 ## Phase 1.5: 웹 패키지 샌드박스 (선택)
 
