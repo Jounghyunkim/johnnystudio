@@ -1,7 +1,7 @@
 # 사이트맵
 
 > **상태**: Phase 1 구현 완료 (자리표시 콘텐츠 일부 남음). Phase 2 회원 가입·로그인 구현 (메일 발송 설정 전). 구역 구조는 [ideation.md](../ideation.md) §0.
-> **Last Updated**: 2026-11-09
+> **Last Updated**: 2026-11-22
 
 ## 페이지
 
@@ -38,8 +38,7 @@
 | 작품 | 유형 | 상태 | 비고 |
 |---|---|---|---|
 | Arkurator | 웹 서비스 | **공개** | https://arkurator.net |
-| 하드웨어 모니터링 앱 | 데스크톱 툴 | 초안 | 소개·날짜·다운로드 파일 필요 |
-| SSH 터미널 클라이언트 | 데스크톱 툴 | 초안 | 소개·날짜·다운로드 파일 필요 |
+| Johnny Mecro · Johnny-Dir · SmartFolder Organizer · Screen-REC · SpaceSense AI · TakeScreenShot · SentinelLite-AV · WLT · CMG Monitor | 데스크톱 툴 | **공개** (9개) | JohnnyStore 에서 옮김 (2026-11-22, [ADR-0011](../04_architecture/adr/0011-absorb-johnnystore.md)). 설치 파일은 서버 설정 뒤 `/opt/johnnystudio/files` 로 옮긴다. 옛 초안 '하드웨어 모니터링 앱'·'SSH 터미널 클라이언트'는 CMG Monitor·WLT 로 대신했다 |
 | Skill Hub | 웹 서비스 | 초안 | 소개·날짜·주소 필요 |
 | 로봇 프로젝트 | 하드웨어 | 초안 | 이름·사진 또는 영상 필요 |
 | `sample-*` 5개 | 유형별 | 예시 | 뷰어 확인용. 출시 불가 |

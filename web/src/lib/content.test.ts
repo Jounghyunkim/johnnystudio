@@ -15,6 +15,7 @@ import {
   localMediaExists,
   mediaPaths,
   missingFields,
+  renderMarkdown,
 } from "./content";
 
 const assets = loadAllAssets();
@@ -104,6 +105,21 @@ describe("스키마", () => {
       ],
     };
     expect(missingFields(asset)).toEqual(["downloads.0.sha256", "downloads.1.sha256"]);
+  });
+
+  it("아이콘도 사이트 안 이미지로 검사한다", () => {
+    const asset = { slug: "t", html: "", title: "t", summary: "t", status: "live" as const, tags: [], featured: false, draft: false, links: [], type: "desktop-app" as const, downloads: [], icon: "/media/t/icon.png" };
+    expect(mediaPaths(asset)).toEqual(["/media/t/icon.png"]);
+    expect(AssetFrontmatter.safeParse({ title: "t", type: "video", summary: "t", status: "live", icon: "icon.png" }).success).toBe(false);
+  });
+});
+
+describe("본문 Markdown", () => {
+  it("외부 링크는 새 탭으로 열고, 사이트 안 링크는 그대로 둔다", () => {
+    const html = renderMarkdown("소스는 https://ffmpeg.org 를 보세요. [목록](/library/) · [원문](http://example.com/a?b=1)");
+    expect(html).toContain('<a href="https://ffmpeg.org" target="_blank" rel="noopener noreferrer">');
+    expect(html).toContain('<a href="http://example.com/a?b=1" target="_blank" rel="noopener noreferrer">');
+    expect(html).toContain('<a href="/library/">');
   });
 });
 

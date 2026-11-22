@@ -16,7 +16,7 @@ export function AssetCard({ asset, headingLevel = 3 }: { asset: AssetSummary; he
   const href = `/library/${asset.slug}/`;
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-card border border-line bg-surface transition-colors hover:border-line-strong hover:bg-raised has-[.card-link:focus-visible]:outline-2 has-[.card-link:focus-visible]:outline-offset-2 has-[.card-link:focus-visible]:outline-accent">
-      <AssetCover type={asset.type} cover={asset.cover} coverAlt={asset.coverAlt} className="aspect-[16/10] border-b border-line" />
+      <AssetCover type={asset.type} cover={asset.cover} coverAlt={asset.coverAlt} icon={asset.icon} className="aspect-[16/10] border-b border-line" />
       <div className="flex flex-1 flex-col gap-3 p-5">
         <div className="flex flex-wrap items-center gap-2">
           <TypeBadge type={asset.type} />

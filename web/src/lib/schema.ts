@@ -77,6 +77,8 @@ const base = {
   tags: z.array(z.string().min(1)).default([]),
   cover: MediaPath.optional(),
   coverAlt: z.string().optional(),
+  /** 앱 아이콘 (정사각형, 256px 권장, png·webp). 대표 이미지가 없을 때 카드·상세에 보인다. 이름 옆에 있으므로 대체 텍스트는 받지 않는다 */
+  icon: MediaPath.optional(),
   featured: z.boolean().default(false),
   /** true 면 개발 미리보기(npm run dev)에서만 보이고 출시 빌드에서는 빠진다 */
   draft: z.boolean().default(false),

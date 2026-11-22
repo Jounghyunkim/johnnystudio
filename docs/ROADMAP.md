@@ -54,7 +54,9 @@
 
 ### 콘텐츠 ⏳
 
-- [ ] 대표 작품 5~10개 등록: 초안 4개(하드웨어 모니터링, SSH 터미널, Skill Hub, 로봇)의 내용을 채우거나 새로 추가 (관리 화면 `/admin/` 으로)
+- [x] 대표 작품 5~10개 등록 (2026-11-22): JohnnyStore 의 Windows 앱 9개를 옮겨 공개 작품이 10개가 됐다 (Arkurator 포함). 초안 '하드웨어 모니터링'·'SSH 터미널'은 CMG Monitor·WLT 로 대신했다
+- [ ] 남은 초안 2개(Skill Hub, 로봇)의 내용 채우기, 대표 작품(`featured`) 고르기 (관리 화면 `/admin/` 으로)
+- [ ] 앱 9개의 설치 파일(180MB, 지금 `.local/files/`)을 서버 설정(deploy/README §2-1) 뒤 `/opt/johnnystudio/files/` 로 옮기기: `rsync -a .local/files/ /opt/johnnystudio/files/`
 - [ ] 작품 이미지 (webp), 다운로드 파일 업로드
 - [ ] `profile.yaml` 의 서비스 목록·연락처, About 운영자 소개 (`grep -rn "TODO(content)"`)
 - [ ] 실제 작품이 생기면 `sample-*` 정리
@@ -83,8 +85,8 @@
 - [x] 나머지 결정 (2026-11-22): 이름 "JohnnyStore" 는 남기지 않음(Q2), 옛 링크 리다이렉트 없음(Q5), 검사는 로컬 ClamAV 만(Q6), 설치 파일은 홈 서버에서만(Q7), 저장소 제거(Q9)
 - [x] 스토어 종료·저장소 제거: 전체를 `~/workspace/backup/johnnystore/johnnystore-20261122.tar.gz` 로 보관·확인한 뒤 지웠다 (통합 문서 §3-3)
 - [x] S0 준비: JohnnyStudio 미커밋 작업 커밋 (2026-11-22, 작품 관리 `f336188` + 통합 문서)
-- [ ] S1 콘텐츠 이관: 보관본의 앱 9개 → `content/assets/` → 공개 (운영 중, 2026-11-16)
-- [ ] S2 배포 엔진: 설치 파일 분석(`api/app/binaries/`)·ClamAV 검사를 관리 도구에, 상세 화면에 아키텍처·검사 결과, OG (ADR-0012). 먼저 사용자가 `sudo apt install clamav`
+- [x] S1 콘텐츠 이관 (2026-11-22): 보관본의 앱 9개 → `content/assets/` → 공개 (운영 중, 2026-11-16). 설치 파일 SHA-256 9개 일치. S2 의 앱 아이콘(`icon`)도 앞당겨 넣었다
+- [ ] S2 배포 엔진: 설치 파일 분석(`api/app/binaries/`)·ClamAV 검사를 관리 도구에, 상세 화면에 아키텍처·검사 결과, OG (ADR-0012). 먼저 사용자가 `sudo apt install clamav`. 앱 9개는 ClamAV 설치 뒤 한 번에 검사
 - [ ] S3 공유 키트: `/d/<slug>/`, 배지, QR (도메인 확정 뒤)
 - [ ] 마무리: GitHub 저장소 삭제·공유기 4000 포트 전달 삭제 (사용자), S2 이식 뒤 보관본 삭제
 - 비공개 공유(테스터·의뢰인)는 Phase 3 Client Room 에서, 누구나 업로드는 하지 않는다 (ADR-0011)

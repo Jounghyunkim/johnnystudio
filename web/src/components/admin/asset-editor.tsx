@@ -19,7 +19,7 @@ import { CheckboxField, FilePicker, panelClass, Section, SelectField, smallButto
 import { DownloadsField, IMAGE_ACCEPT, LinksField, PhotosField, SingleDownloadField, uploadImage } from "./list-fields";
 
 type Data = Record<string, unknown>;
-type Busy = null | "save" | "publish" | "unpublish" | "delete" | "cover";
+type Busy = null | "save" | "publish" | "unpublish" | "delete" | "cover" | "icon";
 
 const str = (v: unknown) => (typeof v === "string" ? v : typeof v === "number" ? String(v) : "");
 const list = (v: unknown): Data[] => (Array.isArray(v) ? (v as Data[]) : []);
@@ -177,6 +177,16 @@ export function AssetEditor({
     if (!r.ok) return setNotice({ tone: "error", text: r.message });
     set("cover", r.path);
     setNotice({ tone: "ok", text: `대표 이미지를 올렸습니다: ${r.path}. 대체 텍스트를 쓰고 저장해 주세요.`, details: r.warnings });
+  }
+
+  async function uploadIcon(file: File) {
+    setBusy("icon");
+    setNotice(null);
+    const r = await uploadImage(slug, file);
+    setBusy(null);
+    if (!r.ok) return setNotice({ tone: "error", text: r.message });
+    set("icon", r.path);
+    setNotice({ tone: "ok", text: `아이콘을 올렸습니다: ${r.path}. 저장해 주세요.`, details: r.warnings.filter((w) => !w.includes("webp")) });
   }
 
   const back = () => {
@@ -368,6 +378,29 @@ export function AssetEditor({
                   hint="무엇이 보이는지 한 문장으로 (예: 작은 창에 CPU·GPU 그래프가 보이는 화면)"
                   error={errorAt("coverAlt")}
                 />
+              </div>
+            </div>
+          </Section>
+
+          <Section id="sec-icon" title="아이콘" description="대표 이미지가 없을 때 카드와 상세 화면 가운데에 보입니다. 정사각형, 256px, png 또는 webp.">
+            <div className="grid gap-5 sm:grid-cols-[12rem_1fr]">
+              <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-xl border border-line bg-canvas">
+                {str(data.icon) ? (
+                  <img src={str(data.icon)} alt="" className="size-20 object-contain" />
+                ) : (
+                  <p className="text-xs text-fg-subtle">아이콘 없음</p>
+                )}
+              </div>
+              <div className="grid content-start gap-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <FilePicker label={busy === "icon" ? "올리는 중…" : str(data.icon) ? "다른 아이콘 올리기" : "아이콘 올리기"} accept={IMAGE_ACCEPT} disabled={busy !== null} onFile={uploadIcon} />
+                  {str(data.icon) && (
+                    <button type="button" className={smallButton} onClick={() => set("icon", undefined)}>
+                      아이콘 빼기
+                    </button>
+                  )}
+                </div>
+                <TextField label="아이콘 경로" mono value={str(data.icon)} onChange={(v) => set("icon", v)} placeholder={`/media/${slug}/icon.png`} error={errorAt("icon")} />
               </div>
             </div>
           </Section>

@@ -83,6 +83,7 @@ export function FeaturedSpotlight({ asset }: { asset: AssetSummary }) {
         type={asset.type}
         cover={asset.cover}
         coverAlt={asset.coverAlt}
+        icon={asset.icon}
         fill
         className="aspect-[16/10] border-b border-line md:aspect-auto md:min-h-80 md:border-b-0 md:border-r"
       />

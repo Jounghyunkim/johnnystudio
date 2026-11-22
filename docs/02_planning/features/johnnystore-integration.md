@@ -1,6 +1,6 @@
 # 기능: JohnnyStore 통합 (서비스 일원화)
 
-> **상태**: 결정 완료 → [ADR-0011](../../04_architecture/adr/0011-absorb-johnnystore.md) (2026-11-22). 질문은 모두 답했다 (§9). 다음은 §6 의 S0 → S1
+> **상태**: 결정 완료 → [ADR-0011](../../04_architecture/adr/0011-absorb-johnnystore.md) (2026-11-22). **S0·S1 끝남** (앱 9개 공개, 2026-11-22). 다음은 §6 의 S2
 > **Last Updated**: 2026-11-22
 > **대상**: JohnnyStore. 2026-11-22 에 서비스를 끄고 저장소를 지웠다. 보관본 `~/workspace/backup/johnnystore/johnnystore-20261122.tar.gz`
 > (마지막 커밋 `6dc01fe` + 미커밋 24파일 + 데이터, §3-3)
@@ -278,7 +278,7 @@ JohnnyStudio/
 | 단계 | 결과 | 크기 | 먼저 있어야 할 것 |
 |---|---|---|---|
 | S0 준비 | JohnnyStudio 미커밋 작업 정리 | 작음 | — |
-| S1 콘텐츠 이관 | 앱 9개가 Library 에 공개 | 작음~중간 | S0 |
+| S1 콘텐츠 이관 ✅ | 앱 9개가 Library 에 공개 (2026-11-22) | 작음~중간 | S0 |
 | S2 배포 엔진 | 설치 파일을 놓으면 분석·아이콘·ClamAV 검사까지 자동, 상세 화면에 신뢰 정보·OG | 중간 | S1, ClamAV 설치(사용자) |
 | S3 공유 키트 | 바로 받기 링크·배지·QR | 작음 | S2, 도메인(ideation §9-1) |
 | 마무리 | 보관본 삭제, GitHub 저장소·공유기 포트 정리 | 작음 | S2 (코드 이식 뒤) |
@@ -303,10 +303,11 @@ JohnnyStudio/
 | `slug` | 파일 이름 `<slug>.md` | 그대로. `wlt`·`cmg-monitor` 는 초안 `ssh-terminal`·`hardware-monitor` 를 대신한다 (Q3). 초안 2개는 지운다 (관리 도구의 삭제 → `.local/trash/`) |
 | `name` | `title` | 그대로 |
 | `summary` (160자 이하) | `summary` (140자 이하) | 그대로 (9개 모두 127자 이하, 확인함) |
-| `description` (■ 제목, • 목록) | 본문 Markdown | 형식만 바꾼다 (■ → `##`, • → `-`). 내용은 바꾸지 않는다. 설명 안의 필요 환경 문단은 `requirements` 로 옮길 수 있다 |
+| `description` (■ 제목, • 목록) | 본문 Markdown | 형식만 바꾼다 (■ → `##`, • → `-`, 한 줄 = 한 문단, `1. ` 은 번호 목록). 내용은 바꾸지 않는다. "■ 시스템 요구 사항" 의 첫 줄(OS·런타임)은 `requirements` 에도 복사하고, 절은 본문에 그대로 둔다 (Screen-REC 은 둘째 줄이 FFmpeg 라이선스 고지라 옮기지 않았다) |
 | `category` | `tags` | 한국어 이름(유틸리티·생산성·개발 도구·미디어·보안·시스템) + `데스크톱`. 지우는 초안의 태그(`SSH`, `모니터링`)는 해당 앱에 더한다 |
-| 아이콘 (`icon_file`, 256px PNG) | `icon` (S2 에서 새 필드) | 우선 `web/public/media/<slug>/icon.png` 로 복사만 한다. `cover` 는 가로 이미지 자리라 쓰지 않는다 |
-| 최신 릴리스 | `downloads[0]` | `label` "Windows 설치 파일", `file` `/files/<slug>/<파일 이름>`, `version`, `os: [windows]`, `size`, `sha256`, `signed`, `notes` ← 릴리스 노트 |
+| 아이콘 (`icon_file`, 256px PNG) | `icon` (새 필드, S2 에서 앞당김) | `web/public/media/<slug>/icon.png`. 대표 이미지가 없으면 카드·상세 가운데에 보인다. `cover` 는 가로 이미지 자리라 쓰지 않는다 |
+| 최신 릴리스 | `downloads[0]` | `label` "Windows 설치 파일 (x64)", `file` `/files/<slug>/<파일 이름>`, `version`, `os: [windows]`, `size`, `sha256`, `signed: false` |
+| 릴리스 노트 | 본문 끝 `## 변경 내역` / `### <버전>` | 여러 줄(WLT·Screen-REC)이라 다운로드 패널의 `notes`(한 문단)에 맞지 않는다. 형식만 바꾼다 (■·• → `-`). 없는 앱(Johnny-Dir)은 절을 두지 않았다 |
 | 설치 파일 | 다운로드 보관 폴더 `<slug>/` | 관리 도구 규칙대로 `/opt/johnnystudio/files` 가 있으면 그곳, 없으면 `.local/files` (지금은 서버 설정 전이라 없다. 서버 설정 뒤 옮긴다). 복사한 뒤 SHA-256 을 다시 계산해서 DB 값과 맞춰 본다. 파일 이름의 공백은 `-` 로 바꾸기를 권한다 (주소 인코딩 문제 방지. 체크섬은 그대로) |
 | (스토어에 공개된 상태) | `status: live` (운영 중) | 스토어와 같게 (Q4). 버전이 0.x 인 앱(Johnny-Dir, SmartFolder Organizer, SentinelLite-AV, WLT)도 같다 |
 | 스토어 등록 시각 2026-11-16 02:27 (KST) | `date: 2026-11-16`, `downloads[0].released: 2026-11-16` | 스토어와 같게 (Q4). 스토어에 처음 공개한 날이다 |
@@ -314,15 +315,17 @@ JohnnyStudio/
 
 할 일:
 
-- [ ] 보관본을 `.local/import/johnnystore/` 에 푼다 (git 제외 폴더). 이관이 끝나면 푼 폴더를 지운다
-- [ ] 1회용 이관 스크립트 `web/scripts/admin/import-johnnystore.ts`
+- [x] 보관본을 `.local/import/johnnystore/` 에 풀었다가, 이관이 끝나고 지웠다
+- [x] 1회용 이관 스크립트 `web/scripts/admin/import-johnnystore.ts` (변환 규칙을 이력으로 남기려고 S1 커밋에 넣고, 다음 커밋에서 지웠다)
   - 스토어 DB 를 **읽기 전용**으로 연다. Node 26 내장 `node:sqlite` 를 쓴다 (새 의존성 없음. 읽기 전용으로 열리는 것을 확인함)
   - `lib/admin/store.ts` 의 만들기·저장 함수를 거쳐 쓴다 (스키마 검사·키 순서·주석 보존을 그대로 탄다). 초안으로 만들고, 확인한 뒤 공개한다
   - 설치 파일·아이콘 복사, SHA-256 재계산·비교, `--dry-run`
   - 끝나면 스크립트는 지우고, 실행 기록은 dev_history 에 남긴다
-- [ ] 결과 확인: `npm --prefix web run admin -- check`, 관리 화면에서 9개를 보고 공개한다 (`publish`)
+- [x] 결과: 9개 모두 설치 파일 SHA-256·크기가 스토어 DB 와 일치, 완성도 검사 통과 → CLI `publish` 로 공개. 초안 `ssh-terminal`·`hardware-monitor` 는 `.local/trash/` 로 옮겼다
+- [x] 설치 파일은 관리 도구 규칙대로 `.local/files/<slug>/` 에 있다 (`/opt/johnnystudio/files` 가 아직 없다). 서버 설정 뒤 `rsync -a .local/files/ /opt/johnnystudio/files/` (ROADMAP 콘텐츠)
+- [x] 함께 고친 것: 본문 Markdown 의 외부 링크에 `target="_blank" rel="noopener noreferrer"` (Screen-REC 의 FFmpeg 주소), 아이콘이 있으면 "대표 이미지 없음" 경고를 내지 않음
 - [ ] Life Log: 2026-11-16 에 앱마다(또는 한 줄로 묶어) `release` 항목을 더할지 (운영자 확인)
-- [ ] SITEMAP 콘텐츠 목록, PHILOSOPHY §5 의 등록 대기 목록, ROADMAP Phase 1 콘텐츠 체크박스
+- [x] SITEMAP 콘텐츠 목록, PHILOSOPHY §5, ROADMAP Phase 1 콘텐츠, CONTENT_GUIDE(`icon`), ARCHITECTURE(외부 링크)
 
 완료 기준: 출시 빌드의 Library 에 앱 9개가 보이고, 상세 화면에서 설치 파일을 받으면 SHA-256 이 맞는다. `./scripts/check.sh` 통과.
 
@@ -353,13 +356,13 @@ JohnnyStudio/
   - Python 이 없거나 실패하면 지금처럼 크기·SHA-256 만 채운다
 - [ ] `app/binaries/scan.py`: `clamscan --no-summary` 실행, 엔진·시그니처 버전·결과를 JSON 으로 (스토어 `scanner.py` 의 ClamAV 부분을 고쳐서)
 - [ ] 스키마 (AGENTS.md 의 순서대로: `schema.ts` → `missingFields()` → `lib/admin/fields.ts` → CONTENT_GUIDE → 테스트)
-  - `icon?: MediaPath` (공통): 카드·상세·OG 에 쓴다
+  - ~~`icon?: MediaPath` (공통)~~: S1 에서 했다 (카드·상세·관리 화면). OG 에 쓰는 것은 아래 `openGraph` 항목
   - `Download.arch?: "x64" | "x86" | "arm64"`
   - `Download.scan?: { engine: "clamav", result: "clean" | "infected", signature?: 문자열(시그니처 버전·날짜), checked: PartialDate, detail?: 문자열(탐지 이름) }`
   - `missingFields`: 공개된 데스크톱 앱의 최신 다운로드에 `scan` 이 없으면 **경고**, `result: infected` 면 **공개 불가**
 - [ ] 관리 화면: "새 작품"에 설치 파일을 놓으면 데스크톱 앱 초안을 만든다. 기존 작품에 새 버전을 놓으면 `downloads` 맨 앞에 더한다
 - [ ] 상세 화면 (`viewers/download-panel.tsx`): 아이콘, 아키텍처, 서명 문구(X12), 검사 배지(엔진·기준일), VirusTotal 검색 링크(`ExternalButton`), 이전 버전 접기
-- [ ] 카드: 데스크톱 앱은 아이콘 표시
+- [x] 카드: 아이콘 표시 (S1 에서 했다)
 - [ ] `library/[slug]/page.tsx` 의 `generateMetadata` 에 `openGraph`(제목·소개·아이콘 또는 대표 이미지)를 넣는다. 메신저 미리보기를 정적으로 해결해서 스토어의 봇 감지를 대신한다 (ROADMAP 출시 체크리스트의 OG 이미지와 같은 일)
 - [ ] PHILOSOPHY · ideation 에 §2-4 의 실천 기준 반영
 
@@ -464,4 +467,5 @@ ADR-0011 의 재검토 조건이 생기면 다음을 먼저 정한다.
 - 가입 닫기: `backend/.env` 에 `JS_REGISTRATION=closed` → 다시 띄움 → `/api/v1/meta` 의 `registration` 이 `closed`
 - 제거: §3-3 의 순서. 보관본을 풀어서 설치 파일 9개 SHA-256·크기, 아이콘 9개, git 이력을 확인한 뒤 지웠다. 4000 포트가 닫힌 것을 확인했다
 - 초안 2개의 참조: `content/`·`web/` 검색. 예시 문구(`hardware-monitor` 를 slug 예로 쓴 곳) 말고는 없다
-- **확인하지 않은 것**: 바깥 네트워크에서 직접 4000 에 접속하기, Cloudflare 요금제별 한도·약관, ClamAV 의 메모리·실행 시간과 패키지 구성, VirusTotal 공개 API 이용 조건, 저작권법 책임 제한 요건의 세부
+- S1 (2026-11-22): 이관 스크립트 `--dry-run` 으로 변환 결과를 먼저 읽고 실행, `admin -- list` 로 공개 10개 확인, `./scripts/check.sh` 통과 (웹 111, API 55, 출시 빌드 HTML 25개), 빌드 결과에서 카드 아이콘 9개·FFmpeg 링크 속성·체크섬 확인, 개발 서버 화면(Library 1280px·390px, WLT 상세)을 헤드리스 Chromium 스크린숏으로 확인
+- **확인하지 않은 것**: 밝은 테마에서 아이콘 카드, 실제 다운로드(개발 서버는 `/files/` 를 내주지 않는다), 바깥 네트워크에서 직접 4000 에 접속하기, Cloudflare 요금제별 한도·약관, ClamAV 의 메모리·실행 시간과 패키지 구성, VirusTotal 공개 API 이용 조건, 저작권법 책임 제한 요건의 세부

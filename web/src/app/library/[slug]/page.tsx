@@ -119,6 +119,7 @@ export default async function AssetPage({ params }: Props) {
               type={asset.type}
               cover={asset.cover}
               coverAlt={asset.coverAlt}
+              icon={asset.icon}
               eager
               className="aspect-[4/3] rounded-card border border-line"
             />

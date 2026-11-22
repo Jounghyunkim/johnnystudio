@@ -2,7 +2,7 @@
 
 > 작품·기록·소개 문구를 추가하거나 고치는 방법. 결정 배경은 [ADR-0005](../04_architecture/adr/0005-file-based-content.md).
 > 형식의 정답은 코드에 있다: [web/src/lib/schema.ts](../../web/src/lib/schema.ts)
-> **Last Updated**: 2026-11-09
+> **Last Updated**: 2026-11-22
 
 ## 0. 관리 화면으로 등록하기 (권장)
 
@@ -74,6 +74,7 @@ npm --prefix web run admin -- unpublish my-tool
 | `updated` | | 마지막 업데이트 날 |
 | `tags` | | `[AI, RAG]`. Library 에서 `#AI` 로 찾을 수 있다 |
 | `cover` · `coverAlt` | | 대표 이미지 경로와 대체 텍스트 (이미지가 있으면 대체 텍스트도 필수) |
+| `icon` | | 앱 아이콘 경로 (정사각형, 256px, png·webp). 대표 이미지가 없으면 카드·상세 가운데에 보인다. 이름 옆에 나오므로 대체 텍스트는 쓰지 않는다 |
 | `featured` | | `true` 면 홈 "대표 작품"에 먼저 나온다 |
 | `draft` | | `true` 면 개발 미리보기에서만 보인다 |
 | `links` | | 추가 링크: `- { label: GitHub, href: https://… }` |
@@ -132,7 +133,9 @@ install -D -m 644 ~/build/hw-monitor-1.2.0-setup.exe /opt/johnnystudio/files/har
 ## 3. 이미지
 
 - `web/public/media/<slug>/` 에 **webp** 로 둔다. 카드용은 가로 1200px 이하, 한 장 300KB 이하가 기준이다
-- 모든 이미지에 대체 텍스트(`coverAlt`, `photos[].alt`)를 쓴다. 무엇이 보이는지 한 문장으로 쓴다
+- 모든 이미지에 대체 텍스트(`coverAlt`, `photos[].alt`)를 쓴다. 무엇이 보이는지 한 문장으로 쓴다 (앱 아이콘 `icon` 은 꾸밈 이미지라 예외)
+- 앱 아이콘은 `icon.png`(또는 webp) 로 둔다. 작고 투명 배경이 흔해서 png 도 괜찮다
+- 본문(Markdown)의 `https://` 링크는 새 탭으로 열린다 (빌드할 때 `target="_blank" rel="noopener noreferrer"` 를 붙인다)
 - 외부 주소의 이미지는 쓰지 않는다 (CSP 가 막는다). YouTube 썸네일만 예외다
 
 ## 4. Life Log (`content/lifelog.yaml`)

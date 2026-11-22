@@ -244,11 +244,12 @@ export function createAdminStore(paths: AdminPaths) {
     const warnings: string[] = [];
     // 아래 둘은 초안이어도 content.test.ts 가 막는다 (check.sh 실패)
     for (const p of mediaPaths(asset)) {
-      if (!localMediaExists(p, paths.publicDir)) errors.push({ path: p === asset.cover ? "cover" : "photos", message: `이미지 파일이 없다: ${p}` });
+      const field = p === asset.cover ? "cover" : p === asset.icon ? "icon" : "photos";
+      if (!localMediaExists(p, paths.publicDir)) errors.push({ path: field, message: `이미지 파일이 없다: ${p}` });
     }
     if (asset.cover && !asset.coverAlt) errors.push({ path: "coverAlt", message: "대표 이미지가 있으면 대체 텍스트(coverAlt)도 쓴다" });
 
-    if (!asset.cover) warnings.push("대표 이미지가 없다 (카드에 유형 아이콘이 대신 나온다)");
+    if (!asset.cover && !asset.icon) warnings.push("대표 이미지가 없다 (카드에 유형 아이콘이 대신 나온다)");
     if (asset.tags.length === 0) warnings.push("태그가 없다 (Library 검색과 '비슷한 작품'에 쓰인다)");
     if (!asset.html) warnings.push("소개 본문이 없다");
     for (const p of mediaPaths(asset)) {
@@ -257,7 +258,8 @@ export function createAdminStore(paths: AdminPaths) {
       if (!fs.existsSync(file)) continue;
       const size = fs.statSync(file).size;
       if (size > IMAGE_SOFT_LIMIT) warnings.push(`${p}: ${kb(size)} (기준 300KB 이하)`);
-      if (!p.endsWith(".webp")) warnings.push(`${p}: webp 가 아니다 (CONTENT_GUIDE §3)`);
+      // 아이콘은 작고 투명 배경이 흔해서 png 도 괜찮다
+      if (!p.endsWith(".webp") && p !== asset.icon) warnings.push(`${p}: webp 가 아니다 (CONTENT_GUIDE §3)`);
     }
     const downloads = asset.type === "desktop-app" ? asset.downloads : asset.type === "web-package" && asset.download ? [asset.download] : [];
     for (const d of downloads) {

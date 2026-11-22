@@ -39,7 +39,8 @@
 
 - **작품 유형**: 웹 서비스, 데스크톱 툴, 웹 패키지, 영상, 사진, 글, 하드웨어 (ideation §3-1)
 - **현재**: [Arkurator](https://arkurator.net), 파일 기반 지식 관리 + RAG AI 에이전트
-- **등록 대기 (초안)**: 하드웨어 모니터링 앱, SSH 터미널 클라이언트, Skill Hub, 로봇 프로젝트. 내용을 채워야 한다 `[확인 필요]`
+- **Windows 앱 9개** (2026-11-22, JohnnyStore 에서 옮김): Johnny Mecro, Johnny-Dir, SmartFolder Organizer, Screen-REC, SpaceSense AI, TakeScreenShot, SentinelLite-AV, WLT, CMG Monitor
+- **등록 대기 (초안)**: Skill Hub, 로봇 프로젝트. 내용을 채워야 한다 `[확인 필요]`
 - **하지 않는 것**: ideation §8 참고 (공개 자료의 회원가입 강요, 범용 SNS 기능, 결제 등)
 
 ## 6. 누구를 위한가

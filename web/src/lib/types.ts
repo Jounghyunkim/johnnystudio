@@ -18,6 +18,7 @@ export interface AssetSummary {
   tags: string[];
   cover?: string;
   coverAlt?: string;
+  icon?: string;
   featured: boolean;
   draft: boolean;
   /** 카드에서 바로 여는 외부 링크 (웹 서비스 실행, 원문 읽기 등). 없으면 상세 페이지로만 간다 */

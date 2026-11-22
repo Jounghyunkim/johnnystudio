@@ -1,6 +1,6 @@
 # 아키텍처
 
-> **Last Updated**: 2026-11-09
+> **Last Updated**: 2026-11-22
 > 결정 배경: [ADR-0004](adr/0004-nextjs-static-export.md) (Next.js 정적 내보내기), [ADR-0005](adr/0005-file-based-content.md) (파일 콘텐츠),
 > [ADR-0002](adr/0002-deploy-home-server-nginx.md) · [ADR-0006](adr/0006-cloudflare-tunnel.md) (배포·공개), [ADR-0007](adr/0007-magic-link-auth-api.md) (회원 API·해시 CSP),
 > [ADR-0008](adr/0008-password-login.md) (비밀번호 로그인), [ADR-0009](adr/0009-local-portfolio-manager.md) · [ADR-0010](adr/0010-admin-on-public-dev-server.md) (작품 관리)
@@ -146,7 +146,7 @@ Next 개발 서버 rewrites (개발 단계에서만) ──▶ 관리 서버 127
 | CSP (페이지 `<meta>`) | `script-src 'self' 'sha256-…'`: 그 페이지의 인라인 스크립트 해시만 허용한다 (테마 스크립트 포함). 헤더와 함께 적용되므로 실제로는 `'unsafe-inline'` 이 없는 것과 같다 (ADR-0007) |
 | 회원 | 비밀번호는 scrypt 해시, 세션·링크 토큰은 SHA-256 해시만 저장, 쿠키 `__Host-…; HttpOnly; Secure; SameSite=Lax`, 상태를 바꾸는 요청은 `Origin` 검사 + JSON 만, IP 는 HMAC 만 하루 보관, 비밀번호 실패 횟수 제한 |
 | 그 밖의 헤더 | `X-Content-Type-Options`, `X-Frame-Options DENY`, `Referrer-Policy`, `Permissions-Policy` |
-| 외부 링크 | 모두 `target="_blank" rel="noopener noreferrer"` |
+| 외부 링크 | 모두 `target="_blank" rel="noopener noreferrer"` (본문 Markdown 의 http(s) 링크는 `content.ts` 의 `renderMarkdown` 이 붙인다) |
 | 웹 패키지 | 별도 출처(샌드박스 도메인)의 iframe, `sandbox` 에 `allow-same-origin` 없음 (Phase 1.5) |
 | 숨김 파일 | `/.` 로 시작하는 경로는 404 (`.release` 등). `/.well-known/` 만 예외 |
 | 추적 | 추적 쿠키·분석 스크립트 없음. 쿠키는 로그인 세션 하나뿐. Next.js 사용 통계 전송 끔 |

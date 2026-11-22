@@ -73,7 +73,10 @@ function splitFrontmatter(file: string): { data: unknown; body: string } {
 
 /** Markdown 본문 → HTML (저장소의 신뢰된 파일에서만 온다) */
 export function renderMarkdown(body: string): string {
-  return body ? (marked.parse(body, { async: false, gfm: true }) as string) : "";
+  if (!body) return "";
+  const html = marked.parse(body, { async: false, gfm: true }) as string;
+  // 외부 링크는 새 탭으로 연다 (AGENTS.md: target="_blank" rel="noopener noreferrer"). 본문에 그냥 적은 https 주소도 링크가 된다
+  return html.replace(/<a href="(https?:\/\/[^"]*)"/g, '<a href="$1" target="_blank" rel="noopener noreferrer"');
 }
 
 /** 검증된 머리말 + slug + 본문 → 화면에서 쓰는 에셋 */
@@ -184,6 +187,7 @@ export function toSummary(a: Asset): AssetSummary {
     tags: a.tags,
     cover: a.cover,
     coverAlt: a.coverAlt,
+    icon: a.icon,
     featured: a.featured,
     draft: a.draft,
     quickAction: quickAction(a),
@@ -307,6 +311,7 @@ export function localMediaExists(src: string, publicDir: string = PUBLIC_DIR): b
 export function mediaPaths(a: Asset): string[] {
   const list: string[] = [];
   if (a.cover) list.push(a.cover);
+  if (a.icon) list.push(a.icon);
   if (a.type === "gallery" || a.type === "hardware") list.push(...a.photos.map((p) => p.src));
   return list;
 }
