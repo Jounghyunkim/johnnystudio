@@ -105,7 +105,8 @@ JohnnyStudio/
 - 없는 이메일·틀린 비밀번호·비밀번호 없는 계정은 같은 응답이고, 해시 계산 시간도 같게 쓴다 (가입 여부를 드러내지 않는다)
 - 스키마: 운영 DB 설치 전이라 그대로 고친다. 개발 SQLite 는 스키마가 다르면 다시 만들고, 운영 DB 는 시작을 멈춘다 (설치 뒤부터 Alembic)
 - 개발: `./scripts/dev.sh` 가 API(127.0.0.1:3001, SQLite `api/data/dev.sqlite3`)도 띄운다. 메일은 터미널에 찍힌다(`api/.env.local` 에 SMTP 를 적으면 진짜로 보낸다). Next 개발 서버의 rewrites 가 `/api/` 를 넘긴다.
-  - 접속 주소는 세 곳이 알아야 한다: Next 의 `allowedDevOrigins`(모르면 HMR 을 막아 **화면이 하이드레이션되지 않는다**), API 의 허용 출처(CSRF), 메일 링크 주소. `dev.sh` 가 `HOST`·`PUBLIC_URL` 로 셋을 함께 맞춘다.
+  - 접속 주소는 세 곳이 알아야 한다: Next 의 `allowedDevOrigins`(모르면 HMR 을 막아 **화면이 하이드레이션되지 않는다**), API 의 허용 출처(CSRF), 메일 링크 주소. `dev.sh` 가 `HOST`·`PUBLIC_URL` 로 셋을 함께 맞춘다. 밖에서 들어오는 주소가 여럿이면 `PUBLIC_URL` 에 쉼표로 모두 적는다 (첫 주소가 메일 링크). 빠진 주소로 들어오면 그 화면의 버튼(테마·즐겨찾기·로그인)이 동작하지 않는다 (2026-11-22, `johnnystudio.net` 으로 겪음).
+  - 저장소 밖 설정 (2026-11-22 확인): `johnnystudio.net`·`www` 는 집 공인 IP 를 가리키고, 이 서버 nginx 사이트 `/etc/nginx/sites-available/johnnystudio.net`(certbot, 2026-11-16)이 443 을 받아 `127.0.0.1:4000` 으로 넘긴다 (WebSocket 헤더 포함). 지금은 개발 서버가 4000 에서 받는다. §1 의 운영 구조(Tunnel → 127.0.0.1:8081)와 다르다 `[확인 필요: 공개 방식 결정]`
   - Next 개발 프록시는 방문자가 보낸 `X-Real-IP` 를 그대로 넘기므로 개발 API 는 그 헤더를 믿지 않는다 (`JOHNNYSTUDIO_TRUST_PROXY_IP=0`).
 - 설정: 환경 변수 `JOHNNYSTUDIO_*` (`api/app/config.py`). 운영 값은 `/opt/johnnystudio/api.env` (예시 `deploy/api.env.example`)
 

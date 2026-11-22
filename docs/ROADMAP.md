@@ -70,6 +70,7 @@
 ### 공개 ⏳
 
 - [ ] 도메인 결정 → DNS 를 Cloudflare 로 ([ADR-0006](04_architecture/adr/0006-cloudflare-tunnel.md))
+  - 2026-11-22 확인: `johnnystudio.net` 이 이미 집 공인 IP 를 가리키고, 저장소 밖 nginx 사이트(certbot HTTPS, 2026-11-16)가 443 → `127.0.0.1:4000`(지금은 개발 서버)으로 넘긴다. 이 도메인을 쓸지, Tunnel 로 바꿀지 정해야 한다 `[확인 필요]`
 - [ ] 서버 1회 설정 + Tunnel ([deploy/README.md](../deploy/README.md) §2, §4, sudo 필요: 사용자)
 - [ ] 출시 체크리스트 ([deploy/README.md](../deploy/README.md) §7): 색인 허용, sitemap, canonical, OG 이미지
 - [x] GitHub 원격 저장소 연결 (2026-11-06, `Jounghyunkim/johnnystudio`, `main` push 완료. 공개 여부 확인 전)

@@ -7,6 +7,10 @@
 #                                     (서버 방화벽에서 3000 을 열어야 한다: sudo ufw allow from 192.168.0.0/24 to any port 3000 proto tcp)
 #   PUBLIC_URL=http://johnnyhouse.iptime.org:3000 ./scripts/dev.sh
 #                                   → 공유기 포트포워딩으로 인터넷에서 접속 (잠깐 시험할 때만. 아래 경고 참고)
+#   PORT=4000 PUBLIC_URL=https://johnnystudio.net,https://www.johnnystudio.net,http://johnnyhouse.iptime.org:4000 ./scripts/dev.sh
+#                                   → 밖에서 들어오는 주소가 여럿이면 쉼표로 모두 적는다. 첫 주소가 대표(로그인 메일 링크)다.
+#                                     (johnnystudio.net 은 이 서버 nginx 가 443 에서 받아 127.0.0.1:4000 으로 넘긴다. 저장소 밖 설정)
+#                                     빠진 주소로 들어오면 그 화면에서는 버튼(테마·즐겨찾기·로그인 등)이 동작하지 않는다
 #   NO_API=1 ./scripts/dev.sh       → 회원 API 없이 화면만
 #   NO_ADMIN=1 ./scripts/dev.sh     → 작품 관리 서버 없이 (관리 화면 /admin/ 이 '연결할 수 없음'으로 보이고, /files/ 다운로드도 안 된다)
 #
@@ -35,10 +39,17 @@ ADMIN_PORT="${ADMIN_PORT:-3002}"
 PUBLIC_URL="${PUBLIC_URL:-}"
 export NEXT_TELEMETRY_DISABLED=1
 
+public_urls=()
 if [[ -n "$PUBLIC_URL" ]]; then
-  PUBLIC_URL="${PUBLIC_URL%/}"
-  [[ "$PUBLIC_URL" =~ ^https?://[A-Za-z0-9.-]+(:[0-9]+)?$ ]] \
-    || { echo "✗ PUBLIC_URL 은 http(s)://주소[:포트] 형식이어야 합니다: $PUBLIC_URL"; exit 1; }
+  IFS=, read -ra public_urls <<< "$PUBLIC_URL"
+  for i in "${!public_urls[@]}"; do
+    u="${public_urls[$i]//[[:space:]]/}"
+    u="${u%/}"
+    [[ "$u" =~ ^https?://[A-Za-z0-9.-]+(:[0-9]+)?$ ]] \
+      || { echo "✗ PUBLIC_URL 의 주소는 http(s)://주소[:포트] 형식이어야 합니다 (여러 개면 쉼표로): $u"; exit 1; }
+    public_urls[i]="$u"
+  done
+  PUBLIC_URL="${public_urls[0]}" # 대표 주소: 로그인 메일 링크를 이 주소로 만든다
   HOST=0.0.0.0 # 밖에서 들어오려면 모든 주소로 들어야 한다
 fi
 
@@ -60,18 +71,21 @@ if [[ "$HOST" != "127.0.0.1" && "$HOST" != "localhost" ]]; then
   # 메일 링크도 다른 기기에서 열리도록 이 PC 의 네트워크 주소로 만든다 (localhost 는 그 기기 자신을 가리킨다)
   (( ${#ips[@]} )) && site="http://${ips[0]}:$PORT"
 fi
-if [[ -n "$PUBLIC_URL" ]]; then
-  public_host="${PUBLIC_URL#*://}"
-  hosts+=("${public_host%%:*}")
-  origins+=("$PUBLIC_URL")
+if (( ${#public_urls[@]} )); then
+  for u in "${public_urls[@]}"; do
+    public_host="${u#*://}"
+    hosts+=("${public_host%%:*}")
+    origins+=("$u")
+  done
   site="$PUBLIC_URL"
   cat <<EOF
-⚠ 개발 서버를 인터넷에 엽니다: $PUBLIC_URL
-  - 초안 작품과 오류 상세(코드 위치)가 누구에게나 보입니다. 인터넷 스캐너가 이미 3000 번을 찾아오고 있습니다.
+⚠ 개발 서버를 인터넷에 엽니다: ${public_urls[*]}
+  - 초안 작품과 오류 상세(코드 위치)가 누구에게나 보입니다. 인터넷 스캐너가 열린 포트를 늘 찾아옵니다.
   - api/.env.local 에 메일 설정이 있으면, 누구나 로그인 링크 요청으로 내 메일 계정에서 메일이 나가게 할 수 있습니다.
   - 작품 관리 화면도 열립니다. 토큰 없이는 쓸 수 없지만, http 주소라면 토큰이 암호화되지 않은 채 오갑니다.
-    공용 와이파이에서는 쓰지 말고, 끝나면 바로 끄세요 (토큰은 이번 실행에만 유효합니다).
-  - 시험이 끝나면 Ctrl+C 로 끄고, 방화벽(sudo ufw delete allow 3000/tcp)과 공유기 포트포워딩을 닫으세요.
+    공용 와이파이에서는 http 주소로 관리 화면을 쓰지 마세요 (토큰은 이번 실행에만 유효합니다).
+  - 위 주소에 없는 주소로 들어오면 화면의 버튼이 동작하지 않습니다. 그 주소도 PUBLIC_URL 에 쉼표로 더하세요.
+  - 끝나면 Ctrl+C 로 끄고, 방화벽(sudo ufw delete allow $PORT/tcp)과 공유기 포트포워딩을 닫으세요.
 EOF
 fi
 JOHNNYSTUDIO_DEV_HOSTS="$(IFS=,; echo "${hosts[*]}")"

@@ -185,3 +185,25 @@
   - 공인 주소:4000 의 `/library/`·`/library/wlt/`·`/api/auth/me`·`/admin/` 200, WLT 다운로드 SHA-256 일치
   - `screen` 출력에서 16.4.6 실행 뒤 업그레이드 안내 0줄 (16.4.2 때 것만 4줄)
 - 메모: 이 세션의 2주 규칙 계산(16.4.6 은 11-23 부터)과 달리, PR #1 은 13일째에 16.4.6 을 골랐다. 보안 업그레이드라서 사용자가 정한 것으로 보고 그대로 두었다
+
+## 추가 (23:33): 테마 버튼이 동작하지 않던 문제
+
+- 사용자 보고: Dark / Light 테마 버튼이 동작하지 않는다
+- 재현 (헤드리스 Chrome + CDP 스크립트, scratchpad. 페이지를 열고 버튼을 눌러 `data-theme`·localStorage·React 연결 여부를 본다)
+  - 도메인·LAN·127.0.0.1 은 동작했다
+  - 공인 IP 숫자 주소는 HMR 웹소켓이 막혀 하이드레이션이 안 됐다 (모든 버튼이 죽는다)
+- 원인: `screen` 의 개발 서버 로그에 `Blocked cross-origin request to Next.js dev resource /_next/hmr from "johnnystudio.net"`
+  - 사용자는 `https://johnnystudio.net` 으로 들어오고 있었다
+  - 저장소 밖 nginx 사이트(`/etc/nginx/sites-available/johnnystudio.net`, certbot, 11-16 생성. 원래 스토어용)가 443 → `127.0.0.1:4000` 으로 넘긴다. WebSocket 헤더는 이미 있다
+  - 그런데 `dev.sh` 의 `PUBLIC_URL` 은 주소를 하나(`johnnyhouse.iptime.org:4000`)만 받았다. 그래서 Next `allowedDevOrigins` 와 API 허용 출처에 `johnnystudio.net` 이 없었다
+- 고친 것
+  - `dev.sh`: `PUBLIC_URL` 에 쉼표로 여러 주소. 첫 주소가 대표(메일 링크)이고, 모두 허용 호스트·출처에 넣는다
+  - 경고 문구에 "빠진 주소로 들어오면 버튼이 동작하지 않는다" 를 더하고, 포트 번호를 실제 `$PORT` 로 바꿨다
+  - 머리말에 예시를 적었다
+- 다시 띄움: `PORT=4000 PUBLIC_URL=https://johnnystudio.net,https://www.johnnystudio.net,http://johnnyhouse.iptime.org:4000 ./dev.sh` (관리 토큰 바뀜)
+- 확인
+  - `JOHNNYSTUDIO_DEV_HOSTS` 에 세 호스트가 들어갔다
+  - CDP 로 `https://johnnystudio.net/`, `https://www.johnnystudio.net/library/`, `http://johnnyhouse.iptime.org:4000/`, LAN 에서 버튼 → dark→light, 저장값 light, React 연결됨, 콘솔 오류 없음
+  - 로그인 API: 세 출처는 출처 검사 통과(`invalid_credentials`), `https://evil.example` 은 403 `bad_origin`
+- 미검증: 사용자 브라우저에서 직접 누르기, 공인 IP 숫자 주소로 들어오는 경우 (여전히 안 된다. 목록에 넣지 않았다)
+- 문서: `dev.sh` 머리말, ARCHITECTURE §4(접속 주소·저장소 밖 nginx), ROADMAP 공개(도메인), 통합 문서의 실행 명령

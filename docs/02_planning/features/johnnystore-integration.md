@@ -259,7 +259,7 @@ JohnnyStudio/
 
 | # | 스토어 | 문제 | 통합 후 |
 |---|---|---|---|
-| X1 | `0.0.0.0:4000`, `.env` 없음 → 가입 정책 `open`, `JS_BASE_URL` 빈 값 | 공인 주소의 4000 포트로 응답했다 (공유기 주소로 `/api/health` 200, 대조로 Arkurator 443 응답). 누구나 가입해서 하루 5GB 까지 올릴 수 있었다 | **끝남 (2026-11-22)**: 가입을 닫았다가(`/api/v1/meta` → `closed` 확인), 저장소 제거 결정에 따라 서비스를 끄고 지웠다. 그 뒤 4000 은 JohnnyStudio 개발 서버가 쓴다 (`PORT=4000 PUBLIC_URL=http://johnnyhouse.iptime.org:4000 ./scripts/dev.sh`) |
+| X1 | `0.0.0.0:4000`, `.env` 없음 → 가입 정책 `open`, `JS_BASE_URL` 빈 값 | 공인 주소의 4000 포트로 응답했다 (공유기 주소로 `/api/health` 200, 대조로 Arkurator 443 응답). 누구나 가입해서 하루 5GB 까지 올릴 수 있었다 | **끝남 (2026-11-22)**: 가입을 닫았다가(`/api/v1/meta` → `closed` 확인), 저장소 제거 결정에 따라 서비스를 끄고 지웠다. 그 뒤 4000 은 JohnnyStudio 개발 서버가 쓴다 (`PORT=4000 PUBLIC_URL=https://johnnystudio.net,https://www.johnnystudio.net,http://johnnyhouse.iptime.org:4000 ./scripts/dev.sh`) |
 | X2 | 운영 설정 예시가 `127.0.0.1:8000` | Arkurator 가 쓰는 포트다 (AGENTS.md §8) | 별도 서비스로 두지 않는다 |
 | X3 | JWT 를 localStorage 에 둔다 | XSS 한 번이면 토큰을 가져간다 | 가져오지 않는다 (httpOnly 세션 쿠키가 기존 방식) |
 | X4 | 이메일 인증 없이 가입 | 남의 이메일로 가입할 수 있다 | 가져오지 않는다 |
