@@ -9,6 +9,8 @@ const base: NextConfig = {
   trailingSlash: true, // /library/arkurator/ → out/library/arkurator/index.html (nginx try_files 와 맞춘다)
   images: { unoptimized: true },
   reactStrictMode: true,
+  // 설치된 Next.js 가 보안 권고 대상이면 코딩 에이전트에게 보안 업그레이드를 권한다 (16.4.2 → 16.4.6 보안 업그레이드 때 켰다)
+  experimental: { agentUpgrade: "security" },
 };
 
 export default function config(phase: string): NextConfig {
