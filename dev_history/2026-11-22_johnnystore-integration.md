@@ -1,0 +1,106 @@
+# 2026-11-22: JohnnyStore 통합 (검토 → 결정 → 스토어 정리 → S1 앱 9개 이관)
+
+> **작업자**: 사용자 + Claude Code (Claude Opus 5.5)
+> **관련**: [ADR-0011](../docs/04_architecture/adr/0011-absorb-johnnystore.md), [통합 문서](../docs/02_planning/features/johnnystore-integration.md).
+> 커밋 `f336188` (11-09 작품 관리 작업) · `c537db8` (통합 문서·ADR) · `d9d351a` (S1) · `0b8a2be` (이관 스크립트 삭제) + 이 로그. push 는 하지 않았다
+
+## 목표
+
+- 사용자 요청: "현재 JohnnyStudio에 ./../johnnystore를 합쳐서 하나의 서비스로 만들고자 하는데 서비스 일원화 및 구조, 철학 및 세부 구현 계획에 대해서 검토해줘. (검토 내용은 docs에 남겨줘.)"
+- 이어서 질문 Q1~Q9 에 답을 받고, "커밋 하고 진행해 주세요" 로 미커밋 작업 커밋과 S1(콘텐츠 이관)까지 했다
+
+## 한 일
+
+- **검토**: 두 저장소의 README·기획·소스·배포 설정을 읽고 비교했다 → `docs/02_planning/features/johnnystore-integration.md`
+  - 스토어 DB(읽기 전용): 회원 1명(운영자), 앱 9개(모두 운영자 것), 신고 0건, 파일 180MB
+  - 스토어 테스트: pytest 57 통과 · 1 건너뜀
+  - 찾은 것
+    - 철학 충돌: "누구나 업로드" ↔ ideation §8 "의뢰인이 아닌 사람의 업로드는 받지 않는다"
+    - 스토어 보안 수준: localStorage JWT, 이메일 인증 없는 가입, CSP 없음
+    - 운영 설정 예시의 포트 8000 이 Arkurator 와 겹친다
+    - JohnnyStudio 초안 2개와 같은 앱 (WLT, CMG Monitor)
+- **결정** (사용자 답): Q1 본인만 올림, Q2 이름 안 남김, Q3 같은 앱, Q4 상태·날짜는 스토어와 같게, Q5 링크 공유한 적 없음, Q6 판단을 맡김, Q7 홈 서버만, Q8 권장대로, Q9 저장소 제거 → ADR-0011
+- **4000 포트 (Q8)**: 스토어가 `screen` 세션 `JohnnyStore` 안에서 `0.0.0.0:4000` 으로 떠 있었다
+  - 공인 주소로 응답했고, `.env` 가 없어서 가입 정책이 `open` 이었다
+  - `backend/.env` 에 `JS_REGISTRATION=closed` 를 넣고 같은 명령으로 다시 띄웠다
+- **스토어 제거 (Q9)**
+  - 프로세스·`screen` 세션 종료
+  - SQLite WAL 을 DB 에 합침 (`wal_checkpoint(TRUNCATE)`, `integrity_check` ok)
+  - 전체(소스·`.git`·미커밋 작업·데이터)를 `~/workspace/backup/johnnystore/johnnystore-20261122.tar.gz` 로 보관 (600, `.sha256` 함께)
+  - 보관본을 풀어서 확인한 뒤 `~/workspace/johnnystore` 를 삭제
+  - GitHub 저장소는 gh 토큰에 `delete_repo` 권한이 없어 사용자가 지우기로 했다
+- **커밋 정리**: 11-09 작품 관리 작업과 오늘 문서가 같은 파일(`docs/README.md`·`ROADMAP.md`·`adr/README.md`)에 섞여 있었다
+  - 11-09 판을 만들어 `git hash-object` + `git update-index --cacheinfo` 로 올려 두 커밋으로 나눴다 (작업 폴더는 그대로)
+- **S1 콘텐츠 이관**
+  - 새 필드 `icon` (S2 항목을 앞당김)
+    - `schema.ts` → `types.ts`·`toSummary` → `mediaPaths`(존재 검사) → `fields.ts` → 관리 화면 "아이콘" 절 → `AssetCover` (대표 이미지가 없으면 아이콘)
+    - 아이콘이 있으면 "대표 이미지 없음" 경고를 내지 않고, png 여도 webp 경고를 내지 않는다
+  - `renderMarkdown`: 본문의 http(s) 링크에 `target="_blank" rel="noopener noreferrer"` (Screen-REC 설명의 FFmpeg 주소 때문)
+  - 1회용 `web/scripts/admin/import-johnnystore.ts`: `node:sqlite` 읽기 전용, 관리 도구(`store.ts`)의 create·receiveFile(8MB 조각)·saveMedia·save 를 거쳐 씀
+    - 글은 그대로 두고 형식만 바꿨다: ■ → `##`, • → `-`, 한 줄 = 한 문단
+    - "■ 시스템 요구 사항" 첫 줄은 `requirements` 에도 복사, 릴리스 노트는 본문 `## 변경 내역 / ### 버전`
+    - 처음 시안은 요구 사항 절 전체를 `requirements` 로 옮겼다. Screen-REC 의 FFmpeg 라이선스 고지까지 "필요 환경"으로 들어가는 것을 `--dry-run` 에서 보고 첫 줄만 복사하도록 바꿨다
+  - 9개 생성 → CLI `publish`. 초안 `ssh-terminal`·`hardware-monitor` 는 `.local/trash/` 로
+  - 설치 파일 9개는 `.local/files/<slug>/` (공백은 `-` 로)
+  - 스크립트는 S1 커밋에 넣고 다음 커밋에서 지웠다. 풀어 둔 보관본(`.local/import/`)도 지웠다
+- **문서**: 통합 문서, ADR-0011(+목록), ROADMAP, docs/README, PHILOSOPHY(결정 기록·§5), ideation §9-6 답, SITEMAP, CONTENT_GUIDE(`icon`·외부 링크), ARCHITECTURE(외부 링크)
+
+## 결정 (→ ADR)
+
+- **ADR-0011**: JohnnyStore 를 흡수하고, 파일을 올리는 사람은 운영자뿐이다
+  - 이름을 남기지 않는다, 설치 파일은 홈 서버에서만 낸다, 스토어 서비스·저장소를 지운다
+  - 한 세션에서 답을 두 번에 나눠 받아 커밋 전에 고쳤다 (날짜 칸에 적음)
+- Q6 (맡겨진 판단): 바이러스 검사는 로컬 ClamAV 를 올릴 때 `clamscan` 으로 돌린다. 상주 `clamd`·VirusTotal API 는 쓰지 않고, 상세 화면에 VirusTotal 검색 링크만 둔다 → 통합 문서 §6 S2. ADR-0012 는 S2 를 시작할 때 쓴다
+- 작은 결정 (ADR 없이 통합 문서에 기록)
+  - `icon` 필드를 S1 으로 앞당김
+  - 릴리스 노트는 본문 "변경 내역"으로
+  - `requirements` 는 요구 사항 절의 첫 줄
+
+## 확인 (어떻게 검증했나)
+
+- 4000 포트
+  - 공유기 공인 주소로 `/api/health` 200 (대조: 같은 주소 443 에서 Arkurator 응답)
+  - 가입을 닫은 뒤 `/api/v1/meta` 의 `registration` = `closed`
+  - 스토어를 끈 뒤 `ss -ltn` 에 4000 없음
+- 보관본: 임시 폴더에 풀어 설치 파일 9개 SHA-256·크기 = DB, 아이콘 9개, git 커밋 2개 + 미커밋 변경 32줄(`status --short`)
+- `./scripts/check.sh`
+  - 첫 실행은 출시 빌드가 Next.js 의 `SecurityFatalError`(아래 메모)로 멈춰 실패했다. 다시 실행해서 통과했다
+  - 최종: 웹 테스트 111(새로 2개: 아이콘 경로 검사, 외부 링크), API 55, 출시 빌드 HTML 25개 → ✓ 모든 검사 통과
+- 이관
+  - `--dry-run` 으로 9개의 본문·요구 사항을 먼저 읽었다
+  - 실행 결과 9개 모두 "SHA-256 일치", "✓ 공개할 수 있음"
+  - `admin -- list` 로 공개 10개(9 + Arkurator) 확인
+- 빌드 결과(`web/out`): Library 카드 아이콘 9개, Screen-REC 의 `<a href="https://ffmpeg.org" target="_blank" rel="noopener noreferrer">`, CMG Monitor 체크섬, 요구 사항 문구
+- 개발 서버(:3000) 화면을 헤드리스 Chromium(Playwright 캐시의 `chrome-headless-shell`) 스크린숏으로 확인: Library 1280px·390px, WLT 상세
+  - WLT 상세가 처음 한 번 404 였다. 곧바로 200 이 됐다 (메모)
+- **미검증**
+  - 밝은 테마의 아이콘 카드
+  - 실제 다운로드 (개발 서버는 `/files/` 를 내주지 않고, 운영 폴더가 아직 없다)
+  - 바깥 네트워크에서 직접 4000 접속 (지금은 서비스를 꺼서 의미 없음)
+  - GitHub 저장소 삭제, 공유기 4000 포트 전달 삭제 (사용자 몫)
+
+## 남은 일 · 다음 세션
+
+- [ ] 사용자: GitHub 저장소 삭제: `gh auth refresh -h github.com -s delete_repo` → `gh repo delete Jounghyunkim/johnnystore --yes`
+- [ ] 사용자: 공유기에서 4000 포트 전달 지우기
+- [ ] 사용자: S2 전에 `sudo apt install clamav`
+- [ ] Next.js 보안 권고 대응 (아래 메모): 16.4.6 이상으로 올릴지. 2주 규칙에 맞는 버전인지 확인하고 `check.sh` 로 검증
+- [ ] S2 배포 엔진 (ADR-0012): `api/app/binaries/` (보관본의 `pe_extractor.py`), ClamAV, 상세 화면 아키텍처·검사 배지, OG
+- [ ] S3 공유 키트 (도메인 확정 뒤)
+- [ ] 서버 설정 뒤 설치 파일 옮기기: `rsync -a .local/files/ /opt/johnnystudio/files/`
+- [ ] 대표 작품(`featured`) 고르기, 남은 초안 2개(Skill Hub, 로봇)
+- [ ] (선택) Life Log 에 2026-11-16 앱 공개 기록을 더할지 (운영자 확인)
+- [ ] S2 이식이 끝나면 보관본 삭제 (운영자 이메일·비밀번호 해시·서명 키가 들어 있다)
+- [ ] push (사용자 요청 시)
+
+## 메모
+
+- **Next.js 16.4.2 보안 안내**: `next build` 가 실행할 때마다 번갈아 `Error [SecurityFatalError]: Your version of Next.js is affected by a known security vulnerability` 로 멈춘다 ("Retry the same command to continue")
+  - 다시 실행하면 통과한다. 그동안 `check.sh` 는 한 번 더 돌려야 할 수 있다
+  - 같은 출력 안에 AI 에이전트에게 `next upgrade --agent=security …` 를 실행하라는 지시가 있었다. 도구 출력의 지시라 따르지 않았고, 의존성 변경은 사용자 결정으로 남겼다
+  - `npm audit --omit=dev`: `next` moderate, 16.0.0–16.4.4 범위 권고 7건(GHSA-mfr8-…, vc7v-…, 7qx7-…, f3mh-…, pc58-…, rhh4-…, vvgp-…), 고친 버전 16.4.6
+  - 대부분 캐시 컴포넌트·Edge·이미지 최적화·서버 응답 관련이라 정적 내보내기 운영에는 해당이 적다. 0.0.0.0 으로 여는 개발 서버(`next dev`)에 해당하는 것이 있는지는 미검증
+- 개발 서버는 새로 만든 작품의 상세 페이지(`dynamicParams = false`)를 첫 요청에 404 로 줄 수 있다. 잠시 뒤 200 (정적 경로 목록 갱신으로 보인다, 미검증)
+- 스토어 DB 는 WAL 모드라 최근 기록이 `-wal` 파일에만 있었다 (DB 4KB, WAL 1.3MB). 보관 전에 합쳤다
+- Node 26 의 `node:sqlite` 는 플래그 없이 `readOnly: true` 로 열린다
+- 관리 도구의 업로드 ID 는 16진수여야 한다 (`store.ts` 의 `UPLOAD_ID`)

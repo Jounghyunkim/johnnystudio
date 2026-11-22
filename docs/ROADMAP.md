@@ -9,11 +9,11 @@
 **Phase 2 의 회원 가입(이메일 인증)·로그인(이메일 + 비밀번호)을 먼저 구현했다** ([ADR-0007](04_architecture/adr/0007-magic-link-auth-api.md), [ADR-0008](04_architecture/adr/0008-password-login.md)). 로컬에서 동작을 확인했고, 서버 설정과 메일 발송 설정이 남았다.
 코드는 GitHub `Jounghyunkim/johnnystudio` 에 올렸다 (2026-11-06). CI 는 아직 없다.
 **작품 등록·관리 도구**를 만들었다 (2026-11-09, [ADR-0009](04_architecture/adr/0009-local-portfolio-manager.md)): `dev.sh` 의 관리 화면 `/admin/` 과 CLI 로 작품을 만들고, 채우고, 공개한다. 콘텐츠 채우기(아래 2번)는 이 도구로 한다.
-**JohnnyStore 를 흡수하기로 했다** (2026-11-22, [통합 문서](02_planning/features/johnnystore-integration.md), [ADR-0011](04_architecture/adr/0011-absorb-johnnystore.md)). 파일을 올리는 사람은 운영자뿐이고, 스토어의 Windows 앱 9개를 작품으로 옮기는 것부터 한다. 스토어 서비스와 저장소(`../johnnystore`)는 보관본을 남기고 지웠다 (아래 "JohnnyStore 통합").
+**JohnnyStore 를 흡수하기로 했다** (2026-11-22, [통합 문서](02_planning/features/johnnystore-integration.md), [ADR-0011](04_architecture/adr/0011-absorb-johnnystore.md)). 파일을 올리는 사람은 운영자뿐이다. 스토어의 Windows 앱 9개를 작품으로 옮겨 공개했다 (공개 작품 10개). 스토어 서비스와 저장소(`../johnnystore`)는 보관본을 남기고 지웠다. 다음은 설치 파일 분석·ClamAV 검사(S2) (아래 "JohnnyStore 통합").
 남은 일은 다음 네 가지다.
 
-1. ideation §9 열린 질문에 답한다
-2. **실제 콘텐츠**를 채운다 (대표 작품, 서비스, 연락처, 개인정보처리방침의 운영자·연락처)
+1. ideation §9 열린 질문에 답한다 (§9-6 큰 파일 배포 채널은 답함: 홈 서버만)
+2. **실제 콘텐츠**를 채운다 (작품은 10개 공개. 서비스, 연락처, 개인정보처리방침의 운영자·연락처가 남았다)
 3. **도메인 + Cloudflare Tunnel** 로 공개한다
 4. 로그인을 쓰려면 **메일 발송 방법**을 정하고 회원 API 를 서버에 설치한다 ([deploy/README.md](../deploy/README.md) §3)
 
