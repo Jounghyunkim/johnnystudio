@@ -23,7 +23,8 @@ export default function config(phase: string): NextConfig {
     .split(",")
     .map((h) => h.trim())
     .filter(Boolean);
-  // 작품 관리 서버(scripts/dev.sh 가 띄운다, ADR-0009). 관리 화면(/admin/)이 /__admin/ 으로 부른다
+  // 작품 관리 서버(scripts/dev.sh 가 띄운다, ADR-0009). 관리 화면(/admin/)이 /__admin/ 으로 부른다.
+  // 다운로드 파일(/files/)도 이 서버가 다운로드 보관 폴더에서 읽어 준다 (운영에서는 nginx 의 /files/). NO_ADMIN=1 이면 /files/ 도 없다
   const admin = process.env.JOHNNYSTUDIO_ADMIN_ORIGIN ?? "http://127.0.0.1:3002";
   return {
     ...base,
@@ -38,6 +39,7 @@ export default function config(phase: string): NextConfig {
       return [
         { source: "/api/:path*", destination: `${api}/api/:path*` },
         { source: "/__admin/:path*", destination: `${admin}/__admin/:path*` },
+        { source: "/files/:path*", destination: `${admin}/files/:path*` },
       ];
     },
   };

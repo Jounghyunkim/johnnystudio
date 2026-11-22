@@ -143,3 +143,25 @@
   - [ ] Next.js 16.4.6 으로 올리기 (2026-11-23 부터, `check.sh` 로 검증)
   - [ ] 공개 개발을 끝내면 끄고 공유기 4000 닫기
 
+## 추가 (22:56): 개발 서버에서 다운로드가 안 되던 문제
+
+- 사용자 보고: 다운로드 버튼을 누르면 브라우저가 "사이트에서 사용할 수 없는 파일"이라고 한다
+- 원인: 버튼은 `/files/<slug>/<파일>` 을 가리킨다
+  - 운영에서는 nginx 가 이 경로를 내주지만, 개발 서버에는 없었다 (`curl -I http://127.0.0.1:4000/files/wlt/…` → 404 text/html)
+  - 파일은 `.local/files/` 에 있었다
+  - `dev.sh` 머리말에도 "개발 미리보기에서는 404" 로 적혀 있었고, ROADMAP 2단계 할 일이었다
+- 고친 것
+  - `lib/admin/server.ts`: `/files/…` 를 토큰 없이 읽기 전용으로 내준다
+    - 다운로드 보관 폴더에서 GET·HEAD, Range(206·416)
+    - Content-Type 은 zip·pdf·이미지·mp4 만 따로, 나머지는 octet-stream
+    - 404: 숨김 파일, 폴더, 폴더 밖 경로, 밖을 가리키는 심볼릭 링크
+  - `next.config.ts` (개발 단계): `/files/:path*` → 관리 서버
+  - 테스트 2개 (내려받기·HEAD·Range, 막는 경로들)
+  - `dev.sh` 머리말, ARCHITECTURE §5-1, ROADMAP
+- 관리 서버는 코드를 다시 읽지 않으므로 `screen` 의 `dev.sh` 를 같은 명령으로 다시 띄웠다 (관리 토큰이 새로 바뀜)
+- 확인
+  - `vitest` 관리 서버 9개 통과, `tsc`·`eslint` 깨끗
+  - 공인 주소:4000 으로 공개 앱 9개를 모두 내려받아 SHA-256 이 작품 값과 일치 (CMG Monitor 118MB 포함)
+  - 응답 `200 application/octet-stream`, `content-length`, `accept-ranges: bytes`. LAN 주소 Range → 206
+  - `sample-*` 초안 2개는 자리표시 파일이라 없다 (예상대로)
+- 미검증: 사용자 브라우저에서 직접 내려받기, 출시 빌드 미리보기(`preview.sh`)의 `/files/` (지원하지 않음)

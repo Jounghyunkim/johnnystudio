@@ -54,6 +54,51 @@ describe("관리 서버", () => {
     expect(logs.join("\n")).toMatch(/토큰이 맞지 않는 요청/);
   });
 
+  it("/files/ 는 토큰 없이 내려받는다 (GET·HEAD·이어받기)", async () => {
+    const files = `${base.replace(/\/__admin$/, "")}/files`;
+    fs.mkdirSync(path.join(root, "files", "app"), { recursive: true });
+    fs.writeFileSync(path.join(root, "files", "app", "My-App_1.0_x64-setup.exe"), "0123456789");
+    fs.writeFileSync(path.join(root, "files", "app", "photo.webp"), "RIFF");
+
+    const full = await fetch(`${files}/app/My-App_1.0_x64-setup.exe`);
+    expect(full.status).toBe(200);
+    expect(full.headers.get("content-type")).toBe("application/octet-stream");
+    expect(full.headers.get("content-length")).toBe("10");
+    expect(full.headers.get("accept-ranges")).toBe("bytes");
+    expect(await full.text()).toBe("0123456789");
+
+    const head = await fetch(`${files}/app/My-App_1.0_x64-setup.exe`, { method: "HEAD" });
+    expect(head.status).toBe(200);
+    expect(head.headers.get("content-length")).toBe("10");
+
+    const part = await fetch(`${files}/app/My-App_1.0_x64-setup.exe`, { headers: { Range: "bytes=3-5" } });
+    expect(part.status).toBe(206);
+    expect(part.headers.get("content-range")).toBe("bytes 3-5/10");
+    expect(await part.text()).toBe("345");
+    const tail = await fetch(`${files}/app/My-App_1.0_x64-setup.exe`, { headers: { Range: "bytes=-2" } });
+    expect(await tail.text()).toBe("89");
+    expect((await fetch(`${files}/app/My-App_1.0_x64-setup.exe`, { headers: { Range: "bytes=50-" } })).status).toBe(416);
+
+    expect((await fetch(`${files}/app/photo.webp`)).headers.get("content-type")).toBe("image/webp");
+  });
+
+  it("/files/ 는 읽기만 하고, 보관 폴더 밖·숨김 파일·폴더는 404", async () => {
+    const files = `${base.replace(/\/__admin$/, "")}/files`;
+    fs.mkdirSync(path.join(root, "files", "app"), { recursive: true });
+    fs.writeFileSync(path.join(root, "files", "app", ".big.exe.abc.upload"), "partial");
+    fs.writeFileSync(path.join(root, "secret.txt"), "secret");
+    fs.symlinkSync(path.join(root, "secret.txt"), path.join(root, "files", "app", "link.txt"));
+
+    expect((await fetch(`${files}/app/x.exe`, { method: "POST", body: "x" })).status).toBe(405);
+    expect((await fetch(`${files}/app/.big.exe.abc.upload`)).status).toBe(404);
+    expect((await fetch(`${files}/app/link.txt`)).status).toBe(404);
+    expect((await fetch(`${files}/app/`)).status).toBe(404);
+    expect((await fetch(`${files}/app`)).status).toBe(404);
+    expect((await fetch(`${files}/%2e%2e/secret.txt`)).status).toBe(404);
+    expect((await fetch(`${files}/app/..%2f..%2fsecret.txt`)).status).toBe(404);
+    expect((await fetch(`${files}/no/such.exe`)).status).toBe(404);
+  });
+
   it("너무 짧은 토큰으로는 시작하지 않는다", () => {
     expect(() => createAdminServer({ store: createAdminStore({ contentDir: root, publicDir: root, filesDir: root, trashDir: root }), token: "short" })).toThrow();
   });

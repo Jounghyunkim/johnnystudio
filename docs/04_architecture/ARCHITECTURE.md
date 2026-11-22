@@ -134,6 +134,7 @@ Next 개발 서버 rewrites (개발 단계에서만) ──▶ 관리 서버 127
 - 출시 빌드는 `page.dev.tsx` 를 보지 않는다 (`pageExtensions` 는 개발 단계에만). `check_site.py --built` 가 `out/admin/` 을 막는다.
 - 토큰: 보통은 `.local/admin-token` 을 계속 쓴다. `PUBLIC_URL` 로 인터넷에 열면 실행마다 새 토큰(파일에 남기지 않음)이고, 다운로드 파일은 `.local/files` 에만 쓴다 (ADR-0010). 틀린 토큰 요청은 터미널에 알린다.
 - 정적 내보내기에서는 개발 서버도 POST 라우트 핸들러를 거부해서, 쓰기는 따로 도는 관리 서버가 맡는다.
+- 개발 서버의 `/files/` 도 관리 서버가 내준다 (rewrites → `127.0.0.1:3002/files/`). 토큰 없이 GET·HEAD 만, 이어받기(Range) 지원, 다운로드 보관 폴더 밖·숨김 파일(받는 중인 조각)·심볼릭 링크로 밖을 가리키는 경로는 404. 운영 nginx 의 `/files/` 와 같은 역할이다. 출시 빌드 미리보기(`preview.sh`)에는 아직 없다.
 - Next 개발 서버는 넘기는 요청 본문을 10MB 까지만 전달한다. 그래서 다운로드 파일은 조각으로 보낸다 (`lib/admin/client.ts`).
 - `src/lib` 은 관리 서버가 Node 로 바로 실행하므로 enum·namespace·생성자 매개변수 속성을 쓰지 않는다.
 - 개발 서버의 콘텐츠 캐시는 파일 수정 시각·크기로 무효화한다 (`content.ts` 의 `cached`). 출시 빌드는 한 번만 읽는다.

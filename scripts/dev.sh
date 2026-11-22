@@ -8,7 +8,7 @@
 #   PUBLIC_URL=http://johnnyhouse.iptime.org:3000 ./scripts/dev.sh
 #                                   → 공유기 포트포워딩으로 인터넷에서 접속 (잠깐 시험할 때만. 아래 경고 참고)
 #   NO_API=1 ./scripts/dev.sh       → 회원 API 없이 화면만
-#   NO_ADMIN=1 ./scripts/dev.sh     → 작품 관리 서버 없이 (관리 화면 /admin/ 이 '연결할 수 없음'으로 보인다)
+#   NO_ADMIN=1 ./scripts/dev.sh     → 작품 관리 서버 없이 (관리 화면 /admin/ 이 '연결할 수 없음'으로 보이고, /files/ 다운로드도 안 된다)
 #
 # 작품 관리 화면: 터미널에 찍히는 http://…/admin/#k=<토큰> 으로 연다 (ADR-0009, docs/02_planning/CONTENT_GUIDE.md §0).
 #   관리 서버는 127.0.0.1:3002(ADMIN_PORT) 에서 content/ 와 web/public/media 를 고친다. 출시 빌드에는 관리 화면이 없다.
@@ -17,7 +17,8 @@
 #
 # 로그인 메일은 실제로 보내지 않고 이 터미널에 찍힌다. api/.env.local 에 메일 설정이 있으면 진짜로 보낸다.
 # 실제로 배포될 모습(초안 제외)은 ./scripts/preview.sh 로 본다.
-# /files/ 다운로드는 서버에만 있어서 개발 미리보기에서는 404 가 난다.
+# /files/ 다운로드: 관리 서버가 다운로드 보관 폴더(.local/files 또는 /opt/johnnystudio/files)에서 읽기 전용으로 내준다 (운영은 nginx).
+#   출시 빌드 미리보기(preview.sh)에는 아직 없다.
 #
 # 접속 주소가 중요한 이유 (세 곳이 모두 그 주소를 알아야 한다):
 #   1. Next 개발 서버: 모르는 주소로 열면 HMR 연결을 막고, 그러면 화면의 JavaScript 가 붙지 않아 버튼이 동작하지 않는다
