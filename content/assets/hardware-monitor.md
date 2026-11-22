@@ -3,7 +3,7 @@
 # TODO(content): 한 줄 소개, 날짜, 다운로드 파일(scripts/file-meta.sh 로 size·sha256 구하기), 대표 이미지
 title: 하드웨어 모니터링 앱
 type: desktop-app
-summary: (초안) 한 줄 소개를 채워 주세요.
+summary: "TODO(content): 한 줄 소개를 채워 주세요."
 status: dev
 tags: [데스크톱, 모니터링]
 draft: true

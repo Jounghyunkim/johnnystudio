@@ -1,7 +1,7 @@
 # 사이트맵
 
 > **상태**: Phase 1 구현 완료 (자리표시 콘텐츠 일부 남음). Phase 2 회원 가입·로그인 구현 (메일 발송 설정 전). 구역 구조는 [ideation.md](../ideation.md) §0.
-> **Last Updated**: 2026-11-06
+> **Last Updated**: 2026-11-09
 
 ## 페이지
 
@@ -21,6 +21,7 @@
 | `/login/verify/#t=…` | My Studio | 이메일 확인 | 메일 링크가 여는 곳. **계속하기**를 눌러야 링크가 쓰인다. 가입·재설정이면 이어서 비밀번호를 정한다. 색인 안 함 | ✅ |
 | `/account/` | My Studio | 계정 | 이메일·가입일·마지막 로그인, 비밀번호 정하기·바꾸기, 로그아웃, 모든 기기에서 로그아웃, 회원 탈퇴(`<dialog>` 확인). 색인 안 함 | ✅ |
 | `/privacy/` | — | 개인정보처리방침 | `content/pages/privacy.md`. 바닥글·로그인 화면에서 연결 | ✅ (운영자·연락처·발송 업체는 `TODO(content)`) |
+| `/admin/` | (운영) | 작품 관리 | **개발 서버 전용** (`page.dev.tsx`, 출시 빌드에 없음). 작품 현황·검사, 새 작품, 편집, 이미지·다운로드 파일 올리기, 공개·초안·삭제. `dev.sh` 가 찍는 `#k=<토큰>` 주소로 연다 ([ADR-0009](../04_architecture/adr/0009-local-portfolio-manager.md), [기능 명세](features/portfolio-manager.md)) | ✅ |
 | `/rooms/…` | Client Room | 의뢰인 룸 | Phase 3 | — |
 | `play.<도메인>` | Showcase | 웹 패키지 샌드박스 | 별도 출처. Phase 1.5 | — |
 

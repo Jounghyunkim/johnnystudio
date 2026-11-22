@@ -3,7 +3,7 @@
 > 이 저장소에서 일하는 **모든 AI 코딩 도구**(Claude Code, Codex, Gemini, Cursor 등)의 공통 규칙이다.
 > Claude Code 는 `CLAUDE.md` 가 이 파일을 불러온다. 규칙을 바꿀 때는 **이 파일만** 고친다. ([ADR-0003](docs/04_architecture/adr/0003-ai-collaboration-docs.md))
 >
-> **Last Updated**: 2026-11-06
+> **Last Updated**: 2026-11-09
 
 ## 1. 프로젝트 요약
 
@@ -11,6 +11,7 @@ JohnnyStudio 의 **포털(허브) 웹사이트**다. 정현 님이 만든 모든
 바로 써 보게 하고, 함께 일하는 셀프 호스팅 스튜디오의 관문이다.
 
 - **현재 단계**: Phase 1(공개 허브) 구현 완료. Phase 2 의 회원 가입·로그인(매직 링크, `api/`)을 구현했고 서버 설치·메일 설정이 남았다.
+  작품 등록·관리는 개발 서버 전용 관리 화면(`/admin/`)과 CLI 로 한다 (2026-11-09).
   남은 일은 실제 콘텐츠 채우기와 도메인·Tunnel 공개다. 진행 상황은 [docs/ROADMAP.md](docs/ROADMAP.md).
 - **기획의 기준**: [docs/ideation.md](docs/ideation.md) v2 (네 구역·원칙·리스크·단계 계획)와 [docs/01_vision/PHILOSOPHY.md](docs/01_vision/PHILOSOPHY.md) 초안 v1.
   둘 다 사용자 확인 전이다. 기획안이 ADR 과 다르면 ADR 이 우선한다. 바꾸려면 새 ADR 을 쓴다.
@@ -26,14 +27,15 @@ JohnnyStudio 의 **포털(허브) 웹사이트**다. 정현 님이 만든 모든
 
 | 경로 | 용도 |
 |---|---|
-| `web/` | **Next.js 앱.** `src/app` 페이지, `src/components` 화면 조각(`viewers/` 유형별 뷰어, `auth/` 로그인·계정), `src/lib` 스키마·콘텐츠 읽기·로직, `scripts/inject-csp.mjs`, `public/` 이미지 |
+| `web/` | **Next.js 앱.** `src/app` 페이지, `src/components` 화면 조각(`viewers/` 유형별 뷰어, `auth/` 로그인·계정, `admin/` 작품 관리), `src/lib` 스키마·콘텐츠 읽기·로직(`admin/` 작품 관리 서버·파일 쓰기), `scripts/inject-csp.mjs`, `scripts/admin/` 관리 CLI, `public/` 이미지 |
 | `api/` | **회원 API (FastAPI, Python 3.14, uv).** `app/` 엔드포인트·DB·메일·설정, `tests/` pytest. 구조: [ADR-0007](docs/04_architecture/adr/0007-magic-link-auth-api.md) |
 | `content/` | **콘텐츠 원본.** `assets/<slug>.md`(작품), `lifelog.yaml`, `profile.yaml`, `pages/<slug>.md`(개인정보처리방침 등). 형식: `web/src/lib/schema.ts` |
 | `docs/` | 기획·설계 문서. "지금 어떻게 되어 있나"를 쓴다 (항상 최신으로 고쳐 쓴다) |
 | `docs/04_architecture/adr/` | 결정 기록(ADR). "왜 이렇게 정했나"를 쓴다 |
 | `dev_history/` | 세션별 작업 로그. "언제 무엇을 했나"를 쓴다 (쓰고 나면 고치지 않는다) |
 | `deploy/` | 배포·롤백 스크립트, nginx·cloudflared·systemd 설정 템플릿, `api.env.example`, 배포 가이드 |
-| `scripts/` | 개발 도구 (미리보기, 검사, 파일 메타) |
+| `scripts/` | 개발 도구 (미리보기, 검사, 파일 메타, `_admin.sh` 관리 서버 실행) |
+| `.local/` | (git 제외) 작품 관리 도구의 로컬 상태: 관리 토큰, 다운로드 파일 임시 보관, 휴지통 |
 | `.claude/commands/` | Claude Code 슬래시 명령 (`/worklog`, `/adr`) |
 
 ## 4. 명령어
@@ -43,11 +45,13 @@ Python 은 시스템 3.14, 패키지 관리는 `uv` 다. API 의존성은 `uv sy
 
 ```bash
 ./scripts/dev.sh        # 개발 미리보기 (초안 포함) → http://localhost:3000, 회원 API 127.0.0.1:3001 (로그인 메일은 터미널에)
+                        # 작품 관리 화면 /admin/ (관리 서버 127.0.0.1:3002, 터미널의 #k=<토큰> 주소로 연다)
                         # 다른 기기에서: HOST=0.0.0.0 / 인터넷에서(잠깐만): PUBLIC_URL=http://주소:3000 (주소 처리는 dev.sh 머리말)
 ./scripts/preview.sh    # 출시 빌드 미리보기 (초안 제외, CSP 헤더 + /api/) → http://127.0.0.1:8080
 ./scripts/check.sh      # 커밋·배포 전 검사: 타입 → 린트 → 테스트 → API 테스트 → 출시 빌드 → 빌드 결과(CSP 해시) → 셸 → CRLF
 (cd api && uv run pytest)   # API 테스트만
 ./scripts/file-meta.sh <파일> <slug>   # 다운로드 파일의 size·sha256 YAML
+npm --prefix web run admin -- list|check [slug]|new <slug> --type … --title …|publish <slug>|unpublish <slug>   # 작품 관리 CLI
 ./deploy/deploy.sh      # 배포: 사용자가 요청했을 때만 실행
 ./deploy/rollback.sh    # 되돌리기: 사용자가 요청했을 때만 실행
 ```
@@ -71,13 +75,16 @@ Python 은 시스템 3.14, 패키지 관리는 `uv` 다. API 의존성은 `uv sy
 - `"use client"` 파일에서 **값**(배열·객체)을 내보내 서버 컴포넌트에서 쓰지 않는다. 공유할 값은 `src/lib/` 에 둔다.
 - `src/lib/content.ts` 는 서버 전용(fs)이다. 클라이언트 컴포넌트에는 `AssetSummary` 같은 가벼운 타입만 넘긴다.
 - 클라이언트 컴포넌트는 `src/lib/schema.ts` 에서 **값**을 가져오지 않는다 (zod 가 번들에 들어가고 CSP 위반이 기록된다). 필요한 상수는 `lib/asset-types.ts` 처럼 zod 없는 파일에 둔다.
+- **개발 전용 페이지**는 `page.dev.tsx` 로 만든다 (개발 서버에서만 페이지가 되고 출시 빌드에는 없다). 공개 페이지에서 `components/admin`·`lib/admin/{store,server}` 를 가져오지 않는다. 새 개발 전용 경로는 `check_site.py` 의 `DEV_ONLY_PATHS` 에 더한다.
+- `src/lib` 은 관리 서버가 Node 로 빌드 없이 실행한다. **enum·namespace·생성자 매개변수 속성**(`constructor(readonly x)`)을 쓰지 않는다.
 - 로그인 상태는 `lib/auth.ts` 의 `useSession()` 으로만 읽는다. 빌드된 HTML 에는 로그인 상태가 없다.
 - 브라우저 저장소(localStorage)는 `try/catch` 로 감싸고 `useSyncExternalStore` 로 읽는다. `useEffect` 안에서 `setState` 하지 않는다 (React Hooks 린트 규칙).
 
 ### 콘텐츠 ([ADR-0005](docs/04_architecture/adr/0005-file-based-content.md), [CONTENT_GUIDE](docs/02_planning/CONTENT_GUIDE.md))
 
 - 콘텐츠를 컴포넌트 안에 하드코딩하지 않는다. 작품은 `content/assets/`, 문구는 `content/profile.yaml` 에 둔다.
-- 스키마를 바꾸면 `schema.ts` → `missingFields()` → CONTENT_GUIDE → 테스트를 함께 고친다.
+- 작품을 만들거나 공개할 때는 작품 관리 CLI(`npm --prefix web run admin -- new|check|publish`)를 쓰면 스키마·완성도 검사를 함께 거친다 ([ADR-0009](docs/04_architecture/adr/0009-local-portfolio-manager.md)).
+- 스키마를 바꾸면 `schema.ts` → `missingFields()` → `lib/admin/fields.ts`(유형별 필드·키 순서, 관리 화면 입력) → CONTENT_GUIDE → 테스트를 함께 고친다. 필드 목록이 어긋나면 `fields.test.ts` 가 실패한다.
 - 큰 파일(exe·zip)은 git 에 넣지 않는다. `/opt/johnnystudio/files/<slug>/` 에 두고 `/files/…` 로 가리킨다.
 - 출시 전에 채워야 할 곳에는 `TODO(content)` · `TODO(design)` · `TODO(launch)` 를 남긴다.
 

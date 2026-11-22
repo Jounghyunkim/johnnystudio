@@ -3,7 +3,7 @@
 # TODO(content): 한 줄 소개, 날짜, 서비스 주소(url), 대표 이미지
 title: Skill Hub
 type: web-app
-summary: (초안) 한 줄 소개를 채워 주세요.
+summary: "TODO(content): 한 줄 소개를 채워 주세요."
 status: dev
 tags: [웹]
 draft: true

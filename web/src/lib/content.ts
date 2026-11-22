@@ -55,29 +55,73 @@ function readYaml(file: string): unknown {
   }
 }
 
-function splitFrontmatter(file: string): { data: unknown; body: string } {
-  const raw = fs.readFileSync(file, "utf8");
+/** "---\n<YAML>\n---\n<본문>" 을 나눈다. 머리말이 없으면 null (관리 도구도 쓴다) */
+export function splitFrontmatterText(raw: string): { yaml: string; body: string } | null {
   const m = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/.exec(raw);
-  if (!m) throw new ContentError(`${rel(file)}: 맨 위에 --- 로 둘러싼 YAML 머리말이 없다`);
+  return m ? { yaml: m[1] ?? "", body: (m[2] ?? "").trim() } : null;
+}
+
+function splitFrontmatter(file: string): { data: unknown; body: string } {
+  const parts = splitFrontmatterText(fs.readFileSync(file, "utf8"));
+  if (!parts) throw new ContentError(`${rel(file)}: 맨 위에 --- 로 둘러싼 YAML 머리말이 없다`);
   try {
-    return { data: parseYaml(m[1] ?? ""), body: (m[2] ?? "").trim() };
+    return { data: parseYaml(parts.yaml), body: parts.body };
   } catch (e) {
     throw new ContentError(`${rel(file)}: 머리말 YAML 을 읽을 수 없다: ${(e as Error).message}`);
   }
 }
 
-// 빌드 한 번에 한 번만 읽는다
-let assetCache: Asset[] | null = null;
+/** Markdown 본문 → HTML (저장소의 신뢰된 파일에서만 온다) */
+export function renderMarkdown(body: string): string {
+  return body ? (marked.parse(body, { async: false, gfm: true }) as string) : "";
+}
 
-/** 초안을 포함한 모든 에셋. 날짜 최신순 (날짜 없는 초안은 맨 뒤) */
-export function loadAllAssets(): Asset[] {
-  if (assetCache) return assetCache;
-  const dir = path.join(CONTENT_DIR, "assets");
-  const files = fs
+/** 검증된 머리말 + slug + 본문 → 화면에서 쓰는 에셋 */
+export function toAsset(data: AssetFrontmatter, slug: string, body: string): Asset {
+  return { ...data, slug, html: renderMarkdown(body) };
+}
+
+/** content/assets 에서 읽는 파일 이름 (_ 로 시작하는 메모 파일은 뺀다) */
+export function listAssetFiles(dir: string): string[] {
+  return fs
     .readdirSync(dir)
     .filter((f) => f.endsWith(".md") && !f.startsWith("_"))
     .sort();
+}
 
+/*
+ * 캐시: 출시 빌드는 한 번만 읽는다. 개발 서버는 오래 떠 있으므로 파일의 수정 시각·크기가 바뀌면 다시 읽는다
+ * (예전에는 처음 읽은 결과를 계속 써서, 콘텐츠를 고쳐도 개발 서버를 다시 켜야 화면에 나왔다).
+ * 읽다가 오류가 나면 캐시하지 않는다: 파일을 고치고 새로 고치면 바로 다시 읽는다.
+ */
+const caches = new Map<string, { stamp: string; value: unknown }>();
+
+function fileStamp(file: string): string {
+  try {
+    const s = fs.statSync(file);
+    return `${s.mtimeMs}:${s.size}`;
+  } catch {
+    return "-";
+  }
+}
+
+function cached<T>(key: string, files: () => string[], load: () => T): T {
+  const stamp = process.env.NODE_ENV === "production" ? "" : files().map((f) => `${f}@${fileStamp(f)}`).join("|");
+  const hit = caches.get(key);
+  if (hit && hit.stamp === stamp) return hit.value as T;
+  const value = load();
+  caches.set(key, { stamp, value });
+  return value;
+}
+
+/** 초안을 포함한 모든 에셋. 날짜 최신순 (날짜 없는 초안은 맨 뒤) */
+export function loadAllAssets(): Asset[] {
+  const dir = path.join(CONTENT_DIR, "assets");
+  return cached("assets", () => listAssetFiles(dir).map((f) => path.join(dir, f)), () => readAssets(dir));
+}
+
+function readAssets(dir: string): Asset[] {
+  const files = listAssetFiles(dir);
   const problems: string[] = [];
   const assets: Asset[] = [];
   for (const name of files) {
@@ -93,13 +137,11 @@ export function loadAllAssets(): Asset[] {
       problems.push(formatIssues(file, parsed.error));
       continue;
     }
-    const html = body ? (marked.parse(body, { async: false, gfm: true }) as string) : "";
-    assets.push({ ...parsed.data, slug, html });
+    assets.push(toAsset(parsed.data, slug, body));
   }
   if (problems.length) throw new ContentError(`콘텐츠 형식 오류\n${problems.join("\n")}`);
 
   assets.sort((a, b) => (b.date ?? "").localeCompare(a.date ?? "") || a.title.localeCompare(b.title, "ko"));
-  assetCache = assets;
   return assets;
 }
 
@@ -148,15 +190,13 @@ export function toSummary(a: Asset): AssetSummary {
   };
 }
 
-let logCache: LogEntry[] | null = null;
-
 export function loadLifeLog(): LogEntry[] {
-  if (logCache) return logCache;
   const file = path.join(CONTENT_DIR, "lifelog.yaml");
-  const parsed = LifeLog.safeParse(readYaml(file) ?? []);
-  if (!parsed.success) throw new ContentError(`콘텐츠 형식 오류\n${formatIssues(file, parsed.error)}`);
-  logCache = parsed.data;
-  return logCache;
+  return cached("lifelog", () => [file], () => {
+    const parsed = LifeLog.safeParse(readYaml(file) ?? []);
+    if (!parsed.success) throw new ContentError(`콘텐츠 형식 오류\n${formatIssues(file, parsed.error)}`);
+    return parsed.data;
+  });
 }
 
 /**
@@ -196,31 +236,25 @@ export function getTimeline(): TimelineItem[] {
   return items.sort((x, y) => y.date.localeCompare(x.date));
 }
 
-let profileCache: Profile | null = null;
-
 export function getProfile(): Profile {
-  if (profileCache) return profileCache;
   const file = path.join(CONTENT_DIR, "profile.yaml");
-  const parsed = Profile.safeParse(readYaml(file));
-  if (!parsed.success) throw new ContentError(`콘텐츠 형식 오류\n${formatIssues(file, parsed.error)}`);
-  profileCache = parsed.data;
-  return profileCache;
+  return cached("profile", () => [file], () => {
+    const parsed = Profile.safeParse(readYaml(file));
+    if (!parsed.success) throw new ContentError(`콘텐츠 형식 오류\n${formatIssues(file, parsed.error)}`);
+    return parsed.data;
+  });
 }
-
-const pageCache = new Map<string, Page>();
 
 /** content/pages/<slug>.md (개인정보처리방침 같은 문서 페이지) */
 export function getPage(slug: string): Page {
-  const cached = pageCache.get(slug);
-  if (cached) return cached;
   const file = path.join(CONTENT_DIR, "pages", `${slug}.md`);
-  if (!fs.existsSync(file)) throw new ContentError(`${rel(file)}: 파일이 없다`);
-  const { data, body } = splitFrontmatter(file);
-  const parsed = PageFrontmatter.safeParse(data);
-  if (!parsed.success) throw new ContentError(`콘텐츠 형식 오류\n${formatIssues(file, parsed.error)}`);
-  const page: Page = { ...parsed.data, slug, html: marked.parse(body, { async: false, gfm: true }) as string };
-  pageCache.set(slug, page);
-  return page;
+  return cached(`page:${slug}`, () => [file], () => {
+    if (!fs.existsSync(file)) throw new ContentError(`${rel(file)}: 파일이 없다`);
+    const { data, body } = splitFrontmatter(file);
+    const parsed = PageFrontmatter.safeParse(data);
+    if (!parsed.success) throw new ContentError(`콘텐츠 형식 오류\n${formatIssues(file, parsed.error)}`);
+    return { ...parsed.data, slug, html: renderMarkdown(body) } satisfies Page;
+  });
 }
 
 const PLACEHOLDER_SHA = /^(0{64}|f{64})$/;
@@ -257,16 +291,16 @@ export function missingFields(a: Asset): string[] {
       if (a.photos.length === 0 && !a.youtubeId) missing.push("photos 또는 youtubeId");
       break;
   }
-  const { html: _html, ...rest } = a;
-  void _html;
+  const { html, ...rest } = a;
   if (JSON.stringify(rest).includes("TODO(")) missing.push("TODO( 표시가 남아 있다");
+  if (html.includes("TODO(")) missing.push("본문에 TODO( 표시가 남아 있다");
   return missing;
 }
 
 /** 사이트 안 경로가 public/ 에 실제로 있는가. /files/ 는 서버에만 있으므로 검사하지 않는다 */
-export function localMediaExists(src: string): boolean {
+export function localMediaExists(src: string, publicDir: string = PUBLIC_DIR): boolean {
   if (!src.startsWith("/") || src.startsWith("/files/")) return true;
-  return fs.existsSync(path.join(PUBLIC_DIR, src));
+  return fs.existsSync(path.join(publicDir, src));
 }
 
 /** 에셋이 쓰는 사이트 안 이미지 경로 */

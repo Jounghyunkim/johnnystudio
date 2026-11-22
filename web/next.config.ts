@@ -23,14 +23,22 @@ export default function config(phase: string): NextConfig {
     .split(",")
     .map((h) => h.trim())
     .filter(Boolean);
+  // 작품 관리 서버(scripts/dev.sh 가 띄운다, ADR-0009). 관리 화면(/admin/)이 /__admin/ 으로 부른다
+  const admin = process.env.JOHNNYSTUDIO_ADMIN_ORIGIN ?? "http://127.0.0.1:3002";
   return {
     ...base,
+    // page.dev.tsx 는 개발 서버에서만 페이지가 된다 (관리 화면). 출시 빌드는 기본 확장자만 보므로 out/ 에 들어가지 않는다.
+    // 정적 내보내기에서는 개발 서버도 POST 라우트 핸들러를 거부해서, 쓰기는 따로 도는 관리 서버가 맡는다
+    pageExtensions: ["dev.tsx", "dev.ts", "tsx", "ts", "jsx", "js"],
     allowedDevOrigins: devHosts,
     // trailingSlash 때문에 /api/auth/me → /api/auth/me/ 로 308 리다이렉트되면, FastAPI 가 다시 / 를 떼며 되돌려 보내 무한 반복된다.
     // 개발 서버에서만 끈다 (페이지 링크는 모두 / 로 끝나고, 운영에서는 nginx 가 리다이렉트를 맡는다).
     skipTrailingSlashRedirect: true,
     async rewrites() {
-      return [{ source: "/api/:path*", destination: `${api}/api/:path*` }];
+      return [
+        { source: "/api/:path*", destination: `${api}/api/:path*` },
+        { source: "/__admin/:path*", destination: `${admin}/__admin/:path*` },
+      ];
     },
   };
 }

@@ -1,9 +1,9 @@
 # 아키텍처
 
-> **Last Updated**: 2026-11-06
+> **Last Updated**: 2026-11-09
 > 결정 배경: [ADR-0004](adr/0004-nextjs-static-export.md) (Next.js 정적 내보내기), [ADR-0005](adr/0005-file-based-content.md) (파일 콘텐츠),
 > [ADR-0002](adr/0002-deploy-home-server-nginx.md) · [ADR-0006](adr/0006-cloudflare-tunnel.md) (배포·공개), [ADR-0007](adr/0007-magic-link-auth-api.md) (회원 API·해시 CSP),
-> [ADR-0008](adr/0008-password-login.md) (비밀번호 로그인)
+> [ADR-0008](adr/0008-password-login.md) (비밀번호 로그인), [ADR-0009](adr/0009-local-portfolio-manager.md) · [ADR-0010](adr/0010-admin-on-public-dev-server.md) (작품 관리)
 
 ## 1. 한눈에 보기
 
@@ -37,10 +37,11 @@
 JohnnyStudio/
 ├── web/                    Next.js 앱 (프론트엔드)
 │   ├── src/app/            페이지 (App Router): /, library, library/[slug], log, about, work, studio,
-│   │                       login, login/verify, account, privacy, not-found
-│   ├── src/components/     화면 조각. viewers/ 는 유형별 뷰어, auth/ 는 로그인·계정
+│   │                       login, login/verify, account, privacy, not-found, admin(page.dev.tsx: 개발 서버 전용)
+│   ├── src/components/     화면 조각. viewers/ 는 유형별 뷰어, auth/ 는 로그인·계정, admin/ 은 작품 관리 화면
 │   ├── src/lib/            schema(콘텐츠 형식) · content(읽기·검증, 서버 전용) · auth(회원 API 클라이언트) · filter · bookmarks …
-│   ├── scripts/            inject-csp.mjs (빌드 뒤 페이지마다 CSP 해시 <meta>)
+│   │                       admin/ (작품 관리: 파일 읽기·쓰기·검사·HTTP 서버·화면 클라이언트)
+│   ├── scripts/            inject-csp.mjs (빌드 뒤 페이지마다 CSP 해시 <meta>), admin/ (관리 CLI·서버 진입점, TS 해석 훅)
 │   ├── public/             robots.txt, media/<slug>/ 이미지
 │   └── out/                빌드 결과 (git 에 넣지 않음)
 ├── api/                    회원 API (FastAPI, Python 3.14, uv)
@@ -48,7 +49,8 @@ JohnnyStudio/
 │   └── tests/              pytest (SQLite 기본, JOHNNYSTUDIO_TEST_DATABASE_URL 로 PostgreSQL)
 ├── content/                콘텐츠 원본: assets/*.md, lifelog.yaml, profile.yaml, pages/*.md
 ├── deploy/                 deploy.sh · rollback.sh · nginx/ · cloudflared/ · systemd/ · api.env.example
-├── scripts/                dev.sh · preview.sh(+preview_server.py) · _api.sh · check.sh · check_site.py · file-meta.sh
+├── scripts/                dev.sh · preview.sh(+preview_server.py) · _api.sh · _admin.sh · _bg.sh · check.sh · check_site.py · file-meta.sh
+├── .local/                 (git 제외) 관리 토큰, 다운로드 파일 임시 보관, 휴지통
 └── docs/ · dev_history/    문서 · 작업 로그
 ```
 
@@ -116,6 +118,26 @@ content/assets/*.md ──▶ 머리말 분리 ──▶ YAML 파싱 ──▶ z
 완성도(missingFields): 초안이 아니면 날짜·유형별 필수값·실제 체크섬·TODO( 없음 → 테스트가 확인
 ```
 
+## 5-1. 작품 관리 (개발 서버 전용, ADR-0009)
+
+```
+브라우저 /admin/ (page.dev.tsx) ── fetch /__admin/* + Authorization: Bearer <토큰>
+   ▼
+Next 개발 서버 rewrites (개발 단계에서만) ──▶ 관리 서버 127.0.0.1:3002 (web/scripts/admin/cli.ts serve, Node 26 타입 제거 실행)
+                                              └─ src/lib/admin/store.ts ── schema.ts(zod) · content.ts(missingFields) 재사용
+                                                   ├─ content/assets/<slug>.md       (주석 지키며 바뀐 키만, 원자적 쓰기, mtime 충돌 검사)
+                                                   ├─ web/public/media/<slug>/        (webp·png·jpg·avif, 파일 머리 확인, 8MB)
+                                                   ├─ 다운로드 보관 폴더/<slug>/       (8MB 조각 이어 받기 → 크기·SHA-256)
+                                                   └─ .local/trash/                   (초안 삭제)
+```
+
+- 출시 빌드는 `page.dev.tsx` 를 보지 않는다 (`pageExtensions` 는 개발 단계에만). `check_site.py --built` 가 `out/admin/` 을 막는다.
+- 토큰: 보통은 `.local/admin-token` 을 계속 쓴다. `PUBLIC_URL` 로 인터넷에 열면 실행마다 새 토큰(파일에 남기지 않음)이고, 다운로드 파일은 `.local/files` 에만 쓴다 (ADR-0010). 틀린 토큰 요청은 터미널에 알린다.
+- 정적 내보내기에서는 개발 서버도 POST 라우트 핸들러를 거부해서, 쓰기는 따로 도는 관리 서버가 맡는다.
+- Next 개발 서버는 넘기는 요청 본문을 10MB 까지만 전달한다. 그래서 다운로드 파일은 조각으로 보낸다 (`lib/admin/client.ts`).
+- `src/lib` 은 관리 서버가 Node 로 바로 실행하므로 enum·namespace·생성자 매개변수 속성을 쓰지 않는다.
+- 개발 서버의 콘텐츠 캐시는 파일 수정 시각·크기로 무효화한다 (`content.ts` 의 `cached`). 출시 빌드는 한 번만 읽는다.
+
 ## 6. 보안
 
 | 항목 | 내용 |
@@ -145,10 +167,10 @@ content/assets/*.md ──▶ 머리말 분리 ──▶ YAML 파싱 ──▶ z
 |---|---|
 | `tsc` | 타입 (strict, `noUncheckedIndexedAccess`) |
 | `eslint` | Next.js core-web-vitals + TypeScript 규칙 (React Hooks 규칙 포함) |
-| `vitest` | 콘텐츠 형식·완성도·이미지 존재, 검색·필터, 형식 변환, 즐겨찾기 저장 형식, 회원 클라이언트(토큰·next·오류), CSP 해시 주입 |
+| `vitest` | 콘텐츠 형식·완성도(본문 TODO 포함)·이미지 존재·개발 캐시 무효화, 검색·필터, 형식 변환, 즐겨찾기 저장 형식, 회원 클라이언트(토큰·next·오류), CSP 해시 주입, 작품 관리(필드 정보 = 스키마, 새 작품 틀, 주석 보존 쓰기, 만들기·저장·공개·삭제 규칙, 업로드·조각·경로 탈출, HTTP 토큰·형식) |
 | `pytest` (api/) | 가입·링크 재사용·만료, 비밀번호 설정·로그인·재설정·변경(현재 비밀번호, 다른 세션 끊기), 실패 횟수 제한, 해시 저장·재해시, 요청 제한, Origin·JSON 검사, 쿠키 속성, 설정 검사, 개발 DB 스키마 |
 | `next build` | 출시 빌드 (초안 제외) + `inject-csp.mjs` |
-| `check_site.py --built` | 빌드 결과: 내부 링크·앵커, `lang`·`title`·`description`·`viewport`, `alt`, 인라인 스타일·이벤트, 외부 리소스, **CSP `<meta>` 와 인라인 스크립트 해시 일치·순서** |
+| `check_site.py --built` | 빌드 결과: 내부 링크·앵커, `lang`·`title`·`description`·`viewport`, `alt`, 인라인 스타일·이벤트, 외부 리소스, **CSP `<meta>` 와 인라인 스크립트 해시 일치·순서**, 개발 전용 페이지(`/admin/`)가 없는지 |
 | 셸·줄바꿈 | `bash -n`, CRLF 금지 |
 
 `./scripts/check.sh` 가 위를 순서대로 돌리고, `deploy.sh` 는 이것이 통과해야 배포한다.
@@ -156,6 +178,7 @@ content/assets/*.md ──▶ 머리말 분리 ──▶ YAML 파싱 ──▶ z
 > 브라우저 상호작용 검사는 임시 Playwright 스크립트로 확인했고, 아직 저장소에 넣지 않았다 (ROADMAP 의 할 일).
 > - 2026-11-05: 즐겨찾기, 필터, 사진 확대, 영상, 모바일 메뉴, CSP 아래 동작
 > - 2026-11-05: 회원 가입·로그인·로그아웃·탈퇴 37개 항목 (출시 빌드 + CSP 헤더 + API)
+> - 2026-11-09: 작품 관리 화면 23개 항목 (토큰, 거르기, 만들기→채우기→형식 오류→공개→미리보기→초안→삭제, 20MB 설치 파일 조각 업로드, 390px, 콘솔 오류)
 
 ## 9. 이후 구조 (ADR-0007 기준)
 

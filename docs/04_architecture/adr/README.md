@@ -15,3 +15,5 @@
 | [0006](0006-cloudflare-tunnel.md) | 외부 공개는 Cloudflare Tunnel, nginx 사이트는 127.0.0.1:8081 전용 | 채택됨 (도메인 확정 후 적용) |
 | [0007](0007-magic-link-auth-api.md) | 회원은 매직 링크 + FastAPI(/api/), 웹은 정적 유지, CSP 는 해시로 조인다 | 일부 대체됨 → 0008 ("비밀번호 없음") |
 | [0008](0008-password-login.md) | 가입은 이메일 인증, 그다음부터는 이메일 + 비밀번호로 로그인한다 | 채택됨 |
+| [0009](0009-local-portfolio-manager.md) | 작품 등록·관리는 개발 서버 전용 관리 화면과 로컬 관리 서버로 한다 | 일부 대체됨 → 0010 (PUBLIC_URL 에서도 켬) |
+| [0010](0010-admin-on-public-dev-server.md) | 인터넷에 연 개발 서버(PUBLIC_URL)에서도 작품 관리 화면을 켠다 (실행마다 새 토큰, 운영 다운로드 폴더 안 씀) | 채택됨 |

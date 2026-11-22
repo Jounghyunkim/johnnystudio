@@ -34,3 +34,6 @@ api/.venv/
 api/data/
 __pycache__/
 .pytest_cache/
+
+# 작품 관리 도구의 로컬 상태: 관리 토큰, 다운로드 파일 보관, 휴지통 (ADR-0009)
+.local/

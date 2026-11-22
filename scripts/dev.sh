@@ -8,6 +8,12 @@
 #   PUBLIC_URL=http://johnnyhouse.iptime.org:3000 ./scripts/dev.sh
 #                                   → 공유기 포트포워딩으로 인터넷에서 접속 (잠깐 시험할 때만. 아래 경고 참고)
 #   NO_API=1 ./scripts/dev.sh       → 회원 API 없이 화면만
+#   NO_ADMIN=1 ./scripts/dev.sh     → 작품 관리 서버 없이 (관리 화면 /admin/ 이 '연결할 수 없음'으로 보인다)
+#
+# 작품 관리 화면: 터미널에 찍히는 http://…/admin/#k=<토큰> 으로 연다 (ADR-0009, docs/02_planning/CONTENT_GUIDE.md §0).
+#   관리 서버는 127.0.0.1:3002(ADMIN_PORT) 에서 content/ 와 web/public/media 를 고친다. 출시 빌드에는 관리 화면이 없다.
+#   PUBLIC_URL 로 인터넷에 열 때도 켠다 (ADR-0010). 이때 토큰은 실행할 때마다 새로 만들고(이번 실행에만 유효),
+#   다운로드 파일은 운영 폴더가 아니라 .local/files 에 둔다. 끄려면 NO_ADMIN=1.
 #
 # 로그인 메일은 실제로 보내지 않고 이 터미널에 찍힌다. api/.env.local 에 메일 설정이 있으면 진짜로 보낸다.
 # 실제로 배포될 모습(초안 제외)은 ./scripts/preview.sh 로 본다.
@@ -24,6 +30,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PORT="${PORT:-3000}"
 HOST="${HOST:-127.0.0.1}"
 API_PORT="${API_PORT:-3001}"
+ADMIN_PORT="${ADMIN_PORT:-3002}"
 PUBLIC_URL="${PUBLIC_URL:-}"
 export NEXT_TELEMETRY_DISABLED=1
 
@@ -61,6 +68,8 @@ if [[ -n "$PUBLIC_URL" ]]; then
 ⚠ 개발 서버를 인터넷에 엽니다: $PUBLIC_URL
   - 초안 작품과 오류 상세(코드 위치)가 누구에게나 보입니다. 인터넷 스캐너가 이미 3000 번을 찾아오고 있습니다.
   - api/.env.local 에 메일 설정이 있으면, 누구나 로그인 링크 요청으로 내 메일 계정에서 메일이 나가게 할 수 있습니다.
+  - 작품 관리 화면도 열립니다. 토큰 없이는 쓸 수 없지만, http 주소라면 토큰이 암호화되지 않은 채 오갑니다.
+    공용 와이파이에서는 쓰지 말고, 끝나면 바로 끄세요 (토큰은 이번 실행에만 유효합니다).
   - 시험이 끝나면 Ctrl+C 로 끄고, 방화벽(sudo ufw delete allow 3000/tcp)과 공유기 포트포워딩을 닫으세요.
 EOF
 fi
@@ -77,5 +86,22 @@ if [[ "${NO_API:-}" != "1" ]]; then
   export JOHNNYSTUDIO_API_ORIGIN="http://127.0.0.1:$API_PORT"
 fi
 
-# exec 하지 않는다: 끝날 때 API 도 꺼야 한다 (_api.sh 의 trap)
+if [[ "${NO_ADMIN:-}" != "1" ]]; then
+  # shellcheck source=scripts/_admin.sh
+  source "$ROOT/scripts/_admin.sh"
+  if [[ -n "$PUBLIC_URL" ]]; then
+    start_admin "$ADMIN_PORT" --public
+  else
+    start_admin "$ADMIN_PORT"
+  fi
+  export JOHNNYSTUDIO_ADMIN_ORIGIN="http://127.0.0.1:$ADMIN_PORT"
+  echo "  작품 관리: $site/admin/#k=$ADMIN_TOKEN"
+  if [[ -n "$PUBLIC_URL" ]]; then
+    echo "             (인터넷 공개 중: 이 토큰은 이번 실행에만 유효합니다. 이 주소를 아는 사람은 작품 파일을 고칠 수 있습니다)"
+  else
+    echo "             (이 주소를 아는 사람은 작품 파일을 고칠 수 있습니다. 공유하지 마세요)"
+  fi
+fi
+
+# exec 하지 않는다: 끝날 때 API·관리 서버도 꺼야 한다 (_bg.sh 의 trap)
 npm --prefix "$ROOT/web" run dev -- --hostname "$HOST" --port "$PORT"

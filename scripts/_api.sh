@@ -37,9 +37,9 @@ start_api() {
       --no-proxy-headers --log-level warning
   ) &
   API_PID=$!
-  # shellcheck disable=SC2064
-  trap "kill $API_PID 2>/dev/null; wait $API_PID 2>/dev/null" EXIT
-  trap 'exit 130' INT TERM
+  track_background "$API_PID"
 }
 
 API_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../api" && pwd)"
+# shellcheck source=scripts/_bg.sh
+source "$(dirname "${BASH_SOURCE[0]}")/_bg.sh"

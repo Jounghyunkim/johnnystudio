@@ -233,12 +233,22 @@ class Checker:
                     continue
                 self.check_local(f, line, url)
 
+    def check_dev_only(self) -> None:
+        for name in DEV_ONLY_PATHS:
+            target = self.root / name
+            if target.exists():
+                self.errors.append(f"{target.relative_to(self.root)}/: 개발 전용 페이지(관리 화면)가 출시 빌드에 들어갔다 (page.dev.tsx 와 next.config.ts 의 pageExtensions 확인)")
+
     def check_json(self, files: list[Path]) -> None:
         for f in files:
             try:
                 json.loads(f.read_text(encoding="utf-8"))
             except json.JSONDecodeError as e:
                 self.report(f, e.lineno, f"JSON 문법 오류: {e.msg}")
+
+
+# 개발 서버에서만 있어야 하는 페이지 (web/src/app/**/page.dev.tsx, ADR-0009). 출시 빌드에 있으면 안 된다
+DEV_ONLY_PATHS = ("admin",)
 
 
 def main(argv: list[str]) -> int:
@@ -260,6 +270,8 @@ def main(argv: list[str]) -> int:
     checker.check_html(html)
     checker.check_css(css)
     checker.check_json(data)
+    if args.built:
+        checker.check_dev_only()
 
     print(f"  HTML {len(html)}개 · CSS {len(css)}개 · JSON {len(data)}개 검사")
     if checker.errors:

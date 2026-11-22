@@ -88,6 +88,11 @@ describe("스키마", () => {
     expect(r.success).toBe(false);
   });
 
+  it("missingFields 는 본문에 남은 TODO( 도 잡는다", () => {
+    const asset = { slug: "t", html: "<p>TODO(content): 소개</p>", title: "t", summary: "t", status: "live" as const, date: "2026", tags: [], featured: false, draft: false, links: [], type: "article" as const, url: "https://a.b" };
+    expect(missingFields(asset)).toEqual(["본문에 TODO( 표시가 남아 있다"]);
+  });
+
   it("missingFields 는 빈 체크섬과 0 으로 채운 체크섬을 잡는다", () => {
     const base = { slug: "t", html: "", title: "t", summary: "t", status: "live" as const, date: "2026", tags: [], featured: false, draft: false, links: [] };
     const asset = {
@@ -115,7 +120,39 @@ describe("콘텐츠 오류 메시지", () => {
       const fresh = await import("./content");
       expect(() => fresh.loadAllAssets()).toThrowError(/bad\.md: status/);
     } finally {
-      process.env.CONTENT_DIR = prev;
+      if (prev === undefined) delete process.env.CONTENT_DIR;
+      else process.env.CONTENT_DIR = prev;
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("개발 서버 캐시", () => {
+  it("파일을 더하거나 고치면 다시 읽는다 (개발 서버를 다시 켜지 않아도 된다)", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "js-content-"));
+    fs.mkdirSync(path.join(dir, "assets"));
+    const write = (slug: string, title: string) =>
+      fs.writeFileSync(path.join(dir, "assets", `${slug}.md`), `---\ntitle: ${title}\ntype: article\nsummary: x\nstatus: dev\ndraft: true\n---\n`);
+    write("one", "하나");
+    const prev = process.env.CONTENT_DIR;
+    process.env.CONTENT_DIR = dir;
+    try {
+      const { vi } = await import("vitest");
+      vi.resetModules();
+      const fresh = await import("./content");
+      expect(fresh.loadAllAssets().map((a) => a.title)).toEqual(["하나"]);
+      expect(fresh.loadAllAssets()).toBe(fresh.loadAllAssets()); // 바뀐 것이 없으면 같은 결과를 그대로 쓴다
+
+      write("two", "둘");
+      expect(fresh.loadAllAssets().map((a) => a.title).sort()).toEqual(["둘", "하나"]);
+
+      const file = path.join(dir, "assets", "one.md");
+      fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace("하나", "하나(고침)"));
+      fs.utimesSync(file, new Date(), new Date(Date.now() + 5000)); // 수정 시각 해상도가 낮은 파일 시스템 대비
+      expect(fresh.loadAllAssets().map((a) => a.title)).toContain("하나(고침)");
+    } finally {
+      if (prev === undefined) delete process.env.CONTENT_DIR;
+      else process.env.CONTENT_DIR = prev;
       fs.rmSync(dir, { recursive: true, force: true });
     }
   });

@@ -3,7 +3,7 @@
 # TODO(content): 한 줄 소개, 날짜, 다운로드 파일, 대표 이미지
 title: SSH 터미널 클라이언트
 type: desktop-app
-summary: (초안) 한 줄 소개를 채워 주세요.
+summary: "TODO(content): 한 줄 소개를 채워 주세요."
 status: dev
 tags: [데스크톱, SSH]
 draft: true

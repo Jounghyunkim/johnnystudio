@@ -11,7 +11,8 @@
     "build": "next build && node scripts/inject-csp.mjs out",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "admin": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/admin/ts-hooks.mjs scripts/admin/cli.ts"
   },
   "dependencies": {
     "lucide-react": "1.61.0",

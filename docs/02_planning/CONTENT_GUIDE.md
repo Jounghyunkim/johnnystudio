@@ -2,9 +2,41 @@
 
 > 작품·기록·소개 문구를 추가하거나 고치는 방법. 결정 배경은 [ADR-0005](../04_architecture/adr/0005-file-based-content.md).
 > 형식의 정답은 코드에 있다: [web/src/lib/schema.ts](../../web/src/lib/schema.ts)
-> **Last Updated**: 2026-11-06
+> **Last Updated**: 2026-11-09
 
-## 1. 한눈에
+## 0. 관리 화면으로 등록하기 (권장)
+
+`./scripts/dev.sh` 를 띄우면 터미널에 관리 화면 주소가 찍힌다 ([ADR-0009](../04_architecture/adr/0009-local-portfolio-manager.md), [기능 명세](features/portfolio-manager.md)).
+
+```
+  작품 관리: http://localhost:3000/admin/#k=<토큰>
+```
+
+1. **새 작품** → 유형·이름·주소(slug)·한 줄 소개 → 초안 파일(`content/assets/<slug>.md`)이 생기고 편집기가 열린다
+2. 편집기에서 채운다: 기본 정보, 대표 이미지(올리기), 유형별 정보(주소·영상·사진·설치 파일), 링크, 본문
+   - 설치 파일을 올리면 크기·SHA-256 이 채워진다. 서버 복사 명령이 나오면 그대로 실행한다 (운영 다운로드 폴더가 있으면 바로 거기에 저장한다)
+   - 저장하면 스키마로 검사하고, 틀린 칸은 옆에 이유가 나온다. 틀리면 파일을 쓰지 않는다
+3. 오른쪽 **검사 결과**에서 "공개 전에 채울 것"이 비면 **공개하기** (= `draft` 지우기)
+4. **미리보기**로 `/library/<slug>/` 를 확인한다 (개발 미리보기는 저장하면 바로 바뀐다)
+5. 지금처럼 `./scripts/check.sh` → 커밋 → `./deploy/deploy.sh`
+
+- 관리 화면은 **개발 서버에만** 있다. 출시 빌드·운영 사이트에는 없다
+- 토큰은 `.local/admin-token` 에 있다. 주소를 아는 사람은 작품 파일을 고칠 수 있으니 공유하지 않는다 (지우면 다음 `dev.sh` 때 새로 만든다)
+- `PUBLIC_URL` 로 인터넷에 열어도 관리 화면을 쓸 수 있다. 이때 토큰은 **실행할 때마다 새로 나오고**(터미널의 주소로 들어간다), 설치 파일은 `.local/files` 에 저장된다. http 주소라면 토큰이 암호화되지 않으니 공용 와이파이에서는 쓰지 않는다 ([ADR-0010](../04_architecture/adr/0010-admin-on-public-dev-server.md))
+- 손으로 쓴 주석·키 순서는 지킨다. 편집기나 AI 도구로 같은 파일을 고친 뒤에 관리 화면에서 저장하면 "다시 불러오기"를 요구한다
+- 삭제는 초안만, Life Log·서비스가 가리키지 않을 때만 된다. 파일은 `.local/trash/` 로 옮겨진다
+
+터미널(AI 도구)에서는 같은 일을 CLI 로 한다.
+
+```bash
+npm --prefix web run admin -- list                     # 목록과 검사 결과
+npm --prefix web run admin -- check hardware-monitor   # 자세한 검사 (문제가 있으면 종료 코드 1)
+npm --prefix web run admin -- new my-tool --type desktop-app --title "내 도구" --summary "한 줄 소개"
+npm --prefix web run admin -- publish my-tool          # 채울 것이 남아 있으면 거부한다
+npm --prefix web run admin -- unpublish my-tool
+```
+
+## 1. 한눈에 (파일을 직접 고칠 때)
 
 | 하고 싶은 일 | 고칠 파일 |
 |---|---|
@@ -118,7 +150,8 @@ install -D -m 644 ~/build/hw-monitor-1.2.0-setup.exe /opt/johnnystudio/files/har
 ## 5. 초안과 샘플
 
 - `draft: true`: 개발 미리보기(`dev.sh`)에서만 보이고 "초안" 표시가 붙는다. 출시 빌드(`check.sh`, `deploy.sh`, `preview.sh`)에서는 빠진다
-- 초안을 지우고 출시하려면 **완성도 검사**를 통과해야 한다: 날짜, 유형별 필수 값, 실제 체크섬, `TODO(` 표시 없음
+- 초안을 지우고 출시하려면 **완성도 검사**를 통과해야 한다: 날짜, 유형별 필수 값, 실제 체크섬, 머리말과 본문에 `TODO(` 표시 없음
+- 채울 곳에는 `TODO(content)` 를 남긴다 (관리 화면이 만드는 새 작품도 한 줄 소개·본문에 넣어 둔다). 그러면 채우기 전에는 공개되지 않는다
 - `sample-*` 파일은 뷰어 예시다. 실제 작품을 몇 개 등록한 뒤 지워도 된다 (출시는 검사가 막는다)
 
 ## 6. 출시 전 확인

@@ -1,6 +1,6 @@
 # 문서 안내
 
-> **Last Updated**: 2026-11-06
+> **Last Updated**: 2026-11-09
 
 | 문서 | 내용 | 상태 |
 |---|---|---|
@@ -9,10 +9,11 @@
 | [archive/](archive/) | 사용자 원안 보관본 | 보관 |
 | [01_vision/PHILOSOPHY.md](01_vision/PHILOSOPHY.md) | 한 문장 정의, 미션·비전, 핵심 가치, 대상, 톤앤매너 | 초안 v1 (사용자 확인 전) |
 | [02_planning/SITEMAP.md](02_planning/SITEMAP.md) | 페이지·메뉴·콘텐츠 목록 | Phase 1 + 회원 화면 반영 |
-| [02_planning/CONTENT_GUIDE.md](02_planning/CONTENT_GUIDE.md) | 작품·기록·문구를 추가하는 방법 (필드, 예시, 파일 올리기) | 최신 |
+| [02_planning/CONTENT_GUIDE.md](02_planning/CONTENT_GUIDE.md) | 작품·기록·문구를 추가하는 방법 (관리 화면, 필드, 예시, 파일 올리기) | 최신 |
+| [02_planning/features/](02_planning/features/) | 기능 명세: [작품 관리](02_planning/features/portfolio-manager.md) (검토·설계·단계 계획) | 1단계 완료 |
 | [03_design/DESIGN_SYSTEM.md](03_design/DESIGN_SYSTEM.md) | 다크 테마 토큰, 글꼴, 컴포넌트 | v1 (브랜드 색·로고 임시) |
 | [04_architecture/ARCHITECTURE.md](04_architecture/ARCHITECTURE.md) | 시스템 구성, 렌더링 원칙, 회원(매직 링크), 콘텐츠 파이프라인, 보안·캐시, 검사, 이후 구조 | 최신 |
-| [04_architecture/adr/](04_architecture/adr/README.md) | 결정 기록 (ADR) | 7건 |
+| [04_architecture/adr/](04_architecture/adr/README.md) | 결정 기록 (ADR) | 10건 |
 | [templates/](templates/) | ADR·작업 로그·기능 명세 템플릿 | |
 | [../deploy/README.md](../deploy/README.md) | 배포 가이드 (서버 설정, 회원 API, Tunnel, 일상 배포, 롤백, 출시 체크리스트) | 서버 설정 전 |
 
