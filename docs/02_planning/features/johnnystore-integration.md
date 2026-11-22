@@ -22,7 +22,8 @@
   - 4000 포트가 공인 주소로 열려 있었고, 가입이 `open` 이었다. 먼저 가입을 닫았다
   - 저장소를 지우기로 해서 서비스와 `screen` 세션을 끝냈다
   - 전체를 보관본으로 남겨 확인한 뒤 로컬 저장소를 지웠다 (§3-3, §5 X1)
-  - 남은 것은 사용자가 할 일 두 가지다: GitHub 저장소 삭제, 공유기의 4000 포트 전달 삭제
+  - GitHub 저장소도 지웠다 (GitHub 에만 있던 커밋 1개까지 bundle 로 보관)
+  - 공유기의 4000 포트 전달은 지우지 않고, JohnnyStudio 개발 서버(`PUBLIC_URL` 모드)가 이어서 쓴다 (2026-11-22)
 
 ## 1. 두 서비스 (2026-11-22, 제거 전에 확인)
 
@@ -167,9 +168,10 @@ JohnnyStudio 의 데스크톱 초안 2개와 **같은 앱**이 있다 (2026-11-2
 | 3 | 보관: `~/workspace/backup/johnnystore/johnnystore-20261122.tar.gz` (권한 폴더 700, 파일 600, 188MB, `.sha256` 함께) | 소스·`.git`·미커밋 작업·`backend/.env`·`backend/data/` 포함. `.venv`·`node_modules`·`dist`·캐시는 뺐다 (다시 만들 수 있다) |
 | 4 | 보관본을 임시 폴더에 풀어서 확인 | 설치 파일 9개 SHA-256·크기가 DB 와 일치, 아이콘 9개, 설명 전체, git 커밋 2개 + 미커밋 변경 |
 | 5 | 로컬 저장소 `~/workspace/johnnystore` 삭제 | |
-| 6 | GitHub 저장소 `Jounghyunkim/johnnystore` | **사용자가 지운다.** gh 토큰에 `delete_repo` 권한이 없다 |
+| 6 | GitHub 저장소 `Jounghyunkim/johnnystore` 삭제 | 사용자가 `delete_repo` 권한을 준 뒤 삭제했다. GitHub 에만 있던 커밋 `ba9220b` ("업데이트 완료", WLT·CMG Monitor 카탈로그 글과 아이콘)가 있어서, 지우기 전에 저장소 전체를 `johnnystore-github-20261122.bundle` 로 남겼다 (`git bundle verify` 정상). 그 글·아이콘은 이관한 내용과 같다 (글 일치, 아이콘은 같은 256px 그림을 다시 저장한 것) |
 
 - 보관본에는 운영자 이메일·비밀번호 해시(bcrypt)·JWT 서명 키가 들어 있다. git 에 넣지 않고, 이식(S1·S2)이 끝나면 지운다.
+- `johnnystore-github-20261122.bundle` 은 GitHub 의 커밋 3개(`f956277`·`6dc01fe`·`ba9220b`)를 담는다. 복원: `git clone johnnystore-github-20261122.bundle johnnystore`. 보관본과 함께 지운다.
 - 커밋 메시지에는 출처를 `johnnystore 6dc01fe (보관본)` 처럼 쓴다. 스토어 이력은 `git subtree` 로 들이지 않는다.
 
 ## 4. 구조
@@ -241,7 +243,7 @@ JohnnyStudio/
 | 앱 설명·버전·체크섬·검사 결과 | `content/assets/<slug>.md` | 예 | git 원격 |
 | 앱 아이콘 (256px) | `web/public/media/<slug>/icon.png` (또는 webp) | 예 | git 원격 |
 | 공개 설치 파일 | `/opt/johnnystudio/files/<slug>/` (서버 설정 전에는 `.local/files/<slug>/`) | 아니오 | 원본 빌드 폴더 + 서버 사본 `[확인 필요: 외부 사본]` |
-| 스토어 보관본 | `~/workspace/backup/johnnystore/` | 아니오 | 이식이 끝나면 지운다 |
+| 스토어 보관본 (tar.gz + GitHub bundle) | `~/workspace/backup/johnnystore/` | 아니오 | 이식이 끝나면 지운다 |
 
 ### 4-7. 디자인
 
@@ -257,7 +259,7 @@ JohnnyStudio/
 
 | # | 스토어 | 문제 | 통합 후 |
 |---|---|---|---|
-| X1 | `0.0.0.0:4000`, `.env` 없음 → 가입 정책 `open`, `JS_BASE_URL` 빈 값 | 공인 주소의 4000 포트로 응답했다 (공유기 주소로 `/api/health` 200, 대조로 Arkurator 443 응답). 누구나 가입해서 하루 5GB 까지 올릴 수 있었다 | **끝남 (2026-11-22)**: 가입을 닫았다가(`/api/v1/meta` → `closed` 확인), 저장소 제거 결정에 따라 서비스를 끄고 지웠다. 4000 은 이제 아무것도 듣지 않는다. 공유기의 4000 포트 전달은 사용자가 지운다 |
+| X1 | `0.0.0.0:4000`, `.env` 없음 → 가입 정책 `open`, `JS_BASE_URL` 빈 값 | 공인 주소의 4000 포트로 응답했다 (공유기 주소로 `/api/health` 200, 대조로 Arkurator 443 응답). 누구나 가입해서 하루 5GB 까지 올릴 수 있었다 | **끝남 (2026-11-22)**: 가입을 닫았다가(`/api/v1/meta` → `closed` 확인), 저장소 제거 결정에 따라 서비스를 끄고 지웠다. 그 뒤 4000 은 JohnnyStudio 개발 서버가 쓴다 (`PORT=4000 PUBLIC_URL=http://johnnyhouse.iptime.org:4000 ./scripts/dev.sh`) |
 | X2 | 운영 설정 예시가 `127.0.0.1:8000` | Arkurator 가 쓰는 포트다 (AGENTS.md §8) | 별도 서비스로 두지 않는다 |
 | X3 | JWT 를 localStorage 에 둔다 | XSS 한 번이면 토큰을 가져간다 | 가져오지 않는다 (httpOnly 세션 쿠키가 기존 방식) |
 | X4 | 이메일 인증 없이 가입 | 남의 이메일로 가입할 수 있다 | 가져오지 않는다 |
@@ -383,9 +385,10 @@ JohnnyStudio/
 ### 마무리
 
 - [x] 스토어 프로세스·`screen` 세션 종료, 로컬 저장소 삭제 (2026-11-22)
-- [ ] 사용자: GitHub 저장소 삭제 — `gh auth refresh -h github.com -s delete_repo` 뒤 `gh repo delete Jounghyunkim/johnnystore --yes` (또는 GitHub 웹의 Settings → Delete this repository)
-- [ ] 사용자: 공유기에서 4000 포트 전달 지우기
-- [ ] 보관본에서 더 옮길 "참고" 자료(OAuth 흐름, 방침 문안, 백업 스크립트)가 있는지 정한 뒤, S2 이식이 끝나면 보관본을 지운다
+- [x] GitHub 저장소 삭제 (2026-11-22, 먼저 bundle 로 보관)
+- [ ] (권장) gh 토큰에서 `delete_repo` 권한 거두기: `gh auth refresh -h github.com -r delete_repo`
+- [x] 공유기 4000 포트 전달: 지우지 않고 JohnnyStudio 개발 서버가 쓴다 (2026-11-22). 인터넷 공개 개발을 끝내면 닫는다
+- [ ] 보관본에서 더 옮길 "참고" 자료(OAuth 흐름, 방침 문안, 백업 스크립트)가 있는지 정한 뒤, S2 이식이 끝나면 보관본(tar.gz·bundle)을 지운다
 
 ### S4. (이 통합에서 뺌) 비공개 공유 — Phase 3 Client Room 설계 때 참고
 
@@ -435,7 +438,7 @@ ADR-0011 의 재검토 조건이 생기면 다음을 먼저 정한다.
 | Q6 | 바이러스 검사 방식 | **판단을 맡김** → 로컬 ClamAV(`clamscan`)만, VirusTotal API 는 쓰지 않고 검색 링크만 | §6 S2 |
 | Q7 | 큰 설치 파일 배포 채널 (ideation §9-6) | **기존과 같이** → 홈 서버(`/files/`)에서만 | ADR-0011 결정 3, X13 |
 | Q8 | 4000 포트의 스토어 | **권장대로** → 밖에서 닿는 것을 확인하고 가입을 닫음 (그 뒤 Q9 로 종료) | X1 |
-| Q9 | johnnystore 저장소 | **제거** → 보관본을 남기고 로컬 삭제, GitHub 은 사용자가 삭제 | §3-3 |
+| Q9 | johnnystore 저장소 | **제거** → 보관본(tar.gz·bundle)을 남기고 로컬·GitHub 모두 삭제 | §3-3 |
 
 ## 부록 A. 이관 대상 앱
 

@@ -81,7 +81,7 @@
 
 ## 남은 일 · 다음 세션
 
-- [ ] 사용자: GitHub 저장소 삭제: `gh auth refresh -h github.com -s delete_repo` → `gh repo delete Jounghyunkim/johnnystore --yes`
+- [x] GitHub 저장소 삭제 (22:45 추가 참고)
 - [ ] 사용자: 공유기에서 4000 포트 전달 지우기
 - [ ] 사용자: S2 전에 `sudo apt install clamav`
 - [ ] Next.js 보안 권고 대응 (아래 메모): 16.4.6 이상으로 올릴지. 2주 규칙에 맞는 버전인지 확인하고 `check.sh` 로 검증
@@ -104,3 +104,42 @@
 - 스토어 DB 는 WAL 모드라 최근 기록이 `-wal` 파일에만 있었다 (DB 4KB, WAL 1.3MB). 보관 전에 합쳤다
 - Node 26 의 `node:sqlite` 는 플래그 없이 `readOnly: true` 로 열린다
 - 관리 도구의 업로드 ID 는 16진수여야 한다 (`store.ts` 의 `UPLOAD_ID`)
+
+## 추가 (22:45): GitHub 저장소 삭제
+
+- 사용자가 `gh auth refresh -h github.com -s delete_repo` 를 실행하고(기기 코드로 승인), `gh repo delete Jounghyunkim/johnnystore --yes` 를 요청했다
+- 지우기 전에 확인: GitHub 에 로컬 보관본에 없던 커밋 `ba9220b` ("업데이트 완료", 2026-11-22 18:35 KST, 3파일 +111)가 있었다
+  - 내용: `tools/register_apps.py` 에 WLT·CMG Monitor 카탈로그, `tools/icons/{wlt,cmg-monitor}.png`
+  - 다른 기기에서 올린 것으로 보인다
+- `git clone --mirror` → `~/workspace/backup/johnnystore/johnnystore-github-20261122.bundle` (커밋 3개, `git bundle verify` 정상, 600)
+- 이관한 작품과 비교
+  - 카탈로그의 WLT·CMG Monitor 버전·요약·설명 첫 줄이 작품과 같다 (설명 길이 차 1자는 끝 줄바꿈)
+  - 아이콘은 같은 256×256 RGBA 그림을 다시 저장한 것이다 (크기 11,773 vs 11,862 바이트, 848 vs 859 바이트)
+  - 그래서 작품은 고치지 않았다
+- 삭제 → `gh repo view` 가 "Could not resolve to a Repository" (삭제 확인)
+- 문서: 통합 문서 §3-3·§4-6·마무리·§9, ROADMAP
+- 남은 일
+  - [ ] (권장) gh 토큰의 `delete_repo` 권한 거두기: `gh auth refresh -h github.com -r delete_repo`
+  - [ ] 보관본을 지울 때 bundle 도 함께
+- 메모: 이 기기에는 클립보드 도구(xsel·xclip)가 없어서 `gh auth refresh` 의 기기 코드가 화면 출력에만 남았다. `!` 로 실행하면 뒤로 돌아가 코드가 안 보일 수 있다
+
+## 추가 (22:50): 개발 서버를 4000 번으로
+
+- 사용자 요청: "지금 JohnnyStudio 서버를 내리고 4000번 포트에서 동작시켜줘."
+- 바꾸기 전: `screen` 세션 `JohnnyStudio` 안에서 `HOST=0.0.0.0 ./dev.sh` (Next 0.0.0.0:3000, API 127.0.0.1:3001, 관리 127.0.0.1:3002)
+- 4000 은 공유기가 인터넷에서 넘겨주는 포트다 (스토어 때 확인). 그래서 `PUBLIC_URL` 모드로 띄웠다
+  - LAN 모드면 밖에서 들어온 방문자는 화면이 하이드레이션되지 않고 로그인이 거부된다
+  - 관리 화면도 오래 쓰는 토큰 파일을 쓴다. `PUBLIC_URL` 모드는 둘 다 맞춰 주고, 토큰을 실행마다 새로 만든다 (ADR-0010)
+- 한 일: 같은 `screen` 세션에 Ctrl+C → 3000~3002 정리 확인 → `PORT=4000 PUBLIC_URL=http://johnnyhouse.iptime.org:4000 ./dev.sh`
+- 확인: 127.0.0.1·192.168.0.206·공인 주소의 4000 에서 200 (`/`, `/library/`, `/library/wlt/`, `Host: johnnyhouse.iptime.org:4000`), `/api/auth/me` 200 (`{"user":null}`), `/admin/` 200. 화면 출력은 토큰 줄을 빼고 확인했다
+- 주의
+  - `api/.env.local` 이 진짜 SMTP 다 (`JOHNNYSTUDIO_MAIL_BACKEND=smtp`). 공개 중에는 누구나 가입·재설정 메일을 보내게 할 수 있다 (앱 요청 제한: 같은 이메일 15분 3회, 같은 IP 1시간 10회)
+  - `next dev` 가 `screen` 안에 업그레이드 선택 화면("Upgrade now / Skip / Skip until next version", 기본값 Upgrade now)을 띄웠다. 키를 보내지 않았다. 서버는 그대로 응답한다
+- Next.js 권고 다시 보기
+  - GHSA-pc58-hwjq-p385 는 "라우트 핸들러가 받은 응답을 그대로 돌려주고, 파이프라이닝을 허용하는 HTTP/1.1 리버스 프록시 뒤에 있을 때"다
+  - 이 개발 서버는 rewrites 로 넘기고 앞에 프록시가 없어서 해당이 적어 보인다 (미검증)
+  - 16.4.6 은 2026-11-09 에 나왔다. 2주 규칙으로는 2026-11-23 부터 고를 수 있다
+- 남은 일
+  - [ ] Next.js 16.4.6 으로 올리기 (2026-11-23 부터, `check.sh` 로 검증)
+  - [ ] 공개 개발을 끝내면 끄고 공유기 4000 닫기
+
