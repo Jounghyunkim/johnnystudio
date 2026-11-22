@@ -84,7 +84,7 @@
 - [x] GitHub 저장소 삭제 (22:45 추가 참고)
 - [ ] 사용자: 공유기에서 4000 포트 전달 지우기
 - [ ] 사용자: S2 전에 `sudo apt install clamav`
-- [ ] Next.js 보안 권고 대응 (아래 메모): 16.4.6 이상으로 올릴지. 2주 규칙에 맞는 버전인지 확인하고 `check.sh` 로 검증
+- [x] Next.js 보안 권고 대응: GitHub 의 PR #1 (16.4.2 → 16.4.6) 로 이미 올라가 있었다. 병합해서 반영 (아래 추가 참고)
 - [ ] S2 배포 엔진 (ADR-0012): `api/app/binaries/` (보관본의 `pe_extractor.py`), ClamAV, 상세 화면 아키텍처·검사 배지, OG
 - [ ] S3 공유 키트 (도메인 확정 뒤)
 - [ ] 서버 설정 뒤 설치 파일 옮기기: `rsync -a .local/files/ /opt/johnnystudio/files/`
@@ -140,7 +140,7 @@
   - 이 개발 서버는 rewrites 로 넘기고 앞에 프록시가 없어서 해당이 적어 보인다 (미검증)
   - 16.4.6 은 2026-11-09 에 나왔다. 2주 규칙으로는 2026-11-23 부터 고를 수 있다
 - 남은 일
-  - [ ] Next.js 16.4.6 으로 올리기 (2026-11-23 부터, `check.sh` 로 검증)
+  - [x] Next.js 16.4.6: PR #1 로 이미 반영돼 있었다 (아래 추가 참고)
   - [ ] 공개 개발을 끝내면 끄고 공유기 4000 닫기
 
 ## 추가 (22:56): 개발 서버에서 다운로드가 안 되던 문제
@@ -165,3 +165,23 @@
   - 응답 `200 application/octet-stream`, `content-length`, `accept-ranges: bytes`. LAN 주소 Range → 206
   - `sample-*` 초안 2개는 자리표시 파일이라 없다 (예상대로)
 - 미검증: 사용자 브라우저에서 직접 내려받기, 출시 빌드 미리보기(`preview.sh`)의 `/files/` (지원하지 않음)
+
+## 추가 (23:13): 커밋·push 와 Next.js 16.4.6 병합
+
+- 사용자 요청: "커밋 해줘." → 세 커밋으로 나눴다
+  - `d71bb71` GitHub 삭제·4000 기록
+  - `bb14584` `/files/` 수정
+  - `10e41fc` `CLAUDE.md` 한국어 규칙
+  - `ROADMAP`·작업 로그는 두 커밋 내용이 섞여 있어서 `git update-index --cacheinfo` 로 나눠 올렸다
+- 사용자 요청: "push까지 해줘."
+  - `git fetch` 해 보니 GitHub `main` 에 로컬에 없는 커밋 2개가 있었다
+    - `3b96389` chore(web): Next.js 16.4.2 → 16.4.6 보안 업그레이드 (2026-11-22 04:15, 로컬 git 사용자)
+    - `f34b48a` PR #1 병합 (04:54)
+  - 바뀐 것: `package.json`·`package-lock.json` 의 `next`·`eslint-config-next` 16.4.6, `next.config.ts` 의 `experimental: { agentUpgrade: "security" }`
+  - rebase 가 아니라 merge 로 합쳤다 (`a18e01a`). 문서와 커밋 메시지가 커밋 번호(`f336188`·`d9d351a` 등)를 가리켜서, 번호가 바뀌면 안 된다
+  - 자동 병합 (충돌 없음)
+- 개발 서버를 내리고 `npm --prefix web ci` (next 16.4.6) → `./scripts/check.sh` 첫 번에 통과 (웹 113, API 55, HTML 25, `SecurityFatalError` 없음) → 같은 명령으로 4000 에 다시 띄움 (관리 토큰 새로 바뀜)
+- 확인
+  - 공인 주소:4000 의 `/library/`·`/library/wlt/`·`/api/auth/me`·`/admin/` 200, WLT 다운로드 SHA-256 일치
+  - `screen` 출력에서 16.4.6 실행 뒤 업그레이드 안내 0줄 (16.4.2 때 것만 4줄)
+- 메모: 이 세션의 2주 규칙 계산(16.4.6 은 11-23 부터)과 달리, PR #1 은 13일째에 16.4.6 을 골랐다. 보안 업그레이드라서 사용자가 정한 것으로 보고 그대로 두었다
