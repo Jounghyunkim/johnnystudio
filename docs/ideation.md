@@ -2,7 +2,7 @@
 
 > **상태**: 검토 v2. 사용자 원안([archive/ideation-v1-2026-11-05.md](archive/ideation-v1-2026-11-05.md))을 검토하고 보완했다.
 > 확정된 내용은 [01_vision/PHILOSOPHY.md](01_vision/PHILOSOPHY.md) 와 ADR 로 옮긴다. §9 열린 질문은 사용자 결정이 필요하다.
-> **Last Updated**: 2026-11-05
+> **Last Updated**: 2026-11-22
 
 ---
 
@@ -286,6 +286,7 @@
 4. **제공 서비스와 연락 수단**: Work with me 에 쓸 서비스 목록, 공개할 이메일 주소
 5. **실행 파일 코드 서명**: 인증서를 쓸지 (연간 비용 발생)
 6. **큰 파일 배포 채널**: 홈 서버만 쓸지, GitHub Releases 를 함께 쓸지 (주권 vs 대역폭)
+   → **답 (2026-11-22)**: 홈 서버(`/files/`)에서만 낸다 ([ADR-0011](04_architecture/adr/0011-absorb-johnnystore.md) 결정 3)
 7. **공개 범위**: About 에 실명·경력을 어디까지 보여 줄지
 
 ---

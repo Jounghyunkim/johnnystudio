@@ -1,6 +1,6 @@
 # JohnnyStudio 포털 로드맵
 
-> **Last Updated**: 2026-11-09
+> **Last Updated**: 2026-11-22
 > 제품 단계(Phase 1~4)는 [ideation.md](ideation.md) §6 을 따른다.
 
 ## 현재 위치
@@ -9,6 +9,7 @@
 **Phase 2 의 회원 가입(이메일 인증)·로그인(이메일 + 비밀번호)을 먼저 구현했다** ([ADR-0007](04_architecture/adr/0007-magic-link-auth-api.md), [ADR-0008](04_architecture/adr/0008-password-login.md)). 로컬에서 동작을 확인했고, 서버 설정과 메일 발송 설정이 남았다.
 코드는 GitHub `Jounghyunkim/johnnystudio` 에 올렸다 (2026-11-06). CI 는 아직 없다.
 **작품 등록·관리 도구**를 만들었다 (2026-11-09, [ADR-0009](04_architecture/adr/0009-local-portfolio-manager.md)): `dev.sh` 의 관리 화면 `/admin/` 과 CLI 로 작품을 만들고, 채우고, 공개한다. 콘텐츠 채우기(아래 2번)는 이 도구로 한다.
+**JohnnyStore 를 흡수하기로 했다** (2026-11-22, [통합 문서](02_planning/features/johnnystore-integration.md), [ADR-0011](04_architecture/adr/0011-absorb-johnnystore.md)). 파일을 올리는 사람은 운영자뿐이고, 스토어의 Windows 앱 9개를 작품으로 옮기는 것부터 한다. 스토어 서비스와 저장소(`../johnnystore`)는 보관본을 남기고 지웠다 (아래 "JohnnyStore 통합").
 남은 일은 다음 네 가지다.
 
 1. ideation §9 열린 질문에 답한다
@@ -70,6 +71,23 @@
 - [ ] 출시 체크리스트 ([deploy/README.md](../deploy/README.md) §7): 색인 허용, sitemap, canonical, OG 이미지
 - [x] GitHub 원격 저장소 연결 (2026-11-06, `Jounghyunkim/johnnystudio`, `main` push 완료. 공개 여부 확인 전)
 - [ ] CI 로 `scripts/check.sh` 실행
+
+## JohnnyStore 통합 ⏳ (결정 완료, 구현 전)
+
+> [통합 문서](02_planning/features/johnnystore-integration.md) · [ADR-0011](04_architecture/adr/0011-absorb-johnnystore.md): JohnnyStudio 기준으로 흡수하고, 파일을 올리는 사람은 운영자뿐이다.
+> S1 이 위 "콘텐츠"의 데스크톱 앱을 채운다 (초안 `ssh-terminal`·`hardware-monitor` 는 스토어의 WLT·CMG Monitor 로 대신한다).
+
+- [x] 검토: 두 서비스 비교, 철학 충돌(누가 올리나), 일원화 방식, 구조, 보안·운영, 단계 계획 (2026-11-22)
+- [x] 결정 (2026-11-22): 올리기는 운영자만(Q1), 겹치는 앱 2개는 같은 앱(Q3), 상태·날짜는 스토어와 같게(Q4: 운영 중, 2026-11-16) → ADR-0011
+- [x] 스토어(4000)가 공인 주소로 열려 있고 가입이 `open` 이던 것을 닫았다 (Q8, 통합 문서 §5 X1)
+- [x] 나머지 결정 (2026-11-22): 이름 "JohnnyStore" 는 남기지 않음(Q2), 옛 링크 리다이렉트 없음(Q5), 검사는 로컬 ClamAV 만(Q6), 설치 파일은 홈 서버에서만(Q7), 저장소 제거(Q9)
+- [x] 스토어 종료·저장소 제거: 전체를 `~/workspace/backup/johnnystore/johnnystore-20261122.tar.gz` 로 보관·확인한 뒤 지웠다 (통합 문서 §3-3)
+- [x] S0 준비: JohnnyStudio 미커밋 작업 커밋 (2026-11-22, 작품 관리 `f336188` + 통합 문서)
+- [ ] S1 콘텐츠 이관: 보관본의 앱 9개 → `content/assets/` → 공개 (운영 중, 2026-11-16)
+- [ ] S2 배포 엔진: 설치 파일 분석(`api/app/binaries/`)·ClamAV 검사를 관리 도구에, 상세 화면에 아키텍처·검사 결과, OG (ADR-0012). 먼저 사용자가 `sudo apt install clamav`
+- [ ] S3 공유 키트: `/d/<slug>/`, 배지, QR (도메인 확정 뒤)
+- [ ] 마무리: GitHub 저장소 삭제·공유기 4000 포트 전달 삭제 (사용자), S2 이식 뒤 보관본 삭제
+- 비공개 공유(테스터·의뢰인)는 Phase 3 Client Room 에서, 누구나 업로드는 하지 않는다 (ADR-0011)
 
 ## Phase 1.5: 웹 패키지 샌드박스 (선택)
 

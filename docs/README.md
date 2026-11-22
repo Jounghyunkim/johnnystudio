@@ -1,6 +1,6 @@
 # 문서 안내
 
-> **Last Updated**: 2026-11-09
+> **Last Updated**: 2026-11-22
 
 | 문서 | 내용 | 상태 |
 |---|---|---|
@@ -11,9 +11,10 @@
 | [02_planning/SITEMAP.md](02_planning/SITEMAP.md) | 페이지·메뉴·콘텐츠 목록 | Phase 1 + 회원 화면 반영 |
 | [02_planning/CONTENT_GUIDE.md](02_planning/CONTENT_GUIDE.md) | 작품·기록·문구를 추가하는 방법 (관리 화면, 필드, 예시, 파일 올리기) | 최신 |
 | [02_planning/features/](02_planning/features/) | 기능 명세: [작품 관리](02_planning/features/portfolio-manager.md) (검토·설계·단계 계획) | 1단계 완료 |
+| [02_planning/features/johnnystore-integration.md](02_planning/features/johnnystore-integration.md) | JohnnyStore 통합: 두 서비스 비교, 철학 충돌(개방 범위 → 운영자 전용), 흡수 통합 구조, 단계 계획 S0~S3, 남은 질문 | 결정 완료 (ADR-0011), 구현 전 |
 | [03_design/DESIGN_SYSTEM.md](03_design/DESIGN_SYSTEM.md) | 다크 테마 토큰, 글꼴, 컴포넌트 | v1 (브랜드 색·로고 임시) |
 | [04_architecture/ARCHITECTURE.md](04_architecture/ARCHITECTURE.md) | 시스템 구성, 렌더링 원칙, 회원(매직 링크), 콘텐츠 파이프라인, 보안·캐시, 검사, 이후 구조 | 최신 |
-| [04_architecture/adr/](04_architecture/adr/README.md) | 결정 기록 (ADR) | 10건 |
+| [04_architecture/adr/](04_architecture/adr/README.md) | 결정 기록 (ADR) | 11건 |
 | [templates/](templates/) | ADR·작업 로그·기능 명세 템플릿 | |
 | [../deploy/README.md](../deploy/README.md) | 배포 가이드 (서버 설정, 회원 API, Tunnel, 일상 배포, 롤백, 출시 체크리스트) | 서버 설정 전 |
 
