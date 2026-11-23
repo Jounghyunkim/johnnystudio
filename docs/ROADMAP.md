@@ -1,6 +1,6 @@
 # JohnnyStudio 포털 로드맵
 
-> **Last Updated**: 2026-11-22
+> **Last Updated**: 2026-11-23
 > 제품 단계(Phase 1~4)는 [ideation.md](ideation.md) §6 을 따른다.
 
 ## 현재 위치
@@ -66,6 +66,7 @@
 
 - [ ] 브라우저 상호작용 테스트를 저장소에 넣는다 (임시 Playwright 스크립트로 확인만 함: 2026-11-05 사이트 18개, 2026-11-09 관리 화면 23개)
 - [ ] Lighthouse(성능·접근성) 점검, 스크린리더 확인
+- 참고: pixtuoid 의 Playwright·Lighthouse CI·gitleaks 설정 ([pixtuoid 검토](02_planning/features/pixtuoid.md) §3 D, 2026-11-23)
 
 ### 공개 ⏳
 
@@ -74,7 +75,7 @@
 - [ ] 서버 1회 설정 + Tunnel ([deploy/README.md](../deploy/README.md) §2, §4, sudo 필요: 사용자)
 - [ ] 출시 체크리스트 ([deploy/README.md](../deploy/README.md) §7): 색인 허용, sitemap, canonical, OG 이미지
 - [x] GitHub 원격 저장소 연결 (2026-11-06, `Jounghyunkim/johnnystudio`, `main` push 완료. 공개 여부 확인 전)
-- [ ] CI 로 `scripts/check.sh` 실행
+- [ ] CI 로 `scripts/check.sh` 실행 (참고: [pixtuoid 검토](02_planning/features/pixtuoid.md) §3 D)
 
 ## JohnnyStore 통합 ⏳ (결정 완료, 구현 전)
 
