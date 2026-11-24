@@ -22,6 +22,7 @@ import type { OfficialStoreApp } from "@/lib/types";
 import { useLocationSearch } from "@/lib/use-location-search";
 
 import { ButtonLink, cx } from "../ui";
+import { ReviewLink } from "./review-link";
 import { AppIcon, ErrorBox, Loading, Pill } from "./store-ui";
 
 const cardClass =
@@ -166,9 +167,12 @@ export function StoreBrowser({ official }: { official: readonly OfficialStoreApp
             <option value="name">이름순</option>
           </select>
         </div>
-        <ButtonLink href="/store/new/" variant="secondary">
-          <Upload aria-hidden="true" className="size-4" />앱 올리기
-        </ButtonLink>
+        <div className="flex flex-wrap gap-2">
+          <ButtonLink href="/store/new/" variant="secondary">
+            <Upload aria-hidden="true" className="size-4" />앱 올리기
+          </ButtonLink>
+          <ReviewLink />
+        </div>
       </div>
 
       {categories.length > 0 && (

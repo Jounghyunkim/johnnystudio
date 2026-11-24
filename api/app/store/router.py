@@ -132,6 +132,36 @@ def _owned_app(db: Session, code: str, user: User) -> StoreApp:
     return app
 
 
+def _editable_app(db: Session, settings: Settings, code: str, user: User) -> tuple[StoreApp, bool]:
+    """정보·아이콘을 고칠 앱과 '운영자가 남의 앱을 고치는가'. 올린 사람과 운영자만 고친다 (그 밖에는 404)"""
+    app = _app(db, code)
+    if app.owner_id == user.id:
+        publisher = _publisher(db, user.id)
+        if publisher is not None and publisher.blocked_at is not None:
+            raise api_error(status.HTTP_403_FORBIDDEN, "blocked", "이 계정은 Store 앱을 고칠 수 없습니다.")
+        return app, False
+    if service.is_admin(settings, user):
+        return app, True
+    raise api_error(status.HTTP_404_NOT_FOUND, "not_found", "앱을 찾을 수 없습니다.")
+
+
+def _deletable_app(db: Session, settings: Settings, code: str, user: User) -> tuple[StoreApp, bool]:
+    """지울 앱과 '운영자가 남의 앱을 지우는가'. 올린 사람(차단돼도 자기 앱은 지운다)과 운영자만 (그 밖에는 404)"""
+    app = _app(db, code)
+    if app.owner_id == user.id:
+        return app, False
+    if service.is_admin(settings, user):
+        return app, True
+    raise api_error(status.HTTP_404_NOT_FOUND, "not_found", "앱을 찾을 수 없습니다.")
+
+
+def _edited_out(db: Session, app: StoreApp, as_admin: bool) -> dict[str, Any]:
+    if as_admin:
+        log.info("Store 운영자가 앱 정보를 고침: %s", app.code)
+        return _owner_view(db, app)
+    return service.app_out(app, _publisher(db, app.owner_id), private=True)
+
+
 def _ready_publisher(db: Session, settings: Settings, user: User) -> StorePublisher:
     """앱을 올릴 수 있는 회원인가"""
     if not settings.store_uploads_open and not service.is_admin(settings, user):
@@ -640,10 +670,7 @@ async def upload_icon(code: str, request: Request, db: DbDep, settings: Settings
 
 def _save_icon(db: Session, settings: Settings, session: AuthSession, code: str, data: bytes) -> dict[str, Any]:
     user = _signed_in(db, session)
-    publisher = _publisher(db, user.id)
-    if publisher is not None and publisher.blocked_at is not None:
-        raise api_error(status.HTTP_403_FORBIDDEN, "blocked", "이 계정은 Store 앱을 고칠 수 없습니다.")
-    app = _owned_app(db, code, user)
+    app, as_admin = _editable_app(db, settings, code, user)
     if not data:
         raise api_error(status.HTTP_400_BAD_REQUEST, "empty", "빈 파일입니다.")
     d = service.dirs(settings)
@@ -662,7 +689,7 @@ def _save_icon(db: Session, settings: Settings, session: AuthSession, code: str,
     app.has_icon = True
     app.updated_at = utcnow()
     db.commit()
-    return service.app_out(app, publisher, private=True)
+    return _edited_out(db, app, as_admin)
 
 
 @router.post("/apps", status_code=status.HTTP_201_CREATED)
@@ -724,10 +751,7 @@ def add_release(
 @router.patch("/apps/{code}")
 def edit_app(code: str, body: AppPatch, db: DbDep, settings: SettingsDep, session: SessionDep) -> dict[str, Any]:
     user = _signed_in(db, session)
-    publisher = _publisher(db, user.id)
-    if publisher is not None and publisher.blocked_at is not None:
-        raise api_error(status.HTTP_403_FORBIDDEN, "blocked", "이 계정은 Store 앱을 고칠 수 없습니다.")
-    app = _owned_app(db, code, user)
+    app, as_admin = _editable_app(db, settings, code, user)
     if body.name is not None:
         app.name = _field(body.name, service.clean_line, "앱 이름", 80, required=True)
     if body.summary is not None:
@@ -738,27 +762,25 @@ def edit_app(code: str, body: AppPatch, db: DbDep, settings: SettingsDep, sessio
         app.category = _category(body.category)
     app.updated_at = utcnow()
     db.commit()
-    return service.app_out(app, publisher, private=True)
+    return _edited_out(db, app, as_admin)
 
 
 @router.delete("/apps/{code}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_app(code: str, db: DbDep, settings: SettingsDep, session: SessionDep) -> None:
     user = _signed_in(db, session)
-    app = _app(db, code)
-    if app.owner_id != user.id and not service.is_admin(settings, user):
-        raise api_error(status.HTTP_404_NOT_FOUND, "not_found", "앱을 찾을 수 없습니다.")
+    app, as_admin = _deletable_app(db, settings, code, user)
     service.delete_app_files(settings, app)
     for report in db.scalars(select(StoreReport).where(StoreReport.app_id == app.id)):
         report.app_id = None
     db.delete(app)
     db.commit()
-    log.info("Store 앱 삭제: %s", code)
+    log.info("Store 앱 삭제%s: %s", " (운영자)" if as_admin else "", code)
 
 
 @router.delete("/apps/{code}/releases/{release_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_release(code: str, release_id: int, db: DbDep, settings: SettingsDep, session: SessionDep) -> None:
     user = _signed_in(db, session)
-    app = _owned_app(db, code, user)
+    app, as_admin = _deletable_app(db, settings, code, user)
     r = next((x for x in app.releases if x.id == release_id), None)
     if r is None:
         raise api_error(status.HTTP_404_NOT_FOUND, "not_found", "버전을 찾을 수 없습니다.")
@@ -766,6 +788,7 @@ def delete_release(code: str, release_id: int, db: DbDep, settings: SettingsDep,
     app.releases.remove(r)
     app.updated_at = utcnow()
     db.commit()
+    log.info("Store 버전 삭제%s: %s %s", " (운영자)" if as_admin else "", app.code, r.version)
 
 
 # ── 운영자 ──

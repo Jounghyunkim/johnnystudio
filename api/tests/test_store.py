@@ -378,6 +378,94 @@ def test_owner_can_edit_and_delete_but_others_cannot(people: Accounts, store_set
     assert rows(dev, StoreApp) == [] and list((store_settings.store_dir / "files").iterdir()) == []
 
 
+def test_admin_can_edit_member_apps(people: Accounts, caplog) -> None:  # noqa: ANN001
+    import io
+    import logging
+
+    from PIL import Image
+
+    dev = people.use("dev@example.com")
+    become_publisher(dev)
+    code = submit(dev)["code"]
+
+    # 검토 대기 중에도 운영자가 고친다. 상태는 그대로이고, 응답에 올린 사람이 함께 온다 (검토 화면)
+    admin = people.use(ADMIN)
+    with caplog.at_level(logging.INFO, logger="johnnystudio.store"):
+        r = admin.patch(f"/api/store/apps/{code}", json={"name": "고친 이름", "summary": "오타 고침", "category": "game"})
+    assert r.status_code == 200, r.text
+    assert r.json()["name"] == "고친 이름" and r.json()["category_label"] == "게임"
+    assert r.json()["status"] == "pending" and r.json()["owner"]["email"] == "dev@example.com"
+    assert any("운영자가 앱 정보를 고침" in m for m in caplog.messages)
+    assert admin.patch(f"/api/store/apps/{code}", json={"name": " "}).status_code == 400  # 같은 검사를 거친다
+
+    buf = io.BytesIO()
+    Image.new("RGB", (32, 32), (10, 120, 200)).save(buf, format="PNG")
+    r = admin.put(f"/api/store/uploads/icons/{code}", content=buf.getvalue())
+    assert r.status_code == 200 and r.json()["has_icon"] and r.json()["owner"]["email"] == "dev@example.com"
+
+    mine = people.use("dev@example.com").get("/api/store/me/apps").json()["apps"][0]
+    assert mine["name"] == "고친 이름" and mine["summary"] == "오타 고침" and mine["has_icon"] and "owner" not in mine
+
+    # 차단된 회원은 자기 앱을 못 고치지만, 운영자는 고친다
+    uid = admin_overview_owner_id(people, code)
+    assert people.use(ADMIN).post(f"/api/store/admin/publishers/{uid}/block", json={"reason": "테스트"}).status_code == 200
+    assert people.use("dev@example.com").patch(f"/api/store/apps/{code}", json={"name": "내가 고침"}).status_code == 403
+    assert people.use(ADMIN).patch(f"/api/store/apps/{code}", json={"name": "운영자가 고침"}).status_code == 200
+
+
+def test_owner_and_admin_can_delete_apps_and_versions(people: Accounts, store_settings: Settings, caplog) -> None:  # noqa: ANN001
+    import logging
+
+    dev = people.use("dev@example.com")
+    become_publisher(dev)
+    app = approve_latest(people, submit(dev))
+    code = app["code"]
+    dev = people.use("dev@example.com")
+    r = dev.post(f"/api/store/apps/{code}/releases", json={"upload_id": upload(dev, make_pe(0x8664, b"v2" * 300))["upload_id"], "version": "2.0.0"})
+    assert r.status_code == 201, r.text
+    first, second = sorted(rel["id"] for rel in r.json()["releases"])
+    files = store_settings.store_dir / "files"
+    assert len(list(files.iterdir())) == 2
+
+    # 남은 못 지운다 (있는지도 알리지 않는다)
+    other = people.use("other@example.com")
+    assert other.delete(f"/api/store/apps/{code}/releases/{second}").status_code == 404
+    assert other.delete(f"/api/store/apps/{code}").status_code == 404
+
+    # 운영자가 남의 버전을 지운다 → 파일도 지워지고 로그에 남는다
+    admin = people.use(ADMIN)
+    with caplog.at_level(logging.INFO, logger="johnnystudio.store"):
+        assert admin.delete(f"/api/store/apps/{code}/releases/{second}").status_code == 204
+    assert any("버전 삭제 (운영자)" in m and "2.0.0" in m for m in caplog.messages)
+    assert [rel["id"] for rel in people.use("dev@example.com").get("/api/store/me/apps").json()["apps"][0]["releases"]] == [first]
+    assert len(list(files.iterdir())) == 1
+
+    # 차단된 회원도 자기 앱은 지운다
+    uid = next(a["owner"]["id"] for a in people.use(ADMIN).get("/api/store/admin/overview").json()["recent"] if a["code"] == code)
+    assert people.use(ADMIN).post(f"/api/store/admin/publishers/{uid}/block", json={"reason": "테스트"}).status_code == 200
+    second_app = submit_as_third_member(people)
+    assert people.use("dev@example.com").delete(f"/api/store/apps/{code}").status_code == 204
+    assert list(files.iterdir()) != [] and [a.code for a in rows(dev, StoreApp)] == [second_app]
+
+    # 운영자가 남의 앱을 통째로 지운다
+    with caplog.at_level(logging.INFO, logger="johnnystudio.store"):
+        assert people.use(ADMIN).delete(f"/api/store/apps/{second_app}").status_code == 204
+    assert any("앱 삭제 (운영자)" in m for m in caplog.messages)
+    assert rows(dev, StoreApp) == [] and list(files.iterdir()) == []
+
+
+def submit_as_third_member(people: Accounts) -> str:
+    """또 다른 회원의 앱 (운영자가 지울 대상)"""
+    c = people.use("third@example.com")
+    become_publisher(c, "세 번째 개발자")
+    return submit(c)["code"]
+
+
+def admin_overview_owner_id(people: Accounts, code: str) -> str:
+    overview = people.use(ADMIN).get("/api/store/admin/overview").json()
+    return next(a["owner"]["id"] for a in overview["pending"] if a["code"] == code)
+
+
 # ── 신고·숨김·차단 ──
 
 

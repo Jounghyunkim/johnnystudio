@@ -9,6 +9,7 @@ import { type StoreQuery, loadRemote, parseStoreQuery, toStoreSearch, useRemote 
 import type { OfficialShowroomService } from "@/lib/types";
 import { useLocationSearch } from "@/lib/use-location-search";
 
+import { ReviewLink } from "../store/review-link";
 import { Pill, ErrorBox, Loading } from "../store/store-ui";
 import { ButtonLink, cx } from "../ui";
 import { OpenLink, ServiceIcon } from "./showroom-ui";
@@ -119,10 +120,13 @@ export function ShowroomBrowser({ official }: { official: readonly OfficialShowr
             <option value="name">이름순</option>
           </select>
         </div>
-        <ButtonLink href="/showroom/new/" variant="secondary">
-          <Plus aria-hidden="true" className="size-4" />
-          서비스 소개하기
-        </ButtonLink>
+        <div className="flex flex-wrap gap-2">
+          <ButtonLink href="/showroom/new/" variant="secondary">
+            <Plus aria-hidden="true" className="size-4" />
+            서비스 소개하기
+          </ButtonLink>
+          <ReviewLink />
+        </div>
       </div>
 
       {categoryMap && (

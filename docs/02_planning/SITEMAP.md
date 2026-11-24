@@ -11,10 +11,10 @@
 | `/library/` | Showcase | Library | 전체 작품: 검색, 유형 필터, 정렬. 상태가 주소(`?q=&type=&sort=`)에 남는다 | ✅ |
 | `/library/<slug>/` | Showcase | 작품 상세 | 유형별 뷰어(실행·다운로드·체험·영상·사진·원문), 소개, 비슷한 작품 | ✅ |
 | `/store/` | Store | Store 목록 | Library 의 Windows 앱('공식', 누르면 Library 상세) + 회원이 올리고 운영자가 승인한 앱: 검색·분류·정렬(`?q=&category=&sort=`). 회원 앱은 브라우저에서 API 로 읽는다 ([ADR-0012](../04_architecture/adr/0012-member-store.md), [기능 명세](features/store.md)) | ✅ |
-| `/store/app/?id=<코드>` | Store | Store 앱 상세 | 내려받기, 검사 결과·SHA-256·서명 문구·VirusTotal 검색 링크, 소개, 이전 버전, 공유 주소, 신고 | ✅ |
+| `/store/app/?id=<코드>` | Store | Store 앱 상세 | 내려받기, 검사 결과·SHA-256·서명 문구·VirusTotal 검색 링크, 소개, 이전 버전, 공유 주소, 신고. 올린 사람·운영자에게는 고치기·아이콘·앱/버전 지우기 | ✅ |
 | `/store/new/` | Store | 앱 올리기 | 로그인 → 표시 이름·약관 동의 → 파일 → 분석으로 채운 양식 → 검토 요청. `?app=<코드>` 는 새 버전. 색인 안 함 | ✅ |
 | `/store/mine/` | Store | 내 앱 | 검토 상태·사유·검사 결과, 고치기·아이콘·새 버전·지우기. 색인 안 함 | ✅ |
-| `/store/manage/` | (운영) | Store·Showroom 검토 | 검토 대기·신고·숨김·차단 (아래에 Showroom 절). 운영자 이메일만 (API 가 판단). 색인 안 함 | ✅ |
+| `/store/manage/` | (운영) | Store·Showroom 검토 | 검토 대기·신고·숨김·차단, 회원 앱 정보·아이콘 고치기·지우기 (아래에 Showroom 절). 운영자 이메일만 (API 가 판단). Store·Showroom 목록의 '검토' 버튼(운영자에게만 보임)으로 들어온다. 색인 안 함 | ✅ |
 | `/store/terms/` | Store | Store·Showroom 이용약관 | `content/pages/store-terms.md` | ✅ (운영자·연락처는 `TODO(content)`) |
 | `/showroom/` | Showroom | Showroom 목록 | Library 의 웹 서비스('공식') + 회원이 소개하고 운영자가 승인한 웹 서비스. 검색·분류·정렬. 카드의 '열기'는 새 탭 ([기능 명세](features/showroom.md)) | ✅ |
 | `/showroom/service/?id=<코드>` | Showroom | 서비스 상세 | 서비스 열기, 화면 그림, 설명, 공유 주소, 신고 | ✅ |

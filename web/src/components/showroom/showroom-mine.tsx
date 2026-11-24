@@ -245,7 +245,7 @@ export function ShowroomMine() {
                 </button>
                 <ImageButton svc={s} kind="icon" meta={meta.data} />
                 <ImageButton svc={s} kind="screenshot" meta={meta.data} />
-                <button type="button" onClick={() => setDeleting(s)} className={cx(buttonClass("ghost", "sm"), "text-danger")}>
+                <button type="button" onClick={() => setDeleting(s)} className={buttonClass("danger", "sm")}>
                   <Trash2 aria-hidden="true" className="size-4" />
                   지우기
                 </button>

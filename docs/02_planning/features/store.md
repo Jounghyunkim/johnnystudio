@@ -22,6 +22,8 @@
   - 앱 정보 고치기, 아이콘 바꾸기, 새 버전, 버전·앱 지우기, 탈퇴하면 모두 삭제
   - 검색·분류·정렬, 상세(검사 결과·체크섬·확인 방법·VirusTotal 검색 링크·공유 주소 복사)
   - 신고(로그인 없이도), 운영자 검토 화면(승인·반려·다시 검사·숨김·회원 차단·신고 처리)
+  - 운영자가 회원 앱의 정보(이름·소개·설명·분류)와 아이콘을 고친다. 검토 상태는 그대로이고, 파일은 못 바꾼다 (2026-11-24 사용자 요청, 약관 제5조 5)
+  - 올린 사람과 운영자가 앱(모든 버전)이나 버전 하나를 지운다: '내 앱', 앱 상세, 검토 화면. 파일까지 바로 지워지고 되돌릴 수 없다 (2026-11-24 사용자 요청. 운영자 근거는 약관 제10조 1)
   - Store 이용약관 페이지, 개인정보처리방침 보강
 - **포함하지 않음**
   - 브라우저에서 실행하는 업로드(웹 zip). 별도 등록 도메인 샌드박스가 먼저다 (ADR-0012 재검토 조건)
@@ -35,11 +37,11 @@
 | 주소 | 화면 | 누가 |
 |---|---|---|
 | `/store/` | 목록: Library 의 공식 앱(빌드된 HTML 에 들어 있다) + 공개된 회원 앱(API). 검색(이름·소개), 분류 8개, 최신순·이름순은 둘에 같은 규칙. 상태가 주소(`?q=&category=&sort=`)에 남는다. 카드: 아이콘·이름·'공식' 표시·올린 사람(공식은 JohnnyStudio)·분류·소개·버전·크기. 공식 앱에 Microsoft Store 주소(`microsoftStore`)가 있으면 'MS Store' 바로가기 | 누구나 |
-| `/store/app/?id=<코드>` | 상세: 아이콘·이름·올린 사람, 최신 버전 패널(내려받기, 아키텍처·형식·크기·등록일, 바뀐 점, 검사 배지, VirusTotal 검색 링크, SHA-256 복사·확인 방법, 서명 문구), 소개, 이전 버전(접기), "회원이 올린 앱" 안내, 공유 주소 복사, 신고(`<dialog>`) | 누구나 (검토 중인 앱은 올린 사람·운영자만, 남에게는 404) |
+| `/store/app/?id=<코드>` | 상세: 아이콘·이름·올린 사람, 최신 버전 패널(내려받기, 아키텍처·형식·크기·등록일, 바뀐 점, 검사 배지, VirusTotal 검색 링크, SHA-256 복사·확인 방법, 서명 문구), 소개, 이전 버전(접기), "회원이 올린 앱" 안내, 공유 주소 복사, 신고(`<dialog>`). 올린 사람·운영자에게는 정보 고치기·아이콘 바꾸기·앱 지우기·버전마다 '이 버전 지우기'(앱을 지우면 올린 사람은 `/store/mine/`, 운영자는 `/store/manage/` 로), 운영자에게는 '검토 화면' 링크 | 누구나 (검토 중인 앱은 올린 사람·운영자만, 남에게는 404) |
 | `/store/new/` | 올리기: 로그인 → (처음이면) 표시 이름·약관 동의·만 14세 확인 → 파일 놓기/고르기 → 조각 업로드 진행률 → 분석 결과(아이콘·형식·아키텍처·서명·SHA-256·경고)로 채운 양식 → **검토 요청하기** | 회원 |
 | `/store/new/?app=<코드>` | 새 버전 올리기 (버전·아키텍처·바뀐 점만) | 올린 사람 |
 | `/store/mine/` | 내 앱: 상태·반려/숨김 사유·검사 결과·내려받기 수, 새 버전·고치기(`<dialog>`)·아이콘 바꾸기·지우기 | 회원 |
-| `/store/manage/` | 검토: ClamAV 상태, 검토 대기(파일 정보·올린 사람 이메일, 승인·반려·다시 검사·검토용 내려받기·회원 차단), 신고(앱 숨기기·조치함·기각), 최근 공개 앱(숨기기), 숨긴 앱(다시 공개), 차단한 회원(풀기). 30초마다 새로 읽는다 | 운영자 |
+| `/store/manage/` | 검토: ClamAV 상태, 검토 대기(파일 정보·올린 사람 이메일, 승인·반려·다시 검사·검토용 내려받기·회원 차단, **정보 고치기·아이콘 바꾸기·앱 지우기**), 신고(앱 숨기기·조치함·기각), 최근 공개 앱(고치기·숨기기·지우기), 숨긴 앱(고치기·다시 공개·지우기), 차단한 회원(풀기). 30초마다 새로 읽는다. Store·Showroom 목록의 **'검토'** 버튼으로 들어온다 (운영자에게만 보인다) | 운영자 |
 | `/store/terms/` | Store 이용약관 (`content/pages/store-terms.md`) | 누구나 |
 
 - 페이지는 정적 셸이고, 회원 앱은 브라우저에서 `/api/store/` 로 읽는다 (ADR-0012 결정 8). JavaScript 가 꺼져 있으면 공식 앱만 보인다.
@@ -87,14 +89,14 @@
 | `POST /uploads` → `PUT /uploads/{id}?offset=` → `POST /uploads/{id}/complete` | 회원 | 시작(이름·크기, 한도 검사) → 8MB 조각 → 분석(확장자·내용 일치, SHA-256, 같은 파일 경고) |
 | `DELETE /uploads/{id}` | 회원 | 취소 (파일 삭제, 하루 횟수에는 남는다) |
 | `POST /apps`, `POST /apps/{code}/releases` | 회원 | 새 앱 / 새 버전 (검토 대기, 검사 시작) |
-| `PATCH /apps/{code}`, `PUT /uploads/icons/{code}` | 올린 사람 | 글 고치기 / 아이콘 바꾸기(1MB, PNG·JPEG·WebP·ICO → 256px PNG). 아이콘은 nginx 본문 한도 때문에 uploads 경로에 있다 |
-| `DELETE /apps/{code}`, `DELETE /apps/{code}/releases/{id}` | 올린 사람 (앱은 운영자도) | 파일까지 지운다 |
+| `PATCH /apps/{code}`, `PUT /uploads/icons/{code}` | 올린 사람 · 운영자 | 글 고치기 / 아이콘 바꾸기(1MB, PNG·JPEG·WebP·ICO → 256px PNG). 아이콘은 nginx 본문 한도 때문에 uploads 경로에 있다. 차단된 회원은 못 고치고, 운영자가 남의 앱을 고치면 로그에 남긴다(응답에 올린 사람 포함) |
+| `DELETE /apps/{code}`, `DELETE /apps/{code}/releases/{id}` | 올린 사람 · 운영자 | 파일까지 지운다. 차단된 회원도 자기 앱은 지운다. 운영자가 남의 것을 지우면 로그에 "(운영자)" 로 남긴다 |
 | `/admin/…` | 운영자 | overview · releases/{id}/approve·reject·rescan · apps/{code}/hide·unhide · reports/{id}/resolve · publishers/{user_id}/block·unblock |
 
 ### 웹 (`web/`)
 
 - `src/lib/store.ts`: API 클라이언트(조각 업로드는 XMLHttpRequest 로 진행률), 주소 도우미, 불러온 값 저장소(`useSyncExternalStore`)
-- `src/components/store/`: `store-browser` · `store-app-view` · `store-upload` · `store-mine` · `store-manage` · `store-ui`(아이콘·상태·검사 배지·글자 그대로 보이기)
+- `src/components/store/`: `store-browser` · `store-app-view` · `store-upload` · `store-mine` · `store-manage` · `store-edit`(정보 고치기·아이콘 바꾸기·지우기 확인 대화상자, 올린 사람·운영자 공용) · `review-link`(운영자 '검토' 버튼) · `store-ui`(아이콘·상태·검사 배지·글자 그대로 보이기)
 - `src/app/store/{,app,new,mine,manage,terms}/page.tsx`
 - 회원이 쓴 글은 `whitespace-pre-line` 으로 글자만 보인다 (HTML 로 넣지 않는다). 분석 화면의 아이콘 미리보기는 `data:` 그림 (CSP `img-src data:` 허용 범위)
 

@@ -12,12 +12,15 @@ export function Container({ className, children }: { className?: string; childre
   return <div className={cx("mx-auto w-full max-w-page px-4 sm:px-6", className)}>{children}</div>;
 }
 
-type Variant = "primary" | "secondary" | "ghost";
+type Variant = "primary" | "secondary" | "ghost" | "danger";
 
+// 글자색은 한 종류에 하나만 둔다. 뒤에 text-… 를 덧붙이면 CSS 순서에 따라 지기도 한다 (ghost + text-danger 가 회색으로 보였다)
 const VARIANT: Record<Variant, string> = {
   primary: "bg-accent text-accent-ink hover:bg-accent-hover",
   secondary: "border border-line-strong bg-raised text-fg hover:border-fg-subtle",
   ghost: "text-fg-muted hover:bg-raised hover:text-fg",
+  /** 되돌릴 수 없는 동작(지우기)의 여는 버튼. 확인 버튼은 대화상자 안의 bg-danger */
+  danger: "text-danger hover:bg-danger/10",
 };
 
 export function buttonClass(variant: Variant = "primary", size: "md" | "sm" = "md"): string {

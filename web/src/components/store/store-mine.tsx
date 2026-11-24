@@ -1,16 +1,14 @@
 "use client";
 
-import { ImageUp, LoaderCircle, Pencil, Trash2, Upload } from "lucide-react";
+import { Pencil, Trash2, Upload } from "lucide-react";
 import Link from "next/link";
-import { type FormEvent, useEffect, useId, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { loginHref, useSession } from "@/lib/auth";
 import { useIsClient } from "@/lib/bookmarks";
 import { formatBytes } from "@/lib/format";
 import {
   APP_STATUS_LABELS,
-  ICON_ACCEPT,
-  ICON_MAX_BYTES,
   RELEASE_STATUS_LABELS,
   type StoreApp,
   type StoreMeta,
@@ -21,195 +19,15 @@ import {
   useRemote,
 } from "@/lib/store";
 
-import { ButtonLink, buttonClass, cx } from "../ui";
-import { AppIcon, ErrorBox, Loading, Pill, ScanBadge, dialogClass, inputClass, panelClass, statusTone } from "./store-ui";
+import { ButtonLink, buttonClass } from "../ui";
+import { AppEditDialog, type DeleteTarget, DeleteDialog, IconButton } from "./store-edit";
+import { AppIcon, ErrorBox, Loading, Pill, ScanBadge, panelClass, statusTone } from "./store-ui";
+
+const reloadMine = () => loadRemote("mine", storeApi.myApps);
 
 type Mine = { apps: StoreApp[] };
-type Pending = { kind: "app"; app: StoreApp } | { kind: "release"; app: StoreApp; id: number; version: string } | null;
 
-function EditDialog({ app, meta, onClose }: { app: StoreApp; meta: StoreMeta; onClose: () => void }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const ids = { name: useId(), summary: useId(), description: useId(), category: useId() };
-
-  useEffect(() => {
-    ref.current?.showModal();
-  }, []);
-
-  async function submit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const f = new FormData(e.currentTarget);
-    setBusy(true);
-    setError(null);
-    const r = await storeApi.editApp(app.code, {
-      name: String(f.get("name") ?? ""),
-      summary: String(f.get("summary") ?? ""),
-      description: String(f.get("description") ?? ""),
-      category: String(f.get("category") ?? ""),
-    });
-    setBusy(false);
-    if (!r.ok) return setError(r.message);
-    await loadRemote("mine", storeApi.myApps);
-    ref.current?.close();
-  }
-
-  return (
-    <dialog ref={ref} onClose={onClose} aria-labelledby="edit-title" className={cx(dialogClass, "max-w-2xl")}>
-      <h2 id="edit-title" className="text-lg font-semibold">
-        앱 정보 고치기
-      </h2>
-      <p className="mt-1 text-sm text-fg-muted">공개된 앱이면 고친 내용이 바로 보입니다. 파일을 바꾸려면 새 버전을 올리세요.</p>
-      <form onSubmit={submit} className="mt-5 space-y-4">
-        <div>
-          <label htmlFor={ids.name} className="block text-sm font-semibold">
-            앱 이름
-          </label>
-          <input id={ids.name} name="name" required maxLength={80} defaultValue={app.name} className={cx(inputClass, "mt-2 h-11")} />
-        </div>
-        <div>
-          <label htmlFor={ids.summary} className="block text-sm font-semibold">
-            한 줄 소개
-          </label>
-          <input id={ids.summary} name="summary" maxLength={160} defaultValue={app.summary} className={cx(inputClass, "mt-2 h-11")} />
-        </div>
-        <div>
-          <label htmlFor={ids.description} className="block text-sm font-semibold">
-            설명
-          </label>
-          <textarea id={ids.description} name="description" maxLength={5000} rows={6} defaultValue={app.description} className={cx(inputClass, "mt-2 py-3")} />
-        </div>
-        <div>
-          <label htmlFor={ids.category} className="block text-sm font-semibold">
-            분류
-          </label>
-          <select id={ids.category} name="category" defaultValue={app.category} className={cx(inputClass, "mt-2 h-11")}>
-            {Object.entries(meta.categories).map(([v, label]) => (
-              <option key={v} value={v}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </div>
-        {error && (
-          <p role="alert" className="text-sm text-danger">
-            {error}
-          </p>
-        )}
-        <div className="flex flex-wrap justify-end gap-3">
-          <button type="button" onClick={() => ref.current?.close()} className={buttonClass("secondary")}>
-            취소
-          </button>
-          <button type="submit" disabled={busy} className={cx(buttonClass("primary"), "disabled:opacity-60")}>
-            {busy && <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />}
-            저장
-          </button>
-        </div>
-      </form>
-    </dialog>
-  );
-}
-
-function ConfirmDelete({ pending, onClose }: { pending: NonNullable<Pending>; onClose: () => void }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    ref.current?.showModal();
-  }, []);
-
-  async function run() {
-    setBusy(true);
-    setError(null);
-    const r = pending.kind === "app" ? await storeApi.deleteApp(pending.app.code) : await storeApi.deleteRelease(pending.app.code, pending.id);
-    setBusy(false);
-    if (!r.ok) return setError(r.message);
-    await loadRemote("mine", storeApi.myApps);
-    ref.current?.close();
-  }
-
-  return (
-    <dialog ref={ref} onClose={onClose} aria-labelledby="delete-title" className={dialogClass}>
-      <h2 id="delete-title" className="text-lg font-semibold">
-        {pending.kind === "app" ? "앱을 지울까요?" : "이 버전을 지울까요?"}
-      </h2>
-      <p className="mt-2 text-sm leading-relaxed text-fg-muted">
-        {pending.kind === "app" ? (
-          <>
-            <strong className="font-semibold text-fg">{pending.app.name}</strong>과 모든 버전의 파일이 바로 지워지고 되돌릴 수 없습니다.
-          </>
-        ) : (
-          <>
-            <strong className="font-semibold text-fg">
-              {pending.app.name} {pending.version}
-            </strong>{" "}
-            파일이 바로 지워집니다. 마지막 공개 버전이면 앱이 목록에서 빠집니다.
-          </>
-        )}
-      </p>
-      {error && (
-        <p role="alert" className="mt-3 text-sm text-danger">
-          {error}
-        </p>
-      )}
-      <div className="mt-6 flex flex-wrap justify-end gap-3">
-        <button type="button" autoFocus onClick={() => ref.current?.close()} className={buttonClass("secondary")}>
-          취소
-        </button>
-        <button type="button" disabled={busy} onClick={run} className={cx(buttonClass("primary"), "bg-danger text-danger-ink hover:bg-danger/90 disabled:opacity-60")}>
-          {busy && <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />}
-          지우기
-        </button>
-      </div>
-    </dialog>
-  );
-}
-
-/** 아이콘 바꾸기: 파일을 고르면 바로 올린다 */
-function IconButton({ app }: { app: StoreApp }) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const id = useId();
-
-  async function pick(file: File) {
-    if (file.size > ICON_MAX_BYTES) return setError("아이콘 그림은 1MB 까지 올릴 수 있습니다.");
-    setBusy(true);
-    setError(null);
-    const r = await storeApi.uploadIcon(app.code, file);
-    setBusy(false);
-    if (!r.ok) return setError(r.message);
-    await loadRemote("mine", storeApi.myApps);
-  }
-
-  return (
-    <>
-      <label htmlFor={id} className={cx(buttonClass("ghost", "sm"), "cursor-pointer focus-within:outline-2 focus-within:outline-accent", busy && "opacity-60")}>
-        {busy ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : <ImageUp aria-hidden="true" className="size-4" />}
-        아이콘 바꾸기
-        <input
-          id={id}
-          type="file"
-          accept={ICON_ACCEPT}
-          disabled={busy}
-          className="sr-only"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) void pick(file);
-            e.target.value = "";
-          }}
-        />
-      </label>
-      {error && (
-        <p role="alert" className="basis-full text-right text-xs text-danger">
-          {error}
-        </p>
-      )}
-    </>
-  );
-}
-
-function AppRow({ app, onEdit, onDelete }: { app: StoreApp; onEdit: () => void; onDelete: (p: NonNullable<Pending>) => void }) {
+function AppRow({ app, onEdit, onDelete }: { app: StoreApp; onEdit: () => void; onDelete: (p: DeleteTarget) => void }) {
   return (
     <article className={panelClass}>
       <div className="flex flex-wrap items-start gap-4">
@@ -237,8 +55,8 @@ function AppRow({ app, onEdit, onDelete }: { app: StoreApp; onEdit: () => void; 
             <Pencil aria-hidden="true" className="size-4" />
             고치기
           </button>
-          <IconButton app={app} />
-          <button type="button" onClick={() => onDelete({ kind: "app", app })} className={cx(buttonClass("ghost", "sm"), "text-danger")}>
+          <IconButton app={app} onSaved={reloadMine} />
+          <button type="button" onClick={() => onDelete({ kind: "app", app })} className={buttonClass("danger", "sm")}>
             <Trash2 aria-hidden="true" className="size-4" />
             지우기
           </button>
@@ -281,7 +99,7 @@ export function StoreMine() {
   const mine = useRemote<Mine>(signedIn ? "mine" : null);
   const meta = useRemote<StoreMeta>("meta");
   const [editing, setEditing] = useState<StoreApp | null>(null);
-  const [deleting, setDeleting] = useState<Pending>(null);
+  const [deleting, setDeleting] = useState<DeleteTarget | null>(null);
 
   useEffect(() => {
     if (signedIn) void loadRemote("mine", storeApi.myApps);
@@ -319,8 +137,8 @@ export function StoreMine() {
       ) : (
         apps.map((a) => <AppRow key={a.code} app={a} onEdit={() => setEditing(a)} onDelete={setDeleting} />)
       )}
-      {editing && meta?.status === "ready" && <EditDialog app={editing} meta={meta.data} onClose={() => setEditing(null)} />}
-      {deleting && <ConfirmDelete pending={deleting} onClose={() => setDeleting(null)} />}
+      {editing && meta?.status === "ready" && <AppEditDialog app={editing} meta={meta.data} onSaved={reloadMine} onClose={() => setEditing(null)} />}
+      {deleting && <DeleteDialog target={deleting} onDone={reloadMine} onClose={() => setDeleting(null)} />}
     </div>
   );
 }

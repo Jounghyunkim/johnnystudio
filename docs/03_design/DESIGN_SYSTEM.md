@@ -2,7 +2,7 @@
 
 > **상태**: v1. ideation §3-7 "Minimalist Dark" 를 구현했다. 어두운 테마가 기본이고 밝은 테마를 고를 수 있다 (2026-11-06). 로고는 Johnny 로봇 아이콘이다. 브랜드 강조색은 아직 임시값이다 `[확인 필요]`.
 > 원본: [web/src/app/globals.css](../../web/src/app/globals.css) (`@theme`), [web/src/lib/type-style.ts](../../web/src/lib/type-style.ts)
-> **Last Updated**: 2026-11-06
+> **Last Updated**: 2026-11-24
 
 ## 원칙
 
@@ -63,7 +63,7 @@
 | 컴포넌트 | 파일 | 비고 |
 |---|---|---|
 | 헤더·바닥글·메뉴 | `site-header` `site-footer` `nav-links` `studio-link` `account-link` | 모바일 메뉴는 `<details>`. 로그인 상태는 브라우저에서 묻는다. 로그인하면 이메일을 보여 준다: 오른쪽 묶음만 `min-w-0` 으로 줄어들고 이메일이 `truncate` 된다(최대 16rem), 휴대폰은 @ 앞부분 + 메뉴 맨 위에 전체 주소. 가운데 메뉴는 줄바꿈하지 않는다(`shrink-0`), md 폭에서는 "My Studio" 글자를 숨긴다 |
-| 버튼·컨테이너·제목 | `ui.tsx` | `primary` `secondary` `ghost` |
+| 버튼·컨테이너·제목 | `ui.tsx` | `primary` `secondary` `ghost` `danger`(지우기를 여는 버튼, 글자만 빨강). 종류마다 글자색은 하나다. `ghost` 뒤에 `text-danger` 를 덧붙이면 CSS 순서 때문에 회색으로 남는다 (2026-11-24 에 고쳤다) |
 | 배지 | `badges.tsx` | 유형, 상태(점), 초안(점선) |
 | 작품 카드·그리드 | `asset-card.tsx` `asset-cover.tsx` | 카드 전체가 링크, 빠른 실행·★ 는 따로 눌린다 |
 | Library 검색·필터 | `library-browser.tsx` | 검색어·유형·정렬이 주소에 남는다 |

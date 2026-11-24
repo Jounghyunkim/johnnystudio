@@ -89,6 +89,8 @@
 - [x] 화면: `/store/` · `/store/app/` · `/store/new/` · `/store/mine/` · `/store/manage/` · `/store/terms/`, 메뉴 Store
 - [x] Store 목록에 Library 의 공개된 Windows 앱 10개를 '공식'으로 함께 (2026-11-24, 원본은 `content/` 그대로)
 - [x] 개발 서버 운영자 이메일 설정 (`api/.env.local`, 2026-11-24)
+- [x] 운영자 '검토' 버튼(Store·Showroom 목록, 운영자에게만), 운영자가 회원 앱 정보·아이콘 고치기 (검토 화면·앱 상세, 약관 판 `2026-11-24.3`) (2026-11-24)
+- [x] 올린 사람·운영자가 앱·버전 지우기 (내 앱·앱 상세·검토 화면) (2026-11-24)
 - [x] 문서: Store 이용약관(JohnnyStore 문안을 고침), 개인정보처리방침, nginx·systemd·`api.env.example`, deploy/README §3-7
 - [x] 확인: API 테스트 107개, 실제 nginx 로 22개 항목, 헤드리스 Chrome 화면 15장, `check.sh` 통과
 - [ ] 사용자: ADR-0012 확정, 한도 기본값(300MB · 2GB · 24시간 10번)과 신고 보관 기간(1년) 확인

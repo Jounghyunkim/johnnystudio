@@ -1,7 +1,8 @@
 "use client";
 
-import { Download, Flag, LoaderCircle, ShieldAlert, ShieldCheck, Upload } from "lucide-react";
+import { ClipboardCheck, Download, Flag, LoaderCircle, Pencil, ShieldAlert, ShieldCheck, Trash2, Upload } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { type FormEvent, type RefObject, useEffect, useId, useRef, useState } from "react";
 
 import type { ApiResult } from "@/lib/auth";
@@ -25,6 +26,7 @@ import { useLocationSearch } from "@/lib/use-location-search";
 
 import { CopyButton } from "../copy-button";
 import { ButtonLink, ExternalButton, buttonClass, cx } from "../ui";
+import { AppEditDialog, type DeleteTarget, DeleteDialog, IconButton } from "./store-edit";
 import { AppIcon, ErrorBox, Loading, Pill, PlainText, ScanBadge, dialogClass, inputClass, panelClass, statusTone } from "./store-ui";
 
 function ReleaseFacts({ r }: { r: StoreRelease }) {
@@ -56,7 +58,8 @@ function Checksum({ r }: { r: StoreRelease }) {
   );
 }
 
-function ReleasePanel({ r, review }: { r: StoreRelease; review: boolean }) {
+/** onDelete: 올린 사람·운영자에게만 '이 버전 지우기' */
+function ReleasePanel({ r, review, onDelete }: { r: StoreRelease; review: boolean; onDelete?: () => void }) {
   return (
     <section aria-label={`버전 ${r.version}`} className={panelClass}>
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -101,6 +104,17 @@ function ReleasePanel({ r, review }: { r: StoreRelease; review: boolean }) {
           {r.company_name && r.inner_path && " · "}
           {r.inner_path && <>압축 안의 실행 파일: {r.inner_path}</>}
         </p>
+      )}
+      {onDelete && (
+        <div className="mt-4 border-t border-line pt-3">
+          <button
+            type="button"
+            onClick={onDelete}
+            className="inline-flex h-8 items-center gap-1 rounded-full px-3 text-xs font-medium text-fg-subtle hover:bg-raised hover:text-danger"
+          >
+            <Trash2 aria-hidden="true" className="size-3.5" />이 버전 지우기<span className="sr-only">: {r.version}</span>
+          </button>
+        </div>
       )}
     </section>
   );
@@ -222,6 +236,10 @@ export function StoreAppView() {
   const app = useRemote<StoreApp>(key);
   const meta = useRemote<StoreMeta>("meta");
   const reportDialog = useRef<HTMLDialogElement>(null);
+  const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState<DeleteTarget | null>(null);
+  const router = useRouter();
+  const reloadApp = () => (code ? loadRemote(`app:${code}`, () => storeApi.app(code)) : Promise.resolve());
 
   useEffect(() => {
     if (code) void loadRemote(`app:${code}`, () => storeApi.app(code));
@@ -263,6 +281,12 @@ export function StoreAppView() {
 
   const a = app.data;
   const review = Boolean(a.viewer?.owner || a.viewer?.admin) && a.status !== undefined;
+  // 고치기: 올린 사람과 운영자 (API 가 다시 확인한다). 운영자가 남의 앱을 고칠 때는 대화상자에 그렇게 적는다
+  const canEdit = review && meta?.status === "ready";
+  const asAdmin = Boolean(a.viewer?.admin && !a.viewer.owner);
+  const deleteRelease = (r: StoreRelease) => (review ? () => setDeleting({ kind: "release", app: a, id: r.id, version: r.version }) : undefined);
+  // 앱을 지우면 이 주소는 404 가 되므로, 올린 사람은 '내 앱'으로, 운영자는 검토 화면으로 간다
+  const afterDelete = (t: DeleteTarget) => (t.kind === "app" ? router.replace(asAdmin ? "/store/manage/" : "/store/mine/") : reloadApp());
   const [latest, ...older] = a.releases;
   const link = `${window.location.origin}/store/app/?id=${a.code}`;
 
@@ -294,7 +318,7 @@ export function StoreAppView() {
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="min-w-0 space-y-8">
-          {latest ? <ReleasePanel r={latest} review={review && latest.status !== "published"} /> : <p className="text-sm text-fg-muted">내려받을 수 있는 버전이 없습니다.</p>}
+          {latest ? <ReleasePanel r={latest} review={review && latest.status !== "published"} onDelete={deleteRelease(latest)} /> : <p className="text-sm text-fg-muted">내려받을 수 있는 버전이 없습니다.</p>}
 
           {a.description && (
             <section aria-labelledby="about-app">
@@ -310,7 +334,7 @@ export function StoreAppView() {
               <summary className="cursor-pointer px-5 py-4 text-sm font-semibold text-fg-muted hover:text-fg">이전 버전 {older.length}개</summary>
               <div className="space-y-4 px-5 pb-5">
                 {older.map((r) => (
-                  <ReleasePanel key={r.id} r={r} review={review && r.status !== "published"} />
+                  <ReleasePanel key={r.id} r={r} review={review && r.status !== "published"} onDelete={deleteRelease(r)} />
                 ))}
               </div>
             </details>
@@ -344,6 +368,27 @@ export function StoreAppView() {
                 <Upload aria-hidden="true" className="size-4" />새 버전 올리기
               </ButtonLink>
             )}
+            {canEdit && (
+              <>
+                <button type="button" onClick={() => setEditing(true)} className={buttonClass("ghost", "sm")}>
+                  <Pencil aria-hidden="true" className="size-4" />
+                  정보 고치기
+                </button>
+                <IconButton app={a} onSaved={reloadApp} />
+              </>
+            )}
+            {review && (
+              <button type="button" onClick={() => setDeleting({ kind: "app", app: a })} className={buttonClass("danger", "sm")}>
+                <Trash2 aria-hidden="true" className="size-4" />
+                앱 지우기
+              </button>
+            )}
+            {a.viewer?.admin && (
+              <ButtonLink href="/store/manage/" variant="ghost" size="sm">
+                <ClipboardCheck aria-hidden="true" className="size-4" />
+                검토 화면
+              </ButtonLink>
+            )}
             {!a.viewer?.owner && a.status === undefined && meta?.status === "ready" && (
               <button type="button" onClick={() => reportDialog.current?.showModal()} className={buttonClass("ghost", "sm")}>
                 <Flag aria-hidden="true" className="size-4" />
@@ -354,6 +399,8 @@ export function StoreAppView() {
         </aside>
       </div>
 
+      {editing && meta?.status === "ready" && <AppEditDialog app={a} meta={meta.data} asAdmin={asAdmin} onSaved={reloadApp} onClose={() => setEditing(false)} />}
+      {deleting && <DeleteDialog target={deleting} asAdmin={asAdmin} onDone={() => afterDelete(deleting)} onClose={() => setDeleting(null)} />}
       {meta?.status === "ready" && <ReportDialog name={a.name} reasons={meta.data.report_reasons} dialog={reportDialog} send={(body) => storeApi.report(a.code, body)} />}
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Download, EyeOff, LoaderCircle, RotateCw, X } from "lucide-react";
+import { Check, Download, EyeOff, LoaderCircle, Pencil, RotateCw, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
 
@@ -12,6 +12,7 @@ import {
   ARCH_LABELS,
   type AdminOverview,
   type StoreApp,
+  type StoreMeta,
   appHref,
   loadRemote,
   localDate,
@@ -23,9 +24,16 @@ import { SERVICE_STATUS_LABELS, type ShowroomOverview, type ShowroomService, ser
 
 import { OpenLink, ServiceIcon } from "../showroom/showroom-ui";
 import { ButtonLink, buttonClass, cx } from "../ui";
+import { AppEditDialog, type DeleteTarget, DeleteDialog, IconButton } from "./store-edit";
 import { AppIcon, ErrorBox, Loading, Pill, PlainText, ScanBadge, dialogClass, inputClass, panelClass, statusTone } from "./store-ui";
 
 type Ask = { title: string; label: string; action: (reason: string) => Promise<ApiResult<unknown>> } | null;
+/** 운영자가 회원 앱의 정보를 고친다 (null 이면 고치기 버튼을 숨긴다: 분류 목록을 아직 못 읽었다) */
+type OnEdit = ((app: StoreApp) => void) | null;
+/** 운영자가 회원 앱을 지운다 (확인 대화상자를 연다) */
+type OnDelete = (target: DeleteTarget) => void;
+
+const deleteClass = buttonClass("danger", "sm");
 
 // 승인·숨김 뒤에는 Store·Showroom 을 함께 새로 읽는다 (회원 차단은 둘 다에 걸린다)
 const reload = () =>
@@ -98,14 +106,14 @@ function useAction(): [string | null, string | null, (key: string, run: () => Pr
   return [busy, error, act];
 }
 
-function PendingApp({ app, setAsk }: { app: StoreApp; setAsk: (a: Ask) => void }) {
+function PendingApp({ app, setAsk, onEdit, onDelete }: { app: StoreApp; setAsk: (a: Ask) => void; onEdit: OnEdit; onDelete: OnDelete }) {
   const [busy, error, act] = useAction();
   const pending = app.releases.filter((r) => r.status === "pending");
   const owner = app.owner;
   return (
     <article className={panelClass}>
       <div className="flex flex-wrap items-start gap-4">
-        <AppIcon code={app.code} hasIcon={app.has_icon} name={app.name} className="size-14 shrink-0" />
+        <AppIcon code={app.code} hasIcon={app.has_icon} name={app.name} version={app.updated_at} className="size-14 shrink-0" />
         <div className="min-w-0 flex-1">
           <h3 className="flex flex-wrap items-center gap-2 text-lg font-semibold text-fg">
             <Link href={appHref(app.code)} className="hover:underline">
@@ -124,6 +132,7 @@ function PendingApp({ app, setAsk }: { app: StoreApp; setAsk: (a: Ask) => void }
             </details>
           )}
         </div>
+        <EditButtons app={app} onEdit={onEdit} onDelete={onDelete} />
       </div>
 
       <ul className="mt-5 space-y-4 border-t border-line pt-5">
@@ -184,7 +193,28 @@ function PendingApp({ app, setAsk }: { app: StoreApp; setAsk: (a: Ask) => void }
   );
 }
 
-function AppLine({ app, children }: { app: StoreApp; children: ReactNode }) {
+/** 정보 고치기 + 아이콘 바꾸기 + 앱 지우기 (운영자) */
+function EditButtons({ app, onEdit, onDelete }: { app: StoreApp; onEdit: OnEdit; onDelete: OnDelete }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {onEdit && (
+        <>
+          <button type="button" onClick={() => onEdit(app)} className={buttonClass("ghost", "sm")}>
+            <Pencil aria-hidden="true" className="size-4" />
+            정보 고치기
+          </button>
+          <IconButton app={app} onSaved={reload} />
+        </>
+      )}
+      <button type="button" onClick={() => onDelete({ kind: "app", app })} className={deleteClass}>
+        <Trash2 aria-hidden="true" className="size-4" />
+        앱 지우기
+      </button>
+    </div>
+  );
+}
+
+function AppLine({ app, onEdit, onDelete, children }: { app: StoreApp; onEdit: OnEdit; onDelete: OnDelete; children: ReactNode }) {
   return (
     <li className="flex flex-wrap items-center justify-between gap-3 py-3">
       <div className="min-w-0">
@@ -198,12 +228,24 @@ function AppLine({ app, children }: { app: StoreApp; children: ReactNode }) {
           {app.publisher} ({app.owner?.email}) · 내려받기 {app.download_count ?? 0}번{app.status_reason && ` · 사유: ${app.status_reason}`}
         </p>
       </div>
-      <div className="flex gap-2">{children}</div>
+      <div className="flex flex-wrap gap-2">
+        {onEdit && (
+          <button type="button" onClick={() => onEdit(app)} className={buttonClass("ghost", "sm")}>
+            <Pencil aria-hidden="true" className="size-4" />
+            고치기
+          </button>
+        )}
+        {children}
+        <button type="button" onClick={() => onDelete({ kind: "app", app })} className={deleteClass}>
+          <Trash2 aria-hidden="true" className="size-4" />
+          지우기
+        </button>
+      </div>
     </li>
   );
 }
 
-function Overview({ data, setAsk }: { data: AdminOverview; setAsk: (a: Ask) => void }) {
+function Overview({ data, setAsk, onEdit, onDelete }: { data: AdminOverview; setAsk: (a: Ask) => void; onEdit: OnEdit; onDelete: OnDelete }) {
   const [busy, error, act] = useAction();
   const section = "space-y-4";
   const heading = "text-xl font-bold tracking-tight text-fg";
@@ -226,7 +268,7 @@ function Overview({ data, setAsk }: { data: AdminOverview; setAsk: (a: Ask) => v
         <h2 id="pending-title" className={heading}>
           검토 대기 <span className="text-fg-subtle">{data.pending.length}</span>
         </h2>
-        {data.pending.length === 0 ? <p className="text-sm text-fg-muted">검토할 앱이 없습니다.</p> : data.pending.map((a) => <PendingApp key={a.code} app={a} setAsk={setAsk} />)}
+        {data.pending.length === 0 ? <p className="text-sm text-fg-muted">검토할 앱이 없습니다.</p> : data.pending.map((a) => <PendingApp key={a.code} app={a} setAsk={setAsk} onEdit={onEdit} onDelete={onDelete} />)}
       </section>
 
       <section aria-labelledby="reports-title" className={section}>
@@ -284,7 +326,7 @@ function Overview({ data, setAsk }: { data: AdminOverview; setAsk: (a: Ask) => v
         <ul className="divide-y divide-line rounded-card border border-line px-5">
           {data.recent.length === 0 && <li className="py-3 text-sm text-fg-muted">없음</li>}
           {data.recent.map((a) => (
-            <AppLine key={a.code} app={a}>
+            <AppLine key={a.code} app={a} onEdit={onEdit} onDelete={onDelete}>
               <button
                 type="button"
                 onClick={() => setAsk({ title: `${a.name} 숨기기`, label: "숨기는 사유", action: (reason) => storeApi.admin.hide(a.code, reason) })}
@@ -305,7 +347,7 @@ function Overview({ data, setAsk }: { data: AdminOverview; setAsk: (a: Ask) => v
         <ul className="divide-y divide-line rounded-card border border-line px-5">
           {data.hidden.length === 0 && <li className="py-3 text-sm text-fg-muted">없음</li>}
           {data.hidden.map((a) => (
-            <AppLine key={a.code} app={a}>
+            <AppLine key={a.code} app={a} onEdit={onEdit} onDelete={onDelete}>
               <button type="button" disabled={busy !== null} onClick={() => act(`u${a.code}`, () => storeApi.admin.unhide(a.code))} className={cx(buttonClass("ghost", "sm"), "disabled:opacity-60")}>
                 다시 공개
               </button>
@@ -517,7 +559,14 @@ export function StoreManage() {
   const signedIn = session.status === "signed-in";
   const overview = useRemote<AdminOverview>(signedIn ? "admin" : null);
   const showroom = useRemote<ShowroomOverview>(signedIn ? "showroom:admin" : null);
+  const meta = useRemote<StoreMeta>("meta");
   const [ask, setAsk] = useState<Ask>(null);
+  const [editing, setEditing] = useState<StoreApp | null>(null);
+  const [deleting, setDeleting] = useState<DeleteTarget | null>(null);
+
+  useEffect(() => {
+    void loadRemote("meta", storeApi.meta);
+  }, []);
 
   useEffect(() => {
     if (!signedIn) return;
@@ -551,10 +600,12 @@ export function StoreManage() {
   }
   return (
     <>
-      <Overview data={overview.data} setAsk={setAsk} />
+      <Overview data={overview.data} setAsk={setAsk} onEdit={meta?.status === "ready" ? setEditing : null} onDelete={setDeleting} />
       {showroom?.status === "ready" && <ShowroomSections data={showroom.data} setAsk={setAsk} />}
       {showroom?.status === "error" && <ErrorBox error={showroom.error} title="Showroom 검토 목록을 불러오지 못했습니다" />}
       {ask && <ReasonDialog ask={ask} onClose={() => setAsk(null)} />}
+      {editing && meta?.status === "ready" && <AppEditDialog app={editing} meta={meta.data} asAdmin onSaved={reload} onClose={() => setEditing(null)} />}
+      {deleting && <DeleteDialog target={deleting} asAdmin onDone={reload} onClose={() => setDeleting(null)} />}
     </>
   );
 }
