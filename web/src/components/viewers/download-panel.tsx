@@ -1,10 +1,11 @@
-import { Download, ShieldAlert, ShieldCheck, Store } from "lucide-react";
+import { Download, ShieldAlert, ShieldCheck } from "lucide-react";
 
 import { formatBytes, formatDate } from "@/lib/format";
 import { OS_LABELS } from "@/lib/labels";
 import type { Download as DownloadInfo } from "@/lib/schema";
 
 import { CopyButton } from "../copy-button";
+import { MsStoreIcon } from "../ms-store-icon";
 import { ExternalButton, buttonClass, cx } from "../ui";
 
 function fileName(path: string): string {
@@ -26,14 +27,15 @@ export function DownloadPanel({
 }) {
   const store = microsoftStore && (
     <section aria-label="Microsoft Store" className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-line bg-surface p-5 sm:p-6">
-      <div className="flex items-start gap-3">
-        <Store aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-fg-muted" />
+      <div className="flex items-center gap-3">
+        <MsStoreIcon className="size-10" />
         <div>
           <p className="font-semibold text-fg">Microsoft Store</p>
           <p className="mt-1 text-sm text-fg-subtle">Microsoft Store에서도 설치할 수 있습니다.</p>
         </div>
       </div>
       <ExternalButton href={microsoftStore} variant="secondary">
+        <MsStoreIcon className="size-5" />
         Microsoft Store에서 받기
       </ExternalButton>
     </section>

@@ -15,6 +15,7 @@ import type { AssetSummary } from "@/lib/types";
 import { AssetCover } from "./asset-cover";
 import { DraftBadge, StatusBadge, TypeBadge } from "./badges";
 import { StarButton } from "./star-button";
+import { MsStoreIcon } from "./ms-store-icon";
 import { ButtonLink, cx, ExternalButton } from "./ui";
 
 type Landing = Profile["landing"];
@@ -121,6 +122,7 @@ export function FeaturedSpotlight({ asset }: { asset: AssetSummary }) {
           </ButtonLink>
           {asset.quickAction && (
             <ExternalButton href={asset.quickAction.href} variant="secondary">
+              {asset.quickAction.icon === "microsoft-store" && <MsStoreIcon className="size-5" />}
               {asset.quickAction.label}
               <ArrowUpRight aria-hidden="true" className="size-4" />
             </ExternalButton>

@@ -21,6 +21,7 @@ import {
 import type { OfficialStoreApp } from "@/lib/types";
 import { useLocationSearch } from "@/lib/use-location-search";
 
+import { MsStoreIcon } from "../ms-store-icon";
 import { ButtonLink, cx } from "../ui";
 import { ReviewLink } from "./review-link";
 import { AppIcon, ErrorBox, Loading, Pill } from "./store-ui";
@@ -59,6 +60,7 @@ function OfficialCard({ app, categoryLabel }: { app: OfficialStoreApp; categoryL
               rel="noopener noreferrer"
               className="relative z-10 inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2.5 text-xs font-semibold text-accent hover:bg-accent/10 light:hover:text-accent-hover"
             >
+              <MsStoreIcon />
               MS Store
               <ArrowUpRight aria-hidden="true" className="size-3.5" />
               <span className="sr-only">: {app.title} (새 탭에서 열림)</span>

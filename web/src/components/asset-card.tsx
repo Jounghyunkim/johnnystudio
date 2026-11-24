@@ -6,6 +6,7 @@ import type { AssetSummary } from "@/lib/types";
 
 import { AssetCover } from "./asset-cover";
 import { DraftBadge, StatusBadge, TypeBadge } from "./badges";
+import { MsStoreIcon } from "./ms-store-icon";
 import { StarButton } from "./star-button";
 
 /**
@@ -40,6 +41,7 @@ export function AssetCard({ asset, headingLevel = 3 }: { asset: AssetSummary; he
                 rel="noopener noreferrer"
                 className="inline-flex h-9 items-center gap-1 rounded-full px-3 text-sm font-semibold text-accent hover:bg-accent/10 light:hover:text-accent-hover"
               >
+                {asset.quickAction.icon === "microsoft-store" && <MsStoreIcon className="size-[18px]" />}
                 {asset.quickAction.label}
                 <ArrowUpRight aria-hidden="true" className="size-4" />
                 <span className="sr-only">: {asset.title} (새 탭에서 열림)</span>

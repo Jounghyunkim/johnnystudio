@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <!--
+    Microsoft Store 바로가기 아이콘 (JohnnyStudio 에서 그림, 2026-11-24).
+    사용자가 준 Microsoft Store 아이콘 그림(손잡이 달린 가방 + 네 가지 색 사각형)을 보고 단순하게 다시 그렸다.
+    Microsoft Store 링크 옆에서만 쓴다. 색은 이 파일에만 둔다 (컴포넌트에 #hex 를 쓰지 않는다).
+  -->
+  <defs>
+    <linearGradient id="bag" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e1e7ef"/>
+    </linearGradient>
+  </defs>
+  <!-- 손잡이 -->
+  <path d="M17 16v-3.5a7 7 0 0 1 14 0V16" fill="none" stroke="#6c7b8e" stroke-width="3" stroke-linecap="round"/>
+  <!-- 가방 몸통 (밝은 테마의 흰 바탕에서도 보이게 테두리) -->
+  <path d="M6.5 15.5h35V38a5.5 5.5 0 0 1-5.5 5.5H12A5.5 5.5 0 0 1 6.5 38z" fill="url(#bag)" stroke="#a7b2c0" stroke-width="1"/>
+  <!-- 아래 파란 테두리 -->
+  <path d="M6.75 37.5a5.75 5.75 0 0 0 5.75 5.75h23a5.75 5.75 0 0 0 5.75-5.75" fill="none" stroke="#1f6fd1" stroke-width="2"/>
+  <!-- 네 가지 색 사각형 -->
+  <rect x="16.25" y="21.25" width="7" height="7" fill="#f25022"/>
+  <rect x="24.75" y="21.25" width="7" height="7" fill="#7fba00"/>
+  <rect x="16.25" y="29.75" width="7" height="7" fill="#00a4ef"/>
+  <rect x="24.75" y="29.75" width="7" height="7" fill="#ffb900"/>
+</svg>

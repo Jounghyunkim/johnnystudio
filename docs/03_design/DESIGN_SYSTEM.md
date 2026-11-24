@@ -91,6 +91,16 @@
 - 파비콘·홈 화면 아이콘은 Pillow 로 원본 마크에서 만들었다 (2026-11-06). 마크가 바뀌면 다시 만든다.
 - 이미지를 바꿀 때는 파일 이름도 바꾼다 (nginx 가 이미지를 30일 캐시한다).
 
+### 바깥 서비스 아이콘
+
+| 파일 | 쓰는 곳 |
+|---|---|
+| `web/public/brand/microsoft-store.svg` | Microsoft Store 링크 옆에만 (`ms-store-icon.tsx` 의 `MsStoreIcon`): Library 카드의 'MS Store' 바로가기(18px), Store 공식 카드(16px), 작품 상세 다운로드 패널(40px·버튼 20px). 사용자가 준 Microsoft Store 아이콘 그림을 보고 SVG 로 다시 그렸다 (2026-11-24) |
+
+- 로고 색(빨강·초록·파랑·노랑, 흰 가방)은 SVG 파일 안에만 둔다. 컴포넌트에 `#hex` 를 쓰지 않는 규칙의 예외가 아니라, 그림 파일이라 토큰을 거치지 않는다
+- 두 테마 모두에서 보이도록 가방에 옅은 테두리를 둔다. 링크 글자와 함께 쓰므로 `alt=""`
+- Microsoft 의 상표다. Microsoft Store 로 가는 링크를 알아보게 하는 데만 쓴다 [확인 필요: Microsoft 의 공식 배지로 바꿀지]
+
 ## 테마
 
 - **고르는 값**: 어둡게(기본) · 밝게 · 시스템(운영체제 설정). 이 브라우저(localStorage `johnnystudio:theme:v1`)에만 저장한다.

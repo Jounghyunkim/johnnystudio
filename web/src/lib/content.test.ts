@@ -215,12 +215,12 @@ describe("Microsoft Store 주소 (desktop-app 의 microsoftStore)", () => {
     expect(AssetFrontmatter.safeParse({ title: "t", type: "web-app", summary: "t", status: "live", microsoftStore: "https://apps.microsoft.com/detail/9PCP2R7RSDQ8" }).success).toBe(false);
   });
 
-  it("카드에 'MS Store' 바로가기가 생긴다", () => {
+  it("카드에 'MS Store' 바로가기(아이콘과 함께)가 생긴다", () => {
     const asset = {
       slug: "t", html: "", title: "t", summary: "t", status: "live" as const, tags: [], featured: false, draft: false, links: [],
       type: "desktop-app" as const, downloads: [], microsoftStore: "https://apps.microsoft.com/detail/9PCP2R7RSDQ8",
     };
-    expect(toSummary(asset).quickAction).toEqual({ label: "MS Store", href: "https://apps.microsoft.com/detail/9PCP2R7RSDQ8" });
+    expect(toSummary(asset).quickAction).toEqual({ label: "MS Store", href: "https://apps.microsoft.com/detail/9PCP2R7RSDQ8", icon: "microsoft-store" });
     expect(toSummary({ ...asset, microsoftStore: undefined }).quickAction).toBeUndefined();
   });
 });

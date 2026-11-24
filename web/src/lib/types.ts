@@ -6,6 +6,8 @@ import type { AssetStatus, AssetType, LogKind } from "./schema";
 export interface QuickAction {
   label: string;
   href: string;
+  /** 글자 앞에 붙일 아이콘 (지금은 Microsoft Store 만) */
+  icon?: "microsoft-store";
 }
 
 export interface AssetSummary {

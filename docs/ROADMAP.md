@@ -62,7 +62,7 @@
 - [ ] 작품 이미지 (webp), 다운로드 파일 업로드
 - [ ] `profile.yaml` 의 서비스 목록·연락처, About 운영자 소개 (`grep -rn "TODO(content)"`)
 - [x] 뷰어 예시 `sample-*` 5개 지움 (2026-11-24, 커밋 `7ec8ffc` 에 남아 있다)
-- [x] Microsoft Store 주소 (`microsoftStore`): CMG Monitor·Johnny-Dir·WLT·Screen-REC·TakeScreenShot (2026-11-24)
+- [x] Microsoft Store 주소 (`microsoftStore`): CMG Monitor·Johnny-Dir·WLT·Screen-REC·TakeScreenShot (2026-11-24). 카드·상세에 Microsoft Store 아이콘 (`brand/microsoft-store.svg`, 같은 날)
 - [ ] 사용자: JohnnyPlanner·SpaceSense AI 의 Microsoft Store 주소 (받은 주소가 각각 CMG Monitor·Screen-REC 의 것이었다), 나머지 앱(Johnny Mecro·SmartFolder Organizer·SentinelLite-AV)도 있으면
 
 ### 품질 ⏳

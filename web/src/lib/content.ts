@@ -204,7 +204,7 @@ function quickAction(a: Asset): AssetSummary["quickAction"] {
     case "article":
       return a.url ? { label: "읽기", href: a.url } : undefined;
     case "desktop-app":
-      return a.microsoftStore ? { label: "MS Store", href: a.microsoftStore } : undefined;
+      return a.microsoftStore ? { label: "MS Store", href: a.microsoftStore, icon: "microsoft-store" } : undefined;
     default:
       return undefined;
   }
