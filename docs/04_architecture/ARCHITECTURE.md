@@ -1,9 +1,10 @@
 # 아키텍처
 
-> **Last Updated**: 2026-11-22
+> **Last Updated**: 2026-11-24
 > 결정 배경: [ADR-0004](adr/0004-nextjs-static-export.md) (Next.js 정적 내보내기), [ADR-0005](adr/0005-file-based-content.md) (파일 콘텐츠),
 > [ADR-0002](adr/0002-deploy-home-server-nginx.md) · [ADR-0006](adr/0006-cloudflare-tunnel.md) (배포·공개), [ADR-0007](adr/0007-magic-link-auth-api.md) (회원 API·해시 CSP),
-> [ADR-0008](adr/0008-password-login.md) (비밀번호 로그인), [ADR-0009](adr/0009-local-portfolio-manager.md) · [ADR-0010](adr/0010-admin-on-public-dev-server.md) (작품 관리)
+> [ADR-0008](adr/0008-password-login.md) (비밀번호 로그인), [ADR-0009](adr/0009-local-portfolio-manager.md) · [ADR-0010](adr/0010-admin-on-public-dev-server.md) (작품 관리),
+> [ADR-0012](adr/0012-member-store.md) (회원 Store)
 
 ## 1. 한눈에 보기
 
@@ -23,12 +24,15 @@
 
  nginx 127.0.0.1:8081 ─┬─ /            → /opt/johnnystudio/current (정적 파일)
                        ├─ /files/      → /opt/johnnystudio/files
-                       └─ /api/        → FastAPI 127.0.0.1:8082 (systemd: johnnystudio-api, 작업 폴더 api/.venv)
-                                            └─ PostgreSQL 127.0.0.1:5432, DB·역할 johnnystudio (Arkurator DB 와 따로)
-                                            └─ SMTP (로그인 메일, 업체 미정)
+                       ├─ /api/        → FastAPI 127.0.0.1:8082 (systemd: johnnystudio-api, 작업 폴더 api/.venv)
+                       │                    ├─ PostgreSQL 127.0.0.1:5432, DB·역할 johnnystudio (Arkurator DB 와 따로)
+                       │                    ├─ SMTP (로그인 메일, 업체 미정)
+                       │                    └─ /opt/johnnystudio/store (Store 파일), 자식 프로세스: 설치 파일 분석·clamscan
+                       └─ /_store_files/ (internal) ← API 의 X-Accel-Redirect 로만 (Store 내려받기)
 ```
 
-- 공개 페이지는 모두 미리 만든 정적 파일이다. 서버에서 도는 코드는 회원 API(`/api/`) 하나뿐이다.
+- 공개 페이지는 모두 미리 만든 정적 파일이다. 서버에서 도는 코드는 회원·Store API(`/api/`) 하나뿐이다.
+- Store 의 회원 앱은 빌드된 HTML 에 없다. `/store/` 페이지(정적 셸)가 브라우저에서 `/api/store/` 를 읽는다 (§4-1).
 - 같은 nginx 의 Arkurator 백엔드(80/443 → 127.0.0.1:8000)와 포트·DB 가 분리되어 있다.
 
 ## 2. 저장소 구조
@@ -38,14 +42,15 @@ JohnnyStudio/
 ├── web/                    Next.js 앱 (프론트엔드)
 │   ├── src/app/            페이지 (App Router): /, library, library/[slug], log, about, work, studio,
 │   │                       login, login/verify, account, privacy, not-found, admin(page.dev.tsx: 개발 서버 전용)
-│   ├── src/components/     화면 조각. viewers/ 는 유형별 뷰어, auth/ 는 로그인·계정, admin/ 은 작품 관리 화면
-│   ├── src/lib/            schema(콘텐츠 형식) · content(읽기·검증, 서버 전용) · auth(회원 API 클라이언트) · filter · bookmarks …
+│   ├── src/components/     화면 조각. viewers/ 는 유형별 뷰어, auth/ 는 로그인·계정, admin/ 은 작품 관리 화면, store/ 는 회원 Store
+│   ├── src/lib/            schema(콘텐츠 형식) · content(읽기·검증, 서버 전용) · auth(회원 API 클라이언트) · store(Store 클라이언트) · filter · bookmarks …
 │   │                       admin/ (작품 관리: 파일 읽기·쓰기·검사·HTTP 서버·화면 클라이언트)
 │   ├── scripts/            inject-csp.mjs (빌드 뒤 페이지마다 CSP 해시 <meta>), admin/ (관리 CLI·서버 진입점, TS 해석 훅)
 │   ├── public/             robots.txt, media/<slug>/ 이미지
 │   └── out/                빌드 결과 (git 에 넣지 않음)
-├── api/                    회원 API (FastAPI, Python 3.14, uv)
+├── api/                    회원·Store API (FastAPI, Python 3.14, uv)
 │   ├── app/                main(앱·CSRF 검사) · auth(엔드포인트) · db(테이블) · security · mailer · config
+│   │   └── store/          Store: models · router · service · analyze(설치 파일 분석, 자식 프로세스) · scan(ClamAV) · files
 │   └── tests/              pytest (SQLite 기본, JOHNNYSTUDIO_TEST_DATABASE_URL 로 PostgreSQL)
 ├── content/                콘텐츠 원본: assets/*.md, lifelog.yaml, profile.yaml, pages/*.md
 ├── deploy/                 deploy.sh · rollback.sh · nginx/ · cloudflared/ · systemd/ · api.env.example
@@ -58,6 +63,7 @@ JohnnyStudio/
 
 - **서버 컴포넌트가 기본**이다. 빌드할 때 `content/` 를 읽어 HTML 을 만든다. 모든 작품 카드가 HTML 에 들어 있다.
 - **클라이언트 컴포넌트는 상호작용에만** 쓴다.
+- **예외: Store** (ADR-0012). 회원이 올리고 운영자가 승인하는 앱은 빌드 없이 바뀌므로, `/store/…` 는 정적 셸이고 내용은 브라우저에서 `/api/store/` 로 읽는다. 회원이 쓴 글은 글자로만 그린다.
 
   | 컴포넌트 | 하는 일 |
   |---|---|
@@ -110,6 +116,15 @@ JohnnyStudio/
   - Next 개발 프록시는 방문자가 보낸 `X-Real-IP` 를 그대로 넘기므로 개발 API 는 그 헤더를 믿지 않는다 (`JOHNNYSTUDIO_TRUST_PROXY_IP=0`).
 - 설정: 환경 변수 `JOHNNYSTUDIO_*` (`api/app/config.py`). 운영 값은 `/opt/johnnystudio/api.env` (예시 `deploy/api.env.example`)
 
+## 4-1. Store (회원 앱, ADR-0012)
+
+- 회원이 Windows 파일을 8MB 조각으로 올린다 → API 가 확장자·내용 일치를 보고, 자식 프로세스에서 분석(이름·버전·아키텍처·서명 블록·아이콘) → 회원이 양식을 채워 **검토 요청**
+- 응답 뒤에 ClamAV(`clamscan`) 검사가 돈다. 탐지되면 반려하고 파일을 지운다
+- 운영자(`JOHNNYSTUDIO_STORE_ADMINS`)가 `/store/manage/` 에서 승인해야 공개된다. 운영은 '탐지 없음'이어야 승인할 수 있다
+- 내려받기: API 가 공개 여부를 확인하고 `X-Accel-Redirect` 로 nginx 에 넘긴다. 파일 이름은 무작위 키, 응답은 `attachment`·`octet-stream`·`nosniff`·`CSP: sandbox`
+- 데이터: `store_*` 테이블 5개 + `/opt/johnnystudio/store/{uploads,files,icons}`. 회원이 탈퇴하면 그 회원의 앱·파일을 지운다
+- 자세한 것: [Store 기능 명세](../02_planning/features/store.md), 설치: [deploy/README.md §3-7](../../deploy/README.md)
+
 ## 5. 콘텐츠 파이프라인
 
 ```
@@ -150,6 +165,7 @@ Next 개발 서버 rewrites (개발 단계에서만) ──▶ 관리 서버 127
 | 그 밖의 헤더 | `X-Content-Type-Options`, `X-Frame-Options DENY`, `Referrer-Policy`, `Permissions-Policy` |
 | 외부 링크 | 모두 `target="_blank" rel="noopener noreferrer"` (본문 Markdown 의 http(s) 링크는 `content.ts` 의 `renderMarkdown` 이 붙인다) |
 | 웹 패키지 | 별도 출처(샌드박스 도메인)의 iframe, `sandbox` 에 `allow-same-origin` 없음 (Phase 1.5) |
+| Store | 공개는 운영자 승인 뒤. 올린 파일·그림은 자식 프로세스(시간·메모리 한도)에서 파싱, 아이콘은 다시 그린 PNG 만. 내려받기는 internal location + `attachment`·`nosniff`·`CSP: sandbox`. 조각 업로드는 `/api/store/uploads` 만 본문 9m·분당 120회. 신고는 같은 IP 1시간 5번. 남의 파일이 같은 도메인에서 나가는 평판 위험은 ADR-0012 에 기록 (`STORE_FILES_ORIGIN` 으로 옮길 수 있다) |
 | 숨김 파일 | `/.` 로 시작하는 경로는 404 (`.release` 등). `/.well-known/` 만 예외 |
 | 추적 | 추적 쿠키·분석 스크립트 없음. 쿠키는 로그인 세션 하나뿐. Next.js 사용 통계 전송 끔 |
 
@@ -162,6 +178,7 @@ Next 개발 서버 rewrites (개발 단계에서만) ──▶ 관리 서버 127
 | 이미지·폰트 | 30일 | 바꿀 때는 파일명을 바꾼다 |
 | `/files/` | 7일 | 버전마다 파일명이 다르다 |
 | `/api/` | `no-store` (API 가 붙인다) | 로그인 상태는 캐시하지 않는다 |
+| `/_store_files/` (Store 내려받기) | `private, no-store` | 숨기거나 지운 앱을 바로 막는다 |
 
 ## 8. 검사
 
@@ -170,7 +187,7 @@ Next 개발 서버 rewrites (개발 단계에서만) ──▶ 관리 서버 127
 | `tsc` | 타입 (strict, `noUncheckedIndexedAccess`) |
 | `eslint` | Next.js core-web-vitals + TypeScript 규칙 (React Hooks 규칙 포함) |
 | `vitest` | 콘텐츠 형식·완성도(본문 TODO 포함)·이미지 존재·개발 캐시 무효화, 검색·필터, 형식 변환, 즐겨찾기 저장 형식, 회원 클라이언트(토큰·next·오류), CSP 해시 주입, 작품 관리(필드 정보 = 스키마, 새 작품 틀, 주석 보존 쓰기, 만들기·저장·공개·삭제 규칙, 업로드·조각·경로 탈출, HTTP 토큰·형식) |
-| `pytest` (api/) | 가입·링크 재사용·만료, 비밀번호 설정·로그인·재설정·변경(현재 비밀번호, 다른 세션 끊기), 실패 횟수 제한, 해시 저장·재해시, 요청 제한, Origin·JSON 검사, 쿠키 속성, 설정 검사, 개발 DB 스키마 |
+| `pytest` (api/) | 가입·링크 재사용·만료, 비밀번호 설정·로그인·재설정·변경(현재 비밀번호, 다른 세션 끊기), 실패 횟수 제한, 해시 저장·재해시, 요청 제한, Origin·JSON 검사, 쿠키 속성, 설정 검사, 개발 DB 스키마. Store: 올리기→검토→공개→내려받기, X-Accel, 형식·내용 불일치, 조각·한도, ClamAV 탐지·검사 필수, 새 버전, 권한, 신고·숨김·차단, 탈퇴 정리, 아이콘, 설치 파일 분석기(보관본 테스트) |
 | `next build` | 출시 빌드 (초안 제외) + `inject-csp.mjs` |
 | `check_site.py --built` | 빌드 결과: 내부 링크·앵커, `lang`·`title`·`description`·`viewport`, `alt`, 인라인 스타일·이벤트, 외부 리소스, **CSP `<meta>` 와 인라인 스크립트 해시 일치·순서**, 개발 전용 페이지(`/admin/`)가 없는지 |
 | 셸·줄바꿈 | `bash -n`, CRLF 금지 |
@@ -181,6 +198,7 @@ Next 개발 서버 rewrites (개발 단계에서만) ──▶ 관리 서버 127
 > - 2026-11-05: 즐겨찾기, 필터, 사진 확대, 영상, 모바일 메뉴, CSP 아래 동작
 > - 2026-11-05: 회원 가입·로그인·로그아웃·탈퇴 37개 항목 (출시 빌드 + CSP 헤더 + API)
 > - 2026-11-09: 작품 관리 화면 23개 항목 (토큰, 거르기, 만들기→채우기→형식 오류→공개→미리보기→초안→삭제, 20MB 설치 파일 조각 업로드, 390px, 콘솔 오류)
+> - 2026-11-24: Store. 실제 nginx(템플릿) 22개 항목 (조각 본문 한도, X-Accel 헤더·Range, internal), 헤드리스 Chrome 화면 15장 (목록·상세·올리기·내 앱·검토, 밝게·어둡게·390px, CSP)
 
 ## 9. 이후 구조 (ADR-0007 기준)
 

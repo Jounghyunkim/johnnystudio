@@ -4,6 +4,7 @@
  */
 export const NAV = [
   { href: "/library/", label: "Library" },
+  { href: "/store/", label: "Store" }, // 회원이 올린 앱 (ADR-0012)
   { href: "/log/", label: "Life Log" },
   { href: "/work/", label: "Work with me" },
   { href: "/about/", label: "About" },

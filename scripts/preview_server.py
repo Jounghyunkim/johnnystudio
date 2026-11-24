@@ -3,7 +3,9 @@
 
 운영 nginx(deploy/nginx/johnnystudio.conf)를 흉내 낸다.
   - web/out 의 정적 파일을 내준다. 없는 주소는 404.html (nginx 의 error_page 404)
-  - 보안 헤더(CSP 포함)는 nginx 설정 파일의 add_header 를 그대로 읽어서 붙인다 → 설정이 한 곳에만 있다
+  - 보안 헤더(CSP 포함)는 nginx 설정 파일의 add_header … always; 줄을 그대로 읽어서 붙인다 → 설정이 한 곳에만 있다
+    (always 가 없는 add_header 는 읽지 않는다: Store 내려받기 전용 location 의 헤더)
+  - Store 내려받기는 API 가 직접 보낸다 (X-Accel-Redirect 를 쓰지 않는 개발 설정)
   - /api/ 는 로컬 API 로 넘긴다 (X-Real-IP 를 붙이고 X-Forwarded-For 는 넘기지 않는다)
 
 Python 표준 라이브러리만 쓴다. 개발용이다. 운영에 쓰지 않는다.
@@ -102,6 +104,12 @@ class Handler(SimpleHTTPRequestHandler):
         self._route(static=True)
 
     def do_POST(self) -> None:
+        self._route(static=False)
+
+    def do_PUT(self) -> None:  # Store 조각 업로드
+        self._route(static=False)
+
+    def do_PATCH(self) -> None:
         self._route(static=False)
 
     def do_DELETE(self) -> None:

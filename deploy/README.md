@@ -1,7 +1,8 @@
 # 배포 가이드: 홈 서버 M8 (nginx + Cloudflare Tunnel)
 
-> **Last Updated**: 2026-11-06
+> **Last Updated**: 2026-11-24
 > **상태**: 서버 설정 전. 도메인이 정해지면 §2 → §3 → §4 순서로 진행한다. 로그인을 쓰지 않을 동안은 §3 을 미뤄도 된다.
+> Store(회원 앱, [ADR-0012](../docs/04_architecture/adr/0012-member-store.md))는 §3 다음에 §3-7 을 한다.
 > 결정 배경: [ADR-0002](../docs/04_architecture/adr/0002-deploy-home-server-nginx.md) (릴리스 + current),
 > [ADR-0006](../docs/04_architecture/adr/0006-cloudflare-tunnel.md) (Cloudflare Tunnel), [ADR-0007](../docs/04_architecture/adr/0007-magic-link-auth-api.md) · [ADR-0008](../docs/04_architecture/adr/0008-password-login.md) (회원 API)
 
@@ -18,6 +19,7 @@
 │   └── 20261106-101500/
 ├── current → releases/20261106-101500    ← nginx root. 이 링크만 바꿔서 배포·롤백한다
 ├── files/                   ← 다운로드 파일 (exe·zip·사진). 배포와 상관없이 유지된다 → /files/
+├── store/                   ← Store 에 회원이 올린 파일 (uploads·files·icons). API 만 쓴다. 바깥에서 직접 열 수 없다
 └── api.env                  ← 회원 API 운영 설정·비밀값 (권한 600, 커밋하지 않는다)
 ```
 
@@ -27,7 +29,7 @@
 | `rollback.sh` | `current` 를 이전 릴리스(또는 지정한 릴리스)로 되돌린다 |
 | `nginx/johnnystudio.conf` | nginx 사이트 설정 템플릿 (`__DOMAIN__` 을 실제 도메인으로 바꿔서 쓴다) |
 | `cloudflared/config.yml.example` | Cloudflare Tunnel 설정 예시 |
-| `systemd/johnnystudio-api.service` | 회원 API 서비스 (작업 폴더의 `api/.venv` 에서 uvicorn, 127.0.0.1:8082) |
+| `systemd/johnnystudio-api.service` | 회원·Store API 서비스 (작업 폴더의 `api/.venv` 에서 uvicorn, 127.0.0.1:8082). `/opt/johnnystudio/store` 에만 쓸 수 있다 |
 | `api.env.example` | 회원 API 운영 설정 예시 → `/opt/johnnystudio/api.env` |
 
 ## 2. 서버 1회 설정
@@ -161,6 +163,44 @@ sudo systemctl restart johnnystudio-api
 3. 로그아웃한 뒤 `/login/` 에서 이메일 + 비밀번호로 로그인된다. 이때는 메일이 필요 없다
 4. `/login/reset/` 으로 재설정 메일이 오고, 새 비밀번호를 정할 수 있다. `/account/` 에서 비밀번호 변경·로그아웃·탈퇴가 된다
 
+### 3-7. Store (회원 앱 올리기) 1회 설정
+
+회원이 올린 파일은 운영자가 승인해야 공개되고, 승인하려면 ClamAV 검사 결과가 '탐지 없음'이어야 한다 (운영 기본값).
+흐름과 결정 배경: [Store 기능 명세](../docs/02_planning/features/store.md), [ADR-0012](../docs/04_architecture/adr/0012-member-store.md).
+
+```bash
+# 1) 파일 폴더 (API 서비스 계정만 쓴다)
+sudo install -d -m 750 -o jounghyun-kim -g jounghyun-kim /opt/johnnystudio/store
+
+# 2) ClamAV: clamscan 과 시그니처 자동 갱신(freshclam). 상주 검사 데몬(clamd)은 쓰지 않는다
+sudo apt install clamav clamav-freshclam
+systemctl status clamav-freshclam --no-pager    # active (running), 첫 시그니처 내려받기에 몇 분 걸린다
+clamscan --version                               # ClamAV 1.x/<시그니처 번호>/<날짜>
+
+# 3) api.env 에 운영자 이메일 (가입한 계정의 주소). 나머지 Store 값은 기본값이면 된다 (api.env.example)
+#    JOHNNYSTUDIO_STORE_ADMINS=운영자@example.com
+
+# 4) nginx 템플릿을 다시 설치한다 (§2-3). /api/store/uploads 와 /_store_files/ 가 새로 들어 있다
+# 5) API 서비스 설정을 다시 설치한다 (ReadWritePaths 가 새로 들어 있다)
+sudo install -m 644 deploy/systemd/johnnystudio-api.service /etc/systemd/system/
+sudo systemctl daemon-reload && sudo systemctl restart johnnystudio-api
+```
+
+확인 (서버 안에서):
+
+```bash
+curl -s -H "Host: $DOMAIN" http://127.0.0.1:8081/api/store/meta    # "scanner":true, "scan_required":true
+```
+
+1. 일반 회원으로 `/store/new/` 에서 표시 이름·약관 동의 → 설치 파일 하나를 올린다 → "접수했습니다"
+2. 운영자 계정으로 `/store/manage/` → 검사 결과가 '탐지 없음'인지 본다 → **승인하고 공개**
+3. 로그아웃한 브라우저에서 `/store/` 에 앱이 보이고, 내려받은 파일의 SHA-256 이 화면 값과 같다
+4. 내려받기 응답 헤더: `curl -sI -H "Host: $DOMAIN" "http://127.0.0.1:8081/api/store/apps/<코드>/releases/<번호>/download"` →
+   `content-type: application/octet-stream`, `content-disposition: attachment; …`, `x-content-type-options: nosniff`
+5. `http://127.0.0.1:8081/_store_files/<아무 값>` 은 404 (바깥에서 직접 열 수 없다)
+
+문제가 생기면 `JOHNNYSTUDIO_STORE_UPLOADS_OPEN=0` 으로 새 업로드를 막고 API 를 다시 시작한다. 이미 공개된 앱은 그대로 받을 수 있다.
+
 ## 4. Cloudflare Tunnel 로 공개
 
 > 먼저 도메인의 DNS(네임서버)를 Cloudflare 로 옮겨 둔다. 명령과 패키지 이름은 Cloudflare 문서로 한 번 더 확인한다 `[확인 필요]`.
@@ -233,6 +273,8 @@ install -D -m 644 ~/build/hw-monitor-1.2.0-setup.exe /opt/johnnystudio/files/har
 - [ ] 모바일 화면 확인 (가로 스크롤 없음), 키보드만으로 메뉴·검색·즐겨찾기·사진 보기
 - [ ] 회원: 메일 발송 설정(§3-5)과 실제 메일 수신 확인, 개인정보처리방침의 운영자·연락처·발송 업체 채우기 (`content/pages/privacy.md`)
 - [ ] 회원: DB 백업 방법 정하기 (`pg_dump` 주기, 외부 사본 1부, 보관 기간 → 개인정보처리방침 §4) `[확인 필요]`
+- [ ] Store: §3-7 확인 1~5, Store 이용약관(`content/pages/store-terms.md`)의 운영자·연락처·시행일 채우기, 법률 검토 여부 `[확인 필요]`
+- [ ] Store: `/opt/johnnystudio/store` 백업을 DB 백업과 같은 주기로 (파일과 DB 행이 함께 있어야 한다) `[확인 필요]`
 - [ ] (선택) 검색엔진 등록: Google Search Console, 네이버 서치어드바이저
 
 ## 8. 문제 해결

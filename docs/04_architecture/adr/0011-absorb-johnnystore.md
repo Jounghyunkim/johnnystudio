@@ -1,6 +1,6 @@
 # ADR-0011: JohnnyStore 를 JohnnyStudio 로 흡수하고, 파일을 올리는 사람은 운영자뿐이다
 
-- **상태**: 채택됨
+- **상태**: 일부 대체됨 (→ ADR-0012: 결정 2·6, 결정 4 의 신고·관리자·이용약관)
 - **날짜**: 2026-11-22 (한 세션에서 Q1·Q3·Q4·Q8, 이어서 Q2·Q5·Q6·Q7·Q9 답을 받아 커밋 전에 함께 확정했다)
 - **관련**: [JohnnyStore 통합 검토](../../02_planning/features/johnnystore-integration.md), [ideation §8](../../ideation.md) (하지 않을 것), [ADR-0005](0005-file-based-content.md) (파일 콘텐츠),
   [ADR-0007](0007-magic-link-auth-api.md) · [ADR-0008](0008-password-login.md) (회원 API, 인증 단일 권위), [ADR-0009](0009-local-portfolio-manager.md) (작품 관리 도구)

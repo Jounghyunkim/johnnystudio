@@ -157,3 +157,7 @@ class Database:
     def session(self) -> Iterator[Session]:
         with self._sessions() as s:
             yield s
+
+    def new_session(self) -> Session:
+        """요청 밖(뒤에서 도는 작업)에서 쓸 세션. with 문으로 쓴다"""
+        return self._sessions()

@@ -1,6 +1,6 @@
 # JohnnyStudio 포털 로드맵
 
-> **Last Updated**: 2026-11-23
+> **Last Updated**: 2026-11-24
 > 제품 단계(Phase 1~4)는 [ideation.md](ideation.md) §6 을 따른다.
 
 ## 현재 위치
@@ -10,6 +10,7 @@
 코드는 GitHub `Jounghyunkim/johnnystudio` 에 올렸다 (2026-11-06). CI 는 아직 없다.
 **작품 등록·관리 도구**를 만들었다 (2026-11-09, [ADR-0009](04_architecture/adr/0009-local-portfolio-manager.md)): `dev.sh` 의 관리 화면 `/admin/` 과 CLI 로 작품을 만들고, 채우고, 공개한다. 콘텐츠 채우기(아래 2번)는 이 도구로 한다.
 **JohnnyStore 를 흡수하기로 했다** (2026-11-22, [통합 문서](02_planning/features/johnnystore-integration.md), [ADR-0011](04_architecture/adr/0011-absorb-johnnystore.md)). 파일을 올리는 사람은 운영자뿐이다. 스토어의 Windows 앱 9개를 작품으로 옮겨 공개했다 (공개 작품 10개). 스토어 서비스와 저장소(`../johnnystore`)는 보관본을 남기고 지웠다. 다음은 설치 파일 분석·ClamAV 검사(S2) (아래 "JohnnyStore 통합").
+**회원 Store 를 만들었다** (2026-11-24, [ADR-0012](04_architecture/adr/0012-member-store.md) 제안됨, [기능 명세](02_planning/features/store.md)): 메뉴 Store(`/store/`), 회원이 Windows 앱을 올리면 ClamAV 검사와 운영자 승인을 거쳐 공개된다. ADR-0011 의 '운영자만 올린다'를 바꿨다. 운영 서버 설정(§3-7)이 남았다 (아래 "Store").
 남은 일은 다음 네 가지다.
 
 1. ideation §9 열린 질문에 답한다 (§9-6 큰 파일 배포 채널은 답함: 홈 서버만)
@@ -77,9 +78,27 @@
 - [x] GitHub 원격 저장소 연결 (2026-11-06, `Jounghyunkim/johnnystudio`, `main` push 완료. 공개 여부 확인 전)
 - [ ] CI 로 `scripts/check.sh` 실행 (참고: [pixtuoid 검토](02_planning/features/pixtuoid.md) §3 D)
 
-## JohnnyStore 통합 ⏳ (결정 완료, 구현 전)
+## Store (회원 앱) ⏳ (구현 완료, 운영 설정 전)
+
+> [기능 명세](02_planning/features/store.md) · [ADR-0012](04_architecture/adr/0012-member-store.md) (제안됨): 회원이 올린 Windows 앱을 운영자가 승인한 뒤 공개한다. 파일은 지금은 같은 도메인에서 낸다.
+
+- [x] 결정 (2026-11-24, 사용자): 운영자 승인 후 공개, Windows 파일 내려받기만, 지금은 johnnystudio.net, 메뉴 이름 Store → ADR-0012
+- [x] API `api/app/store/`: 조각 업로드, 설치 파일 분석(JohnnyStore `pe_extractor`, 자식 프로세스), ClamAV, 검토·숨김·차단·신고, X-Accel 내려받기, 아이콘 바꾸기, 탈퇴 정리. 의존성 4개 추가 (pefile·icoextract·pillow·olefile)
+- [x] 화면: `/store/` · `/store/app/` · `/store/new/` · `/store/mine/` · `/store/manage/` · `/store/terms/`, 메뉴 Store
+- [x] 문서: Store 이용약관(JohnnyStore 문안을 고침), 개인정보처리방침, nginx·systemd·`api.env.example`, deploy/README §3-7
+- [x] 확인: API 테스트 107개, 실제 nginx 로 22개 항목, 헤드리스 Chrome 화면 15장, `check.sh` 통과
+- [ ] 사용자: ADR-0012 확정, 한도 기본값(300MB · 2GB · 24시간 10번)과 신고 보관 기간(1년) 확인
+- [ ] 사용자: 개발 서버에서 승인해 보려면 `api/.env.local` 에 `JOHNNYSTUDIO_STORE_ADMINS=<가입한 이메일>` (지금은 비어 있어 아무도 승인할 수 없다)
+- [ ] 사용자: Store 이용약관의 운영자 이름·연락처·시행일 (`TODO(content)`), 법률 검토 여부 `[확인 필요]`
+- [ ] 운영 서버 설정 (deploy/README §3-7, sudo: 사용자): `/opt/johnnystudio/store`, `sudo apt install clamav clamav-freshclam`, 운영자 이메일, nginx·systemd 다시 설치, 확인 1~5
+- [ ] Store 파일 백업 (DB 백업과 같은 주기) `[확인 필요]`
+- [ ] (재검토 조건이 생기면) 공개 내려받기를 별도 등록 도메인으로: `JOHNNYSTUDIO_STORE_FILES_ORIGIN` + 그 도메인의 nginx server 블록
+- [ ] (나중에) 공유 키트(바로 받기 링크·배지·QR)를 Store 앱에도
+
+## JohnnyStore 통합 ⏳ (S1·S5 완료)
 
 > [통합 문서](02_planning/features/johnnystore-integration.md) · [ADR-0011](04_architecture/adr/0011-absorb-johnnystore.md): JohnnyStudio 기준으로 흡수하고, 파일을 올리는 사람은 운영자뿐이다.
+> 2026-11-24 에 회원 업로드를 운영자 승인제로 받기로 바꿨다 (S5 → 위 "Store", ADR-0012).
 > S1 이 위 "콘텐츠"의 데스크톱 앱을 채운다 (초안 `ssh-terminal`·`hardware-monitor` 는 스토어의 WLT·CMG Monitor 로 대신한다).
 
 - [x] 검토: 두 서비스 비교, 철학 충돌(누가 올리나), 일원화 방식, 구조, 보안·운영, 단계 계획 (2026-11-22)
@@ -89,11 +108,11 @@
 - [x] 스토어 종료·저장소 제거: 전체를 `~/workspace/backup/johnnystore/johnnystore-20261122.tar.gz` 로 보관·확인한 뒤 지웠다 (통합 문서 §3-3)
 - [x] S0 준비: JohnnyStudio 미커밋 작업 커밋 (2026-11-22, 작품 관리 `f336188` + 통합 문서)
 - [x] S1 콘텐츠 이관 (2026-11-22): 보관본의 앱 9개 → `content/assets/` → 공개 (운영 중, 2026-11-16). 설치 파일 SHA-256 9개 일치. S2 의 앱 아이콘(`icon`)도 앞당겨 넣었다
-- [ ] S2 배포 엔진: 설치 파일 분석(`api/app/binaries/`)·ClamAV 검사를 관리 도구에, 상세 화면에 아키텍처·검사 결과, OG (ADR-0012). 먼저 사용자가 `sudo apt install clamav`. 앱 9개는 ClamAV 설치 뒤 한 번에 검사
+- [ ] S2 배포 엔진: 설치 파일 분석·ClamAV 검사를 관리 도구에, 상세 화면에 아키텍처·검사 결과, OG (ADR-0013 예정). 분석기·검사 모듈은 Store 에서 먼저 만들었다(`api/app/store/analyze.py`·`scan.py`). 관리 서버가 부르는 연결이 남았다. 먼저 사용자가 `sudo apt install clamav`. 앱 9개는 ClamAV 설치 뒤 한 번에 검사
 - [ ] S3 공유 키트: `/d/<slug>/`, 배지, QR (도메인 확정 뒤)
 - [x] GitHub 저장소 삭제 (2026-11-22, 먼저 bundle 로 보관)
-- [ ] 마무리: S2 이식 뒤 보관본(tar.gz·bundle) 삭제. 공유기 4000 포트는 JohnnyStudio 개발 서버가 쓴다 (인터넷 공개 개발을 끝내면 닫는다)
-- 비공개 공유(테스터·의뢰인)는 Phase 3 Client Room 에서, 누구나 업로드는 하지 않는다 (ADR-0011)
+- [ ] 마무리: S2 이식 뒤 보관본(tar.gz·bundle) 삭제 (분석기·약관 문안은 Store 로 옮겼다). 공유기 4000 포트는 JohnnyStudio 개발 서버가 쓴다 (인터넷 공개 개발을 끝내면 닫는다)
+- 비공개 공유(테스터·의뢰인)는 Phase 3 Client Room 에서 (ADR-0011 결정 5). 회원 업로드는 Store 에서 운영자 승인제로 (ADR-0012)
 
 ## Phase 1.5: 웹 패키지 샌드박스 (선택)
 

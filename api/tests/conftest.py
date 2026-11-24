@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import re
+import struct
 from collections.abc import Iterator
 from dataclasses import replace
 
@@ -65,3 +66,17 @@ def client(settings: Settings, mailer: FakeMailer) -> Iterator[TestClient]:
 def strict_client(settings: Settings, mailer: FakeMailer) -> Iterator[TestClient]:
     """요청 횟수 제한을 낮춘 클라이언트"""
     yield from make_client(replace(settings, email_limit=2, ip_limit=3), mailer)
+
+
+def make_pe(machine: int = 0x8664, payload: bytes = b"") -> bytes:
+    """리소스 없는 최소 PE 이미지 (아키텍처 판별·시그니처 검증용). 출처: johnnystore 6dc01fe (보관본) tests/conftest.py"""
+    plus = machine in (0x8664, 0xAA64)
+    dos = bytearray(64)
+    dos[0:2] = b"MZ"
+    struct.pack_into("<I", dos, 0x3C, 64)
+    opt = bytearray(240 if plus else 224)
+    struct.pack_into("<H", opt, 0, 0x20B if plus else 0x10B)
+    struct.pack_into("<H", opt, 68, 2)  # Subsystem = GUI
+    struct.pack_into("<I", opt, 108 if plus else 92, 16)  # NumberOfRvaAndSizes
+    coff = struct.pack("<HHIIIHH", machine, 0, 0, 0, 0, len(opt), 0x0022 if plus else 0x0102)
+    return bytes(dos) + b"PE\x00\x00" + coff + bytes(opt) + b"\x00" * 256 + payload

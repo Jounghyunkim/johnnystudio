@@ -5,13 +5,18 @@
 [project]
 name = "johnnystudio-api"
 version = "0.1.0"
-description = "JohnnyStudio 포털 API: 매직 링크 회원 가입·로그인"
+description = "JohnnyStudio 포털 API: 회원(이메일 인증·비밀번호)과 Store(회원 앱 업로드·검토·내려받기)"
 requires-python = ">=3.13"
 dependencies = [
     "fastapi==0.159.1",
     "uvicorn==0.54.0",
     "sqlalchemy==2.1.6",
     "psycopg[binary]==3.3.6", # 운영 DB (PostgreSQL). 개발·테스트는 SQLite
+    # Store 설치 파일 분석 (app/store/inspect.py, ADR-0012). JohnnyStore 의 pe_extractor 를 옮겼다
+    "pefile==2024.8.26",  # exe: 아키텍처·버전 정보·서명 블록
+    "icoextract==0.3.1",  # exe: 아이콘 꺼내기
+    "pillow==13.0.0",  # 아이콘을 256px PNG 로 다시 그리기 (올라온 그림을 그대로 내주지 않는다)
+    "olefile==0.47",  # msi: 제품명·제조사·플랫폼
 ]
 
 [dependency-groups]
@@ -21,11 +26,15 @@ dev = [
 ]
 
 [tool.uv]
-exclude-newer = "2026-10-22T00:00:00Z"
+exclude-newer = "2026-11-10T00:00:00Z"
 package = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
 # Starlette 가 httpx2 를 권하지만, httpx2 는 낯선 하위 패키지를 함께 들여와서 검증된 httpx 0.28 을 쓴다
-filterwarnings = ["ignore:Using `httpx` with `starlette.testclient` is deprecated"]
+filterwarnings = [
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated",
+    # icoextract 0.3.1 의 ctypes 구조체 경고 (Python 3.19 에서 오류가 된다). 통합 검토 문서 X9 에 기록, 그때 대안을 본다
+    "ignore:Due to '_pack_':DeprecationWarning",
+]

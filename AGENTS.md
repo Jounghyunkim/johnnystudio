@@ -3,7 +3,7 @@
 > 이 저장소에서 일하는 **모든 AI 코딩 도구**(Claude Code, Codex, Gemini, Cursor 등)의 공통 규칙이다.
 > Claude Code 는 `CLAUDE.md` 가 이 파일을 불러온다. 규칙을 바꿀 때는 **이 파일만** 고친다. ([ADR-0003](docs/04_architecture/adr/0003-ai-collaboration-docs.md))
 >
-> **Last Updated**: 2026-11-09
+> **Last Updated**: 2026-11-24
 
 ## 1. 프로젝트 요약
 
@@ -12,6 +12,7 @@ JohnnyStudio 의 **포털(허브) 웹사이트**다. 정현 님이 만든 모든
 
 - **현재 단계**: Phase 1(공개 허브) 구현 완료. Phase 2 의 회원 가입·로그인(매직 링크, `api/`)을 구현했고 서버 설치·메일 설정이 남았다.
   작품 등록·관리는 개발 서버 전용 관리 화면(`/admin/`)과 CLI 로 한다 (2026-11-09).
+  회원이 Windows 앱을 올리고 운영자가 승인하면 공개되는 **Store**(`/store/`, `api/app/store/`)를 만들었다 (2026-11-24, [ADR-0012](docs/04_architecture/adr/0012-member-store.md) 제안됨).
   남은 일은 실제 콘텐츠 채우기와 도메인·Tunnel 공개다. 진행 상황은 [docs/ROADMAP.md](docs/ROADMAP.md).
 - **기획의 기준**: [docs/ideation.md](docs/ideation.md) v2 (네 구역·원칙·리스크·단계 계획)와 [docs/01_vision/PHILOSOPHY.md](docs/01_vision/PHILOSOPHY.md) 초안 v1.
   둘 다 사용자 확인 전이다. 기획안이 ADR 과 다르면 ADR 이 우선한다. 바꾸려면 새 ADR 을 쓴다.
@@ -27,8 +28,8 @@ JohnnyStudio 의 **포털(허브) 웹사이트**다. 정현 님이 만든 모든
 
 | 경로 | 용도 |
 |---|---|
-| `web/` | **Next.js 앱.** `src/app` 페이지, `src/components` 화면 조각(`viewers/` 유형별 뷰어, `auth/` 로그인·계정, `admin/` 작품 관리), `src/lib` 스키마·콘텐츠 읽기·로직(`admin/` 작품 관리 서버·파일 쓰기), `scripts/inject-csp.mjs`, `scripts/admin/` 관리 CLI, `public/` 이미지 |
-| `api/` | **회원 API (FastAPI, Python 3.14, uv).** `app/` 엔드포인트·DB·메일·설정, `tests/` pytest. 구조: [ADR-0007](docs/04_architecture/adr/0007-magic-link-auth-api.md) |
+| `web/` | **Next.js 앱.** `src/app` 페이지, `src/components` 화면 조각(`viewers/` 유형별 뷰어, `auth/` 로그인·계정, `admin/` 작품 관리, `store/` 회원 Store), `src/lib` 스키마·콘텐츠 읽기·로직(`admin/` 작품 관리 서버·파일 쓰기), `scripts/inject-csp.mjs`, `scripts/admin/` 관리 CLI, `public/` 이미지 |
+| `api/` | **회원·Store API (FastAPI, Python 3.14, uv).** `app/` 엔드포인트·DB·메일·설정, `app/store/` Store(업로드·분석·ClamAV·검토), `tests/` pytest. 구조: [ADR-0007](docs/04_architecture/adr/0007-magic-link-auth-api.md), [ADR-0012](docs/04_architecture/adr/0012-member-store.md) |
 | `content/` | **콘텐츠 원본.** `assets/<slug>.md`(작품), `lifelog.yaml`, `profile.yaml`, `pages/<slug>.md`(개인정보처리방침 등). 형식: `web/src/lib/schema.ts` |
 | `docs/` | 기획·설계 문서. "지금 어떻게 되어 있나"를 쓴다 (항상 최신으로 고쳐 쓴다) |
 | `docs/04_architecture/adr/` | 결정 기록(ADR). "왜 이렇게 정했나"를 쓴다 |
@@ -62,7 +63,7 @@ npm --prefix web run admin -- list|check [slug]|new <slug> --type … --title �
 
 - Next.js 16 App Router + TypeScript(strict) + Tailwind CSS 4. **웹은 정적 내보내기**(`output: "export"`)다.
   서버가 필요한 기능(API 라우트, 미들웨어, ISR, `next/image` 최적화, `cookies()`·`headers()`)은 쓰지 않는다.
-- 서버가 필요한 일(회원·인증)은 **`api/` 의 FastAPI 만** 맡는다 (인증 단일 권위). 웹은 같은 출처의 `/api/` 를 `fetch` 로 부른다 ([ADR-0007](docs/04_architecture/adr/0007-magic-link-auth-api.md)).
+- 서버가 필요한 일(회원·인증, Store)은 **`api/` 의 FastAPI 만** 맡는다 (인증 단일 권위). 웹은 같은 출처의 `/api/` 를 `fetch` 로 부른다 ([ADR-0007](docs/04_architecture/adr/0007-magic-link-auth-api.md)).
 - Python 의존성도 정확한 버전으로 고정한다. `api/pyproject.toml` 의 `exclude-newer` 가 "2주 이상" 규칙을 지킨다.
 - 새 의존성은 꼭 필요할 때만 들인다. **정확한 버전으로 고정**하고, **나온 지 2주 이상 된 버전 중 최신**을 고른다. 추가한 이유는 dev_history 에 쓴다.
 - Next.js 사용 통계는 끈다 (`NEXT_TELEMETRY_DISABLED=1`, 스크립트에 이미 들어 있다).
@@ -70,7 +71,7 @@ npm --prefix web run admin -- list|check [slug]|new <slug> --type … --title �
 ### 렌더링
 
 - **서버 컴포넌트가 기본**이다. `"use client"` 는 상호작용(검색·필터, 즐겨찾기, 영상, 사진 확대, 복사, 메뉴)에만 쓴다.
-- **콘텐츠는 빌드된 HTML 에 들어 있어야 한다.** 클라이언트에서 콘텐츠를 불러오지 않는다. 정적 내보내기에서 `useSearchParams` 를 쓰지 않는다
+- **콘텐츠는 빌드된 HTML 에 들어 있어야 한다.** 클라이언트에서 콘텐츠를 불러오지 않는다. 예외는 **Store 의 회원 앱**뿐이다 (빌드 없이 바뀌므로 `/api/store/` 에서 읽는다, ADR-0012). 정적 내보내기에서 `useSearchParams` 를 쓰지 않는다
   (`lib/use-location-search.ts` 를 쓴다).
 - `"use client"` 파일에서 **값**(배열·객체)을 내보내 서버 컴포넌트에서 쓰지 않는다. 공유할 값은 `src/lib/` 에 둔다.
 - `src/lib/content.ts` 는 서버 전용(fs)이다. 클라이언트 컴포넌트에는 `AssetSummary` 같은 가벼운 타입만 넘긴다.
@@ -107,6 +108,8 @@ npm --prefix web run admin -- list|check [slug]|new <slug> --type … --title �
 - 회원 API: 비밀번호는 scrypt 해시(`api/app/passwords.py`), 토큰·세션은 SHA-256 해시만 저장하고, 로그에 이메일·토큰·비밀번호를 남기지 않는다.
   로그인 실패 응답은 "없는 계정"과 "틀린 비밀번호"를 구분하지 않는다 ([ADR-0008](docs/04_architecture/adr/0008-password-login.md)). 상태를 바꾸는 엔드포인트는 Origin 검사(미들웨어)를 거친다. 새 개인정보를 받게 되면 `content/pages/privacy.md` 를 함께 고친다.
 - 웹 패키지 iframe 의 `sandbox` 에 `allow-same-origin` 을 넣지 않는다.
+- Store (회원이 올린 것): 설치 파일·그림은 API 프로세스에서 파싱하지 않고 `app/store/analyze.py` 자식 프로세스(시간·메모리 한도)에서 다룬다. 아이콘은 다시 그린 PNG 만 내준다.
+  회원이 쓴 글은 HTML 로 넣지 않는다 (`dangerouslySetInnerHTML` 금지). 내려받기는 `attachment`·`octet-stream`·`nosniff`·`CSP: sandbox` 다. 공개는 운영자 승인 뒤에만 한다.
 
 ### 접근성
 

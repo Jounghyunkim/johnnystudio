@@ -1,7 +1,7 @@
 # 사이트맵
 
 > **상태**: Phase 1 구현 완료 (자리표시 콘텐츠 일부 남음). Phase 2 회원 가입·로그인 구현 (메일 발송 설정 전). 구역 구조는 [ideation.md](../ideation.md) §0.
-> **Last Updated**: 2026-11-22
+> **Last Updated**: 2026-11-24
 
 ## 페이지
 
@@ -10,6 +10,12 @@
 | `/` | — | 홈 (랜딩) | 히어로(한 줄 정의 + 다루는 작품 7가지 유형과 공개 개수), 이렇게 쓰세요(둘러보기·바로 쓰기·모아 두기·함께 일하기), 대표 작품(하나면 넓은 카드), 일하는 원칙, 함께 일하는 방식, 최근 기록, 자주 묻는 질문, 마지막 안내. 문구는 `profile.yaml` 의 `landing` | ✅ |
 | `/library/` | Showcase | Library | 전체 작품: 검색, 유형 필터, 정렬. 상태가 주소(`?q=&type=&sort=`)에 남는다 | ✅ |
 | `/library/<slug>/` | Showcase | 작품 상세 | 유형별 뷰어(실행·다운로드·체험·영상·사진·원문), 소개, 비슷한 작품 | ✅ |
+| `/store/` | Store | Store 목록 | 회원이 올리고 운영자가 승인한 Windows 앱: 검색·분류·정렬(`?q=&category=&sort=`). 내용은 브라우저에서 API 로 읽는다 ([ADR-0012](../04_architecture/adr/0012-member-store.md), [기능 명세](features/store.md)) | ✅ |
+| `/store/app/?id=<코드>` | Store | Store 앱 상세 | 내려받기, 검사 결과·SHA-256·서명 문구·VirusTotal 검색 링크, 소개, 이전 버전, 공유 주소, 신고 | ✅ |
+| `/store/new/` | Store | 앱 올리기 | 로그인 → 표시 이름·약관 동의 → 파일 → 분석으로 채운 양식 → 검토 요청. `?app=<코드>` 는 새 버전. 색인 안 함 | ✅ |
+| `/store/mine/` | Store | 내 앱 | 검토 상태·사유·검사 결과, 고치기·아이콘·새 버전·지우기. 색인 안 함 | ✅ |
+| `/store/manage/` | (운영) | Store 검토 | 검토 대기·신고·숨김·차단. 운영자 이메일만 (API 가 판단). 색인 안 함 | ✅ |
+| `/store/terms/` | Store | Store 이용약관 | `content/pages/store-terms.md` | ✅ (운영자·연락처는 `TODO(content)`) |
 | `/log/` | Showcase | Life Log | 작품 + 마일스톤 타임라인, 연도별 | ✅ |
 | `/about/` | Showcase | About | 원칙, 운영 방식(셀프 호스팅), 로드맵, 운영자 소개 | ✅ (운영자 소개는 자리표시) |
 | `/work/` | Work with me | 함께 일하기 | 서비스, 진행 방식(GitHub 대응), Client Room 미리보기(`#client-room`), 연락 | ✅ (서비스·연락처는 초안) |
@@ -27,7 +33,7 @@
 
 ## 메뉴
 
-- **헤더**: Library · Life Log · Work with me · About, 오른쪽에 ★ My Studio (즐겨찾기 개수)와 **로그인 / 로그인한 이메일**(→ `/account/`).
+- **헤더**: Library · Store · Life Log · Work with me · About, 오른쪽에 ★ My Studio (즐겨찾기 개수)와 **로그인 / 로그인한 이메일**(→ `/account/`).
   - 이메일은 남는 폭만큼만 보이고 넘치면 `…` 로 줄인다. 전체 주소는 마우스를 올리면 보인다
   - 휴대폰 폭에서는 @ 앞부분만 보이고, 메뉴 버튼(`<details>`, JS 없이도 열림) 맨 위에 전체 이메일이 있다
 - **바닥글**: 같은 메뉴 + My Studio, 운영 방식 한 줄, 개인정보처리방침, 외부 채널 링크(`profile.yaml` 의 `links`), 테마 선택(어둡게·밝게·시스템)

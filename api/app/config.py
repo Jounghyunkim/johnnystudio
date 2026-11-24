@@ -28,6 +28,15 @@ def _bool(value: str | None, default: bool) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _int(value: str, default: int, name: str) -> int:
+    if not value:
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        raise ConfigError(f"JOHNNYSTUDIO_{name} 는 정수여야 한다: {value}") from None
+
+
 def _origin(url: str) -> str:
     parts = urlsplit(url)
     return f"{parts.scheme}://{parts.netloc}"
@@ -69,6 +78,26 @@ class Settings:
     smtp_password: str = ""
     smtp_security: str = "starttls"  # starttls | ssl | none
 
+    # ── Store (회원이 올린 Windows 앱, ADR-0012) ──
+    # 올린 파일·아이콘을 두는 폴더. 운영은 /opt/johnnystudio/store (deploy/README.md §3-6)
+    store_dir: Path = API_DIR / "data" / "store"
+    # 검토·숨김·차단을 할 수 있는 회원 이메일 (쉼표로 구분). 비어 있으면 아무도 검토할 수 없다
+    store_admins: frozenset[str] = frozenset()
+    # 새 업로드를 받는가. 문제가 생기면 끄고(0) 다시 띄운다. 이미 공개된 앱은 그대로 받을 수 있다
+    store_uploads_open: bool = True
+    store_file_max_mb: int = 300  # 파일 하나
+    store_user_quota_mb: int = 2048  # 회원 한 명이 올려 둔 파일 합계 (검토 중 포함)
+    store_daily_uploads: int = 10  # 회원 한 명이 24시간에 시작할 수 있는 업로드 수
+    # ClamAV 명령 (없으면 검사를 건너뛰고 '검사 안 함'으로 남긴다). 빈 값이면 검사하지 않는다
+    store_clamscan: str = "clamscan"
+    # 검사에서 탐지 없음이 나와야 공개(승인)할 수 있는가. 운영은 켠다
+    store_require_scan: bool = False
+    # 내려받기를 nginx 에 맡기는 내부 경로 (X-Accel-Redirect). 비어 있으면 API 가 직접 보낸다 (개발)
+    store_accel_prefix: str = ""
+    # 공개 내려받기 링크를 다른 등록 도메인으로 보낼 때 그 출처 (예: https://dl.example.net). 비어 있으면 사이트 주소 그대로.
+    # 남이 올린 파일 때문에 포털 도메인이 위험 사이트 경고를 받지 않게 나중에 옮기는 자리다 (ADR-0012). 검토용 내려받기는 옮기지 않는다
+    store_files_origin: str = ""
+
     @property
     def production(self) -> bool:
         return self.env == "production"
@@ -89,6 +118,19 @@ class Settings:
             raise ConfigError(f"JOHNNYSTUDIO_MAIL_BACKEND 는 console 또는 smtp 여야 한다: {self.mail_backend}")
         if self.smtp_security not in {"starttls", "ssl", "none"}:
             raise ConfigError(f"JOHNNYSTUDIO_SMTP_SECURITY 는 starttls, ssl, none 중 하나여야 한다: {self.smtp_security}")
+        if self.store_files_origin and (
+            urlsplit(self.store_files_origin).scheme not in {"http", "https"} or _origin(self.store_files_origin) != self.store_files_origin
+        ):
+            raise ConfigError(f"JOHNNYSTUDIO_STORE_FILES_ORIGIN 은 경로 없는 출처여야 한다 (예: https://dl.example.net): {self.store_files_origin}")
+        if self.store_accel_prefix and not (self.store_accel_prefix.startswith("/") and self.store_accel_prefix.endswith("/")):
+            raise ConfigError(f"JOHNNYSTUDIO_STORE_ACCEL_PREFIX 는 / 로 시작하고 / 로 끝나야 한다: {self.store_accel_prefix}")
+        for name, value in (
+            ("STORE_FILE_MAX_MB", self.store_file_max_mb),
+            ("STORE_USER_QUOTA_MB", self.store_user_quota_mb),
+            ("STORE_DAILY_UPLOADS", self.store_daily_uploads),
+        ):
+            if value < 1:
+                raise ConfigError(f"JOHNNYSTUDIO_{name} 는 1 이상이어야 한다: {value}")
         if urlsplit(self.site_url).scheme not in {"http", "https"}:
             raise ConfigError(f"JOHNNYSTUDIO_SITE_URL 이 http(s) 주소가 아니다: {self.site_url}")
         if not self.production:
@@ -109,6 +151,8 @@ class Settings:
             problems.append("JOHNNYSTUDIO_SMTP_HOST 가 없다")
         if self.database_url.startswith("sqlite"):
             problems.append("운영 DB 는 PostgreSQL 이다 (JOHNNYSTUDIO_DATABASE_URL)")
+        if not self.store_dir.is_absolute():
+            problems.append("JOHNNYSTUDIO_STORE_DIR 은 절대 경로여야 한다")
         if problems:
             raise ConfigError("운영 설정 오류:\n  - " + "\n  - ".join(problems))
 
@@ -159,6 +203,17 @@ def load_settings(environ: dict[str, str] | None = None) -> Settings:
         smtp_user=get("SMTP_USER"),
         smtp_password=e.get("JOHNNYSTUDIO_SMTP_PASSWORD", ""),
         smtp_security=get("SMTP_SECURITY", "starttls"),
+        store_dir=Path(get("STORE_DIR") or ("/opt/johnnystudio/store" if env == "production" else str(defaults.store_dir))),
+        store_admins=frozenset(a.strip().lower() for a in get("STORE_ADMINS").split(",") if a.strip()),
+        store_uploads_open=_bool(e.get("JOHNNYSTUDIO_STORE_UPLOADS_OPEN"), True),
+        store_file_max_mb=_int(get("STORE_FILE_MAX_MB"), defaults.store_file_max_mb, "STORE_FILE_MAX_MB"),
+        store_user_quota_mb=_int(get("STORE_USER_QUOTA_MB"), defaults.store_user_quota_mb, "STORE_USER_QUOTA_MB"),
+        store_daily_uploads=_int(get("STORE_DAILY_UPLOADS"), defaults.store_daily_uploads, "STORE_DAILY_UPLOADS"),
+        store_clamscan=e.get("JOHNNYSTUDIO_STORE_CLAMSCAN", defaults.store_clamscan).strip(),  # 빈 값이면 검사하지 않는다
+        store_require_scan=_bool(e.get("JOHNNYSTUDIO_STORE_REQUIRE_SCAN"), env == "production"),
+        # 운영 nginx 의 internal location 과 맞춘다 (deploy/nginx/johnnystudio.conf)
+        store_accel_prefix=get("STORE_ACCEL_PREFIX", "/_store_files/" if env == "production" else ""),
+        store_files_origin=get("STORE_FILES_ORIGIN").rstrip("/"),
     )
     settings.validate()
     return settings

@@ -2,7 +2,7 @@
 
 > 작품·기록·소개 문구를 추가하거나 고치는 방법. 결정 배경은 [ADR-0005](../04_architecture/adr/0005-file-based-content.md).
 > 형식의 정답은 코드에 있다: [web/src/lib/schema.ts](../../web/src/lib/schema.ts)
-> **Last Updated**: 2026-11-22
+> **Last Updated**: 2026-11-24
 
 ## 0. 관리 화면으로 등록하기 (권장)
 
@@ -44,7 +44,7 @@ npm --prefix web run admin -- unpublish my-tool
 | Life Log 마일스톤 | `content/lifelog.yaml` |
 | 홈·About·Work with me 문구, 서비스, 연락처 | `content/profile.yaml` |
 | 홈(랜딩)의 단계·자주 묻는 질문·마지막 안내 | `content/profile.yaml` 의 `landing` (답은 지금 실제로 동작하는 것만 쓴다. 링크는 `/` 로 시작하는 사이트 안 주소) |
-| 개인정보처리방침 같은 문서 페이지 | `content/pages/<slug>.md` (머리말: `title`·`description`·`updated`, 본문 Markdown) |
+| 개인정보처리방침 같은 문서 페이지 | `content/pages/<slug>.md` (머리말: `title`·`description`·`updated`, 본문 Markdown). 지금 `privacy`·`store-terms` (Store 이용약관의 `updated` 를 바꾸면 `api/app/store/service.py` 의 `TERMS_VERSION` 도 같게) |
 | 작품 이미지 | `web/public/media/<slug>/` (git 에 넣는다) |
 | 다운로드 파일(exe·zip) | 서버 `/opt/johnnystudio/files/<slug>/` (git 에 넣지 않는다) |
 

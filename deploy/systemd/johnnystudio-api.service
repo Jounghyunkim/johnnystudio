@@ -1,4 +1,4 @@
-# JohnnyStudio 회원 API (FastAPI). 설치 방법: deploy/README.md §3
+# JohnnyStudio 회원·Store API (FastAPI). 설치 방법: deploy/README.md §3, §3-7
 #
 #   sudo install -m 644 deploy/systemd/johnnystudio-api.service /etc/systemd/system/
 #   sudo systemctl daemon-reload && sudo systemctl enable --now johnnystudio-api
@@ -28,10 +28,13 @@ Restart=always
 RestartSec=5
 TimeoutStopSec=20
 
-# 쓰기가 필요 없다 (DB 는 PostgreSQL). 시스템·홈 폴더를 읽기 전용으로 둔다
+# 시스템·홈 폴더를 읽기 전용으로 둔다. 쓰는 곳은 Store 파일 폴더뿐이다 (DB 는 PostgreSQL). deploy/README.md §3-7
+# - 접두사: 폴더가 아직 없어도(§3-7 전) 서비스는 뜬다. 그때 Store 업로드만 실패한다
+# Store 의 설치 파일 분석(app/store/analyze.py)과 ClamAV(clamscan)는 이 서비스 안의 자식 프로세스로 돈다
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=read-only
+ReadWritePaths=-/opt/johnnystudio/store
 PrivateTmp=true
 PrivateDevices=true
 ProtectKernelTunables=true

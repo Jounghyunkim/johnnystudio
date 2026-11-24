@@ -1,6 +1,7 @@
 "use client";
 
 import { KeyRound, LoaderCircle, LogOut, UserX } from "lucide-react";
+import Link from "next/link";
 import { useRef, useState } from "react";
 
 import { type ApiResult, deleteAccount, loginHref, logout, logoutEverywhere, useSession } from "@/lib/auth";
@@ -91,7 +92,13 @@ export function AccountView() {
           <dt className="text-fg-subtle">마지막 로그인</dt>
           <dd className="text-fg">{localDate(user.last_login_at, true)}</dd>
         </dl>
-        <p className="mt-5 text-sm text-fg-subtle">로그인은 30일 동안 유지됩니다. 받는 정보는 이메일 주소와 비밀번호(되돌릴 수 없게 변환해 저장)뿐입니다.</p>
+        <p className="mt-5 text-sm text-fg-subtle">
+          로그인은 30일 동안 유지됩니다. 받는 정보는 이메일 주소와 비밀번호(되돌릴 수 없게 변환해 저장)뿐입니다. Store에 앱을 올리면 표시 이름이 더해집니다 (
+          <Link href="/store/mine/" className="underline underline-offset-4 hover:text-fg">
+            내 Store 앱
+          </Link>
+          ).
+        </p>
         {error && (
           <p role="alert" className="mt-4 text-sm text-danger">
             {error}
@@ -168,7 +175,7 @@ export function AccountView() {
           회원 탈퇴
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-fg-muted">
-          계정과 로그인 기록이 바로 지워지고 되돌릴 수 없습니다. 이 브라우저에 저장된 즐겨찾기는 그대로 남습니다.
+          계정과 로그인 기록, Store에 올린 앱과 파일이 바로 지워지고 되돌릴 수 없습니다. 이 브라우저에 저장된 즐겨찾기는 그대로 남습니다.
         </p>
         <button
           type="button"
