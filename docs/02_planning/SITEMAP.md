@@ -49,6 +49,7 @@
 |---|---|---|---|
 | Arkurator | 웹 서비스 | **공개** | https://arkurator.net |
 | Johnny Mecro · Johnny-Dir · SmartFolder Organizer · Screen-REC · SpaceSense AI · TakeScreenShot · SentinelLite-AV · WLT · CMG Monitor | 데스크톱 툴 | **공개** (9개) | JohnnyStore 에서 옮김 (2026-11-22, [ADR-0011](../04_architecture/adr/0011-absorb-johnnystore.md)). 설치 파일은 서버 설정 뒤 `/opt/johnnystudio/files` 로 옮긴다. 옛 초안 '하드웨어 모니터링 앱'·'SSH 터미널 클라이언트'는 CMG Monitor·WLT 로 대신했다. Microsoft Store 주소: CMG Monitor·Johnny-Dir·WLT·Screen-REC·TakeScreenShot (2026-11-24) |
+| My Claude Inspector | 데스크톱 툴 | **공개** | 2026-11-24 추가. 설치 파일 v0.1.2 (GitHub Releases 와 SHA-256 같음), 랭킹 웹·GitHub 링크. M8 서비스는 deploy/README §9 |
 | JohnnyPlanner | 데스크톱 툴 | **공개** (개발 중) | 2026-11-24 설치 파일 추가. Microsoft Store 주소 확인 필요 `[확인 필요]` |
 | Skill Hub | 웹 서비스 | 초안 | 소개·날짜·주소 필요 |
 | 로봇 프로젝트 | 하드웨어 | 초안 | 이름·사진 또는 영상 필요 |

@@ -98,6 +98,12 @@
 - [ ] (재검토 조건이 생기면) 공개 내려받기를 별도 등록 도메인으로: `JOHNNYSTUDIO_STORE_FILES_ORIGIN` + 그 도메인의 nginx server 블록
 - [ ] (나중에) 공유 키트(바로 받기 링크·배지·QR)를 Store 앱에도
 
+## 같은 서버의 다른 서비스 ⏳
+
+- [x] My Claude Inspector: 최신 코드(`c6acf01`)를 M8 `127.0.0.1:3300` 에서 실행, Library 작품 `my-claude-inspector` (설치 파일 v0.1.2) (2026-11-24, deploy/README §9)
+- [ ] 사용자: 공개 주소 DNS(예: `inspector.johnnystudio.net`) → nginx 사이트·certbot (deploy/README §9). 공개되면 작품 링크 '사용량 랭킹'을 M8 주소로 바꿀지 정한다
+- [ ] M8 을 다시 켜면 `screen` 세션이 사라진다. 오래 둘 거면 systemd 서비스로 (sudo)
+
 ## Showroom (회원 웹 서비스) ⏳ (구현 완료, 운영 설정 전)
 
 > [기능 명세](02_planning/features/showroom.md) · [ADR-0012](04_architecture/adr/0012-member-store.md) 결정 12·13: Store 와 같은 수준에서 회원이 만든 웹 서비스를 소개한다. 메뉴는 Library ▾ 아래 (작품 전체 · Store · Showroom).

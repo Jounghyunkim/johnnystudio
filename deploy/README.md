@@ -291,3 +291,40 @@ install -D -m 644 ~/build/hw-monitor-1.2.0-setup.exe /opt/johnnystudio/files/har
 | 로그인 메일이 오지 않는다 | `journalctl -u johnnystudio-api` 의 "메일 발송 실패", `app.check_config … --send-test`, 스팸함, SPF·DKIM |
 | 429 "요청이 너무 많습니다" | 정상 동작이다 (같은 이메일 15분 3회, 같은 IP 1시간 10회) |
 | 로그 | `sudo tail -f /var/log/nginx/johnnystudio.error.log`, `journalctl -u johnnystudio-api -f`, `/var/log/nginx/johnnystudio.api.log` |
+
+## 9. 같은 서버의 다른 서비스: My Claude Inspector
+
+`~/workspace/myclaudeinspector` (GitHub `Jounghyunkim/myclaudeinspector`). Library 작품 `my-claude-inspector`. 웹은 Vercel(`myclaudeinspector.vercel.app`)에도 있고, M8 에서 같은 Supabase 로 하나 더 띄운다 (2026-11-24).
+
+- **앱은 `127.0.0.1:3300` 에서만 듣는다.** `screen` 세션 `MyClaudeInspector` 안에서 `next start` (출시 빌드). Bun 1.3.6 은 `~/.local/bin/bun`
+- **공개는 랭킹·다운로드만.** 대시보드(`/`)·`/trends`·`/learn/…` 은 주소에 적힌 서버 PC 의 폴더를 읽어서, 열면 운영자의 Claude 정보가 보인다.
+  nginx 템플릿 `deploy/nginx/myclaudeinspector.conf` 가 `/ranking`·`/download`·`/auth/login`·`/auth/sign-up`·`/settings`·`/api/ranking/`·빌드 파일만 넘기고 나머지는 404 (첫 화면은 `/ranking` 으로)
+
+다시 띄우기 (코드를 받은 뒤, 또는 M8 을 다시 켠 뒤):
+
+```bash
+cd ~/workspace/myclaudeinspector
+git pull --ff-only
+ELECTRON_SKIP_BINARY_DOWNLOAD=1 bun install --frozen-lockfile
+NEXT_TELEMETRY_DISABLED=1 bun run build
+screen -S MyClaudeInspector -X quit 2>/dev/null
+screen -dmS MyClaudeInspector bash -c 'cd ~/workspace/myclaudeinspector && NEXT_TELEMETRY_DISABLED=1 exec ./node_modules/.bin/next start --hostname 127.0.0.1 --port 3300'
+curl -s http://127.0.0.1:3300/api/ranking/metrics | head -c 80
+```
+
+인터넷에 공개하기 (1회, **사용자가 직접**: DNS 와 sudo):
+
+1. DNS: `inspector.johnnystudio.net` (다른 이름이어도 된다) 의 A 레코드를 `johnnystudio.net` 과 같은 공인 IP 로 [확인 필요: DNS 관리 업체]
+2. nginx 사이트 (Arkurator·johnnystudio.net 사이트 파일은 건드리지 않는다):
+
+   ```bash
+   HOST=inspector.johnnystudio.net
+   sed "s/__HOST__/$HOST/g" deploy/nginx/myclaudeinspector.conf | sudo tee /etc/nginx/sites-available/myclaudeinspector >/dev/null
+   sudo ln -s /etc/nginx/sites-available/myclaudeinspector /etc/nginx/sites-enabled/myclaudeinspector
+   sudo nginx -t && sudo systemctl reload nginx
+   sudo certbot --nginx -d $HOST     # HTTPS (443) 와 http→https 리다이렉트를 더한다
+   ```
+
+3. 확인: `https://$HOST/ranking` 200, `https://$HOST/` 는 `/ranking` 으로, `https://$HOST/trends` 404
+4. 로그인·가입 메일의 링크가 어느 주소로 돌아오는지는 Supabase Auth 설정(Site URL·Redirect URLs)을 따른다. M8 주소로 가입해 보려면 그 목록에 더한다 [확인 필요]
+

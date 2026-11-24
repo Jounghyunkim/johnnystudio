@@ -145,6 +145,7 @@ npm --prefix web run admin -- list|check [slug]|new <slug> --type … --title �
   배포 위치는 `/opt/johnnystudio/{releases,current,files,api.env}` 다.
 - 회원 API 는 **`127.0.0.1:8082`** (systemd `johnnystudio-api`), DB 는 같은 PostgreSQL 의 **별도 역할·DB `johnnystudio`** 다.
   개발용 API 는 3001(dev.sh)·8090(preview.sh) 포트를 쓴다. Arkurator 의 DB·역할은 건드리지 않는다.
+- 같은 기기의 다른 서비스: **My Claude Inspector** (`~/workspace/myclaudeinspector`) 가 `127.0.0.1:3300` (`screen` 세션 `MyClaudeInspector`). 공개 경로와 다시 띄우는 법은 deploy/README.md §9
 - 기존 `/etc/nginx/sites-*/arkurator-backend`, `/etc/nginx/snippets/arkurator-*`, `/opt/arkurator/`, `127.0.0.1:8000` 은 **절대 건드리지 않는다.**
 - `sudo` 가 필요한 작업(nginx 사이트 추가·reload, `/opt` 디렉터리 생성, cloudflared 설치)은 직접 실행하지 않는다.
   명령을 정리해서 사용자가 자기 터미널에서 실행하도록 안내한다.
