@@ -3,7 +3,7 @@
     uvicorn --factory app.main:create_app --host 127.0.0.1 --port 8082
 
 정적 사이트(web/out)는 nginx 가 내주고, /api/ 만 이 앱으로 넘어온다 (ADR-0007).
-회원(app/auth.py)과 Store(app/store/, ADR-0012) 두 묶음이다.
+회원(app/auth.py), Store(app/store/), Showroom(app/showroom/) 세 묶음이다 (ADR-0012).
 """
 
 from __future__ import annotations
@@ -16,6 +16,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 
 from .auth import router
+from .showroom.router import router as showroom_router
 from .store.router import router as store_router
 from .config import Settings, load_settings
 from .db import Database
@@ -66,4 +67,5 @@ def create_app(settings: Settings | None = None, mailer: Mailer | None = None) -
 
     app.include_router(router)
     app.include_router(store_router)
+    app.include_router(showroom_router)
     return app

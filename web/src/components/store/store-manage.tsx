@@ -19,12 +19,17 @@ import {
   useRemote,
 } from "@/lib/store";
 
+import { SERVICE_STATUS_LABELS, type ShowroomOverview, type ShowroomService, serviceHref, showroomApi } from "@/lib/showroom";
+
+import { OpenLink, ServiceIcon } from "../showroom/showroom-ui";
 import { ButtonLink, buttonClass, cx } from "../ui";
 import { AppIcon, ErrorBox, Loading, Pill, PlainText, ScanBadge, dialogClass, inputClass, panelClass, statusTone } from "./store-ui";
 
 type Ask = { title: string; label: string; action: (reason: string) => Promise<ApiResult<unknown>> } | null;
 
-const reload = () => loadRemote("admin", storeApi.admin.overview);
+// 승인·숨김 뒤에는 Store·Showroom 을 함께 새로 읽는다 (회원 차단은 둘 다에 걸린다)
+const reload = () =>
+  Promise.all([loadRemote("admin", storeApi.admin.overview), loadRemote("showroom:admin", showroomApi.admin.overview)]).then(() => undefined);
 
 function ReasonDialog({ ask, onClose }: { ask: NonNullable<Ask>; onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -204,6 +209,7 @@ function Overview({ data, setAsk }: { data: AdminOverview; setAsk: (a: Ask) => v
   const heading = "text-xl font-bold tracking-tight text-fg";
   return (
     <div className="space-y-12">
+      <p className="text-sm font-semibold text-accent">Store (회원 Windows 앱)</p>
       {!data.scanner && (
         <p role="status" className={cx(panelClass, "text-sm text-amber-300 light:text-amber-800")}>
           서버에 ClamAV(clamscan)가 없어 바이러스 검사를 하지 않습니다.
@@ -331,11 +337,186 @@ function Overview({ data, setAsk }: { data: AdminOverview; setAsk: (a: Ask) => v
 }
 
 /** /store/manage/: 운영자 검토 화면. 권한은 API 가 판단한다 (JOHNNYSTUDIO_STORE_ADMINS) */
+function ServiceLine({ svc, children }: { svc: ShowroomService; children: ReactNode }) {
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-3 py-3">
+      <div className="min-w-0">
+        <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-fg">
+          <Link href={serviceHref(svc.code)} className="hover:underline">
+            {svc.name}
+          </Link>
+          {svc.status && <Pill tone={statusTone(svc.status)}>{SERVICE_STATUS_LABELS[svc.status]}</Pill>}
+        </p>
+        <p className="mt-0.5 break-all text-xs text-fg-subtle">
+          {svc.publisher} ({svc.owner?.email}) · {svc.host}
+          {svc.status_reason && ` · 사유: ${svc.status_reason}`}
+        </p>
+      </div>
+      <div className="flex gap-2">{children}</div>
+    </li>
+  );
+}
+
+/** Showroom 검토: 주소를 직접 열어 보고 승인한다 */
+function ShowroomSections({ data, setAsk }: { data: ShowroomOverview; setAsk: (a: Ask) => void }) {
+  const [busy, error, act] = useAction();
+  const heading = "text-xl font-bold tracking-tight text-fg";
+  return (
+    <div className="mt-16 space-y-12 border-t border-line pt-12">
+      <p className="text-sm font-semibold text-accent">Showroom (회원 웹 서비스)</p>
+      {error && (
+        <p role="alert" className="text-sm text-danger">
+          {error}
+        </p>
+      )}
+      <section aria-labelledby="sr-pending-title" className="space-y-4">
+        <h2 id="sr-pending-title" className={heading}>
+          검토 대기 <span className="text-fg-subtle">{data.pending.length}</span>
+        </h2>
+        {data.pending.length === 0 ? (
+          <p className="text-sm text-fg-muted">검토할 서비스가 없습니다.</p>
+        ) : (
+          data.pending.map((s) => (
+            <article key={s.code} className={panelClass}>
+              <div className="flex flex-wrap items-start gap-4">
+                <ServiceIcon code={s.code} hasIcon={s.has_icon} name={s.name} version={s.updated_at} className="size-14 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-lg font-semibold text-fg">
+                    <Link href={serviceHref(s.code)} className="hover:underline">
+                      {s.name}
+                    </Link>
+                  </h3>
+                  <p className="mt-1 break-all text-sm text-fg-subtle">
+                    {s.publisher} ({s.owner?.email}) · {s.category_label} · {localDate(s.created_at, true)}
+                  </p>
+                  <p className="mt-2 break-all font-mono text-sm text-fg">{s.url}</p>
+                  {s.status_reason && <p className="mt-1 text-xs text-fg-subtle">{s.status_reason}</p>}
+                  {s.summary && <p className="mt-2 text-sm text-fg-muted">{s.summary}</p>}
+                  {s.description && (
+                    <details className="mt-2 text-sm">
+                      <summary className="cursor-pointer text-fg-muted hover:text-fg">설명 보기</summary>
+                      <PlainText text={s.description} className="mt-2 rounded-xl bg-canvas p-3 text-fg-muted" />
+                    </details>
+                  )}
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button type="button" disabled={busy !== null} onClick={() => act(`sa${s.code}`, () => showroomApi.admin.approve(s.code))} className={cx(buttonClass("primary", "sm"), "disabled:opacity-60")}>
+                  {busy === `sa${s.code}` ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : <Check aria-hidden="true" className="size-4" />}
+                  승인하고 공개
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAsk({ title: `${s.name} 반려`, label: "반려 사유", action: (reason) => showroomApi.admin.reject(s.code, reason) })}
+                  className={buttonClass("secondary", "sm")}
+                >
+                  <X aria-hidden="true" className="size-4" />
+                  반려
+                </button>
+                <OpenLink href={s.url} name={s.name} ugc className={buttonClass("ghost", "sm")}>
+                  주소 열어 보기
+                </OpenLink>
+              </div>
+            </article>
+          ))
+        )}
+      </section>
+
+      <section aria-labelledby="sr-reports-title" className="space-y-4">
+        <h2 id="sr-reports-title" className={heading}>
+          신고 <span className="text-fg-subtle">{data.reports.length}</span>
+        </h2>
+        {data.reports.length === 0 ? (
+          <p className="text-sm text-fg-muted">처리할 신고가 없습니다.</p>
+        ) : (
+          <ul className="space-y-4">
+            {data.reports.map((r) => (
+              <li key={r.id} className={panelClass}>
+                <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-fg">
+                  {r.service_exists ? (
+                    <Link href={serviceHref(r.service_code)} className="hover:underline">
+                      {r.service_name}
+                    </Link>
+                  ) : (
+                    <span>{r.service_name} (지워진 서비스)</span>
+                  )}
+                  <Pill tone="warn">{r.reason_label}</Pill>
+                </p>
+                <PlainText text={r.detail} className="mt-2 text-sm text-fg-muted" />
+                <p className="mt-2 break-all text-xs text-fg-subtle">
+                  {localDate(r.created_at, true)} · {r.signed_in ? "회원" : "비회원"}
+                  {r.contact && ` · 연락처 ${r.contact}`}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {r.service_exists && (
+                    <button
+                      type="button"
+                      onClick={() => setAsk({ title: `${r.service_name} 숨기기`, label: "숨기는 사유", action: (reason) => showroomApi.admin.hide(r.service_code, reason) })}
+                      className={buttonClass("secondary", "sm")}
+                    >
+                      <EyeOff aria-hidden="true" className="size-4" />
+                      서비스 숨기기
+                    </button>
+                  )}
+                  <button type="button" disabled={busy !== null} onClick={() => act(`ra${r.id}`, () => showroomApi.admin.resolve(r.id, "actioned", ""))} className={cx(buttonClass("ghost", "sm"), "disabled:opacity-60")}>
+                    조치함
+                  </button>
+                  <button type="button" disabled={busy !== null} onClick={() => act(`rd${r.id}`, () => showroomApi.admin.resolve(r.id, "dismissed", ""))} className={cx(buttonClass("ghost", "sm"), "disabled:opacity-60")}>
+                    기각
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section aria-labelledby="sr-recent-title" className="space-y-4">
+        <h2 id="sr-recent-title" className={heading}>
+          최근 공개한 서비스
+        </h2>
+        <ul className="divide-y divide-line rounded-card border border-line px-5">
+          {data.recent.length === 0 && <li className="py-3 text-sm text-fg-muted">없음</li>}
+          {data.recent.map((s) => (
+            <ServiceLine key={s.code} svc={s}>
+              <button
+                type="button"
+                onClick={() => setAsk({ title: `${s.name} 숨기기`, label: "숨기는 사유", action: (reason) => showroomApi.admin.hide(s.code, reason) })}
+                className={buttonClass("ghost", "sm")}
+              >
+                <EyeOff aria-hidden="true" className="size-4" />
+                숨기기
+              </button>
+            </ServiceLine>
+          ))}
+        </ul>
+      </section>
+
+      <section aria-labelledby="sr-hidden-title" className="space-y-4">
+        <h2 id="sr-hidden-title" className={heading}>
+          숨긴 서비스
+        </h2>
+        <ul className="divide-y divide-line rounded-card border border-line px-5">
+          {data.hidden.length === 0 && <li className="py-3 text-sm text-fg-muted">없음</li>}
+          {data.hidden.map((s) => (
+            <ServiceLine key={s.code} svc={s}>
+              <button type="button" disabled={busy !== null} onClick={() => act(`su${s.code}`, () => showroomApi.admin.unhide(s.code))} className={cx(buttonClass("ghost", "sm"), "disabled:opacity-60")}>
+                검토 대기로 되돌리기
+              </button>
+            </ServiceLine>
+          ))}
+        </ul>
+      </section>
+    </div>
+  );
+}
+
 export function StoreManage() {
   const session = useSession();
   const isClient = useIsClient();
   const signedIn = session.status === "signed-in";
   const overview = useRemote<AdminOverview>(signedIn ? "admin" : null);
+  const showroom = useRemote<ShowroomOverview>(signedIn ? "showroom:admin" : null);
   const [ask, setAsk] = useState<Ask>(null);
 
   useEffect(() => {
@@ -371,6 +552,8 @@ export function StoreManage() {
   return (
     <>
       <Overview data={overview.data} setAsk={setAsk} />
+      {showroom?.status === "ready" && <ShowroomSections data={showroom.data} setAsk={setAsk} />}
+      {showroom?.status === "error" && <ErrorBox error={showroom.error} title="Showroom 검토 목록을 불러오지 못했습니다" />}
       {ask && <ReasonDialog ask={ask} onClose={() => setAsk(null)} />}
     </>
   );

@@ -23,7 +23,7 @@ import {
   Profile,
   SLUG_PATTERN,
 } from "./schema";
-import type { AssetSummary, OfficialStoreApp, TimelineItem } from "./types";
+import type { AssetSummary, OfficialShowroomService, OfficialStoreApp, TimelineItem } from "./types";
 
 export const CONTENT_DIR = process.env.CONTENT_DIR ?? path.join(process.cwd(), "..", "content");
 export const PUBLIC_DIR = path.join(process.cwd(), "public");
@@ -178,6 +178,16 @@ export function getOfficialStoreApps(): OfficialStoreApp[] {
     });
   }
   return apps;
+}
+
+/** Showroom 목록에 함께 보일 공개된 웹 서비스 (초안 제외, 주소가 있는 것) */
+export function getOfficialShowroomServices(): OfficialShowroomService[] {
+  const services: OfficialShowroomService[] = [];
+  for (const a of getAssets()) {
+    if (a.type !== "web-app" || a.draft || !a.url) continue;
+    services.push({ slug: a.slug, title: a.title, summary: a.summary, tags: a.tags, image: a.icon ?? a.cover, url: a.url, date: a.updated ?? a.date });
+  }
+  return services;
 }
 
 export function detailHref(slug: string): string {

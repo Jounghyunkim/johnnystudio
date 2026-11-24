@@ -43,6 +43,18 @@ export interface OfficialStoreApp {
   microsoftStore?: string;
 }
 
+/** Showroom 목록에 '공식'으로 함께 보이는 Library 의 웹 서비스 (ADR-0012). 누르면 Library 상세로 간다 */
+export interface OfficialShowroomService {
+  slug: string;
+  title: string;
+  summary: string;
+  tags: string[];
+  /** 아이콘, 없으면 대표 이미지 */
+  image?: string;
+  url: string;
+  date?: string;
+}
+
 export interface TimelineItem {
   date: string;
   title: string;

@@ -40,8 +40,8 @@ function Field({ id, label, hint, children }: { id: string; label: string; hint?
   );
 }
 
-/** 처음 올리기 전: 표시 이름, Store 이용약관 동의, 만 14세 확인 */
-function PublisherForm({ me }: { me: StoreMe }) {
+/** 처음 올리기 전: 표시 이름, Store·Showroom 이용약관 동의, 만 14세 확인 (Showroom 등록 화면도 쓴다) */
+export function PublisherForm({ me }: { me: StoreMe }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const ids = { name: useId(), terms: useId(), age: useId() };
@@ -67,8 +67,8 @@ function PublisherForm({ me }: { me: StoreMe }) {
         <h2 className="text-lg font-semibold text-fg">{me.publisher ? "바뀐 이용약관 확인" : "올리기 전에"}</h2>
         <p className="mt-2 text-sm leading-relaxed text-fg-muted">
           {me.publisher
-            ? "Store 이용약관이 바뀌었습니다. 확인하고 다시 동의해 주세요."
-            : "앱 화면에 보일 표시 이름을 정하고 Store 이용약관에 동의해 주세요. 이메일 주소는 다른 사람에게 보이지 않습니다."}
+            ? "Store·Showroom 이용약관이 바뀌었습니다. 확인하고 다시 동의해 주세요."
+            : "앱·서비스 화면에 보일 표시 이름을 정하고 Store·Showroom 이용약관에 동의해 주세요. 이메일 주소는 다른 사람에게 보이지 않습니다."}
         </p>
       </div>
       <Field id={ids.name} label="표시 이름" hint="2~30자. 앱 화면에 '올린 사람'으로 보입니다. 운영자로 오해할 수 있는 이름은 쓸 수 없습니다.">
@@ -79,9 +79,9 @@ function PublisherForm({ me }: { me: StoreMe }) {
           <input id={ids.terms} name="agree_terms" type="checkbox" required className="mt-1 size-4 accent-accent" />
           <span>
             <Link href="/store/terms/" target="_blank" className="underline underline-offset-4">
-              Store 이용약관
+              Store·Showroom 이용약관
             </Link>
-            에 동의합니다. 악성코드나 다른 사람의 권리를 침해하는 프로그램은 올리지 않습니다.
+            에 동의합니다. 악성코드·피싱이나 다른 사람의 권리를 침해하는 프로그램·서비스는 올리지 않습니다.
           </span>
         </label>
         <label htmlFor={ids.age} className="flex items-start gap-3">

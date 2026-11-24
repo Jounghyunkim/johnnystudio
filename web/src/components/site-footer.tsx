@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { getProfile } from "@/lib/content";
-import { NAV } from "@/lib/nav";
+import { flatNav } from "@/lib/nav";
 
 import { LogoMark } from "./logo-mark";
 import { ThemeChoice } from "./theme-toggle";
@@ -23,7 +23,7 @@ export function SiteFooter() {
         <nav aria-label="바닥글 메뉴">
           <p className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">둘러보기</p>
           <ul className="mt-3 space-y-2 text-sm">
-            {[...NAV, { href: "/studio/", label: "My Studio" }].map((item) => (
+            {[...flatNav(), { href: "/studio/", label: "My Studio" }].map((item) => (
               <li key={item.href}>
                 <Link href={item.href} className="text-fg-muted hover:text-fg">
                   {item.label}

@@ -12,6 +12,7 @@
 | [02_planning/CONTENT_GUIDE.md](02_planning/CONTENT_GUIDE.md) | 작품·기록·문구를 추가하는 방법 (관리 화면, 필드, 예시, 파일 올리기) | 최신 |
 | [02_planning/features/](02_planning/features/) | 기능 명세: [작품 관리](02_planning/features/portfolio-manager.md) (검토·설계·단계 계획) | 1단계 완료 |
 | [02_planning/features/johnnystore-integration.md](02_planning/features/johnnystore-integration.md) | JohnnyStore 통합: 두 서비스 비교, 철학 충돌(개방 범위 → 운영자 전용 → 2026-11-24 회원 Store), 흡수 통합 구조, 단계 계획 S0~S5 | S1·S5(Store) 완료, S2·S3 남음 |
+| [02_planning/features/showroom.md](02_planning/features/showroom.md) | Showroom (회원 웹 서비스 소개): 범위, 화면·상태, 구조, 확인한 것 | 구현 완료, 운영 설정 전 (ADR-0012 제안됨) |
 | [02_planning/features/store.md](02_planning/features/store.md) | Store (회원 앱): 범위, 화면·상태, API·웹 구조, 한도·설정, 운영 경로, 확인한 것·못 한 것 | 구현 완료, 운영 설정 전 (ADR-0012 제안됨) |
 | [02_planning/features/pixtuoid.md](02_planning/features/pixtuoid.md) | pixtuoid 적용 검토: 개발 도구·사이트 데모·실시간 보기·만드는 방식 참고(CI·gitleaks·Playwright·Lighthouse) 비교 | 검토 완료, 결정 전 |
 | [03_design/DESIGN_SYSTEM.md](03_design/DESIGN_SYSTEM.md) | 다크 테마 토큰, 글꼴, 컴포넌트 | v1 (브랜드 색·로고 임시) |

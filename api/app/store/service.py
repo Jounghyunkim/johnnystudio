@@ -22,8 +22,9 @@ from .scan import scan_file
 
 log = logging.getLogger("johnnystudio.store")
 
-# Store 이용약관 판(content/pages/store-terms.md 의 updated 와 같게). 바꾸면 올리는 회원이 다시 동의한다
-TERMS_VERSION = "2026-11-24"
+# Store·Showroom 이용약관 판. 약관(content/pages/store-terms.md)을 고칠 때마다 바꾼다. 바꾸면 올리는 회원이 다시 동의한다.
+# 날짜(약관의 updated)를 쓰고, 같은 날 다시 고치면 .2 처럼 붙인다 (2026-11-24.2: Showroom 조항을 더했다)
+TERMS_VERSION = "2026-11-24.2"
 UPLOAD_TTL = timedelta(hours=24)
 # 하루 업로드 횟수를 세려고, 다 쓴 업로드 기록도 이틀 동안 남긴다
 USED_UPLOAD_RETENTION = timedelta(days=2)

@@ -18,4 +18,4 @@
 | [0009](0009-local-portfolio-manager.md) | 작품 등록·관리는 개발 서버 전용 관리 화면과 로컬 관리 서버로 한다 | 일부 대체됨 → 0010 (PUBLIC_URL 에서도 켬) |
 | [0010](0010-admin-on-public-dev-server.md) | 인터넷에 연 개발 서버(PUBLIC_URL)에서도 작품 관리 화면을 켠다 (실행마다 새 토큰, 운영 다운로드 폴더 안 씀) | 채택됨 |
 | [0011](0011-absorb-johnnystore.md) | JohnnyStore 를 JohnnyStudio 로 흡수하고, 파일을 올리는 사람은 운영자뿐이다 | 일부 대체됨 → 0012 (결정 2·6, 결정 4 의 신고·관리자·이용약관) |
-| [0012](0012-member-store.md) | 회원 Store: 회원이 올린 Windows 앱을 운영자 승인 후 공개한다 | 제안됨 |
+| [0012](0012-member-store.md) | 회원 Store·Showroom: 회원이 올린 Windows 앱과 웹 서비스를 운영자 승인 후 공개한다 | 제안됨 |

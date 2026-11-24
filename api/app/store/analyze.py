@@ -17,6 +17,7 @@ Windows API 없이 순수 Python(`pefile`, `icoextract`, `Pillow`, `olefile`)만
 
     python -m app.store.analyze <파일> <원래 파일 이름> [--icon 아이콘.png]   → 표준 출력에 JSON
     python -m app.store.analyze --icon-from <그림> <저장할 PNG>              회원이 올린 아이콘을 256px PNG 로
+    python -m app.store.analyze --screenshot-from <그림> <저장할 WebP>       Showroom 화면 그림을 1600px 이하 WebP 로
 """
 from __future__ import annotations
 
@@ -605,6 +606,29 @@ def normalize_icon(src: str | os.PathLike, dst: str | os.PathLike) -> dict:
     return {"ok": True}
 
 
+# Showroom 의 서비스 화면 그림. 긴 변 1600px 이하 WebP 로 다시 그린다 (원본을 내주지 않는다)
+SCREENSHOT_MAX = 1600
+_SCREENSHOT_FORMATS = {"PNG", "JPEG", "WEBP"}
+_SCREENSHOT_MAX_PIXELS = 8000 * 8000
+
+
+def normalize_screenshot(src: str | os.PathLike, dst: str | os.PathLike) -> dict:
+    """화면 그림을 WebP 로 (비율 유지, 크면 줄인다). 실패하면 {"error": 문구}"""
+    Image.MAX_IMAGE_PIXELS = _SCREENSHOT_MAX_PIXELS
+    try:
+        with Image.open(src) as im:
+            if im.format not in _SCREENSHOT_FORMATS:
+                return {"error": "PNG·JPEG·WebP 그림만 쓸 수 있습니다."}
+            if im.width * im.height > _SCREENSHOT_MAX_PIXELS:
+                return {"error": "그림이 너무 큽니다."}
+            out = im.convert("RGB")
+            out.thumbnail((SCREENSHOT_MAX, SCREENSHOT_MAX), Image.LANCZOS)
+    except (OSError, ValueError, Image.DecompressionBombError):
+        return {"error": "그림 파일을 읽을 수 없습니다."}
+    out.save(dst, format="WEBP", quality=82, method=4)
+    return {"ok": True, "width": out.width, "height": out.height}
+
+
 def _limit_resources(memory_bytes: int, cpu_seconds: int) -> None:  # pragma: no cover - 자식 프로세스에서 돈다
     import resource
 
@@ -624,6 +648,12 @@ def run_isolated(path: Path, filename: str, icon_out: Path, timeout: int = 120) 
 def run_icon_isolated(src: Path, dst: Path, timeout: int = 30) -> dict:
     """회원이 올린 아이콘 그림을 자식 프로세스에서 다시 그린다 (Pillow 가 남의 그림을 이 프로세스에서 풀지 않게)"""
     result = _run_child(["--icon-from", str(src), str(dst)], 1024 * 1024 * 1024, timeout)
+    return {"error": "그림을 처리하지 못했습니다."} if result.get("failed") else result
+
+
+def run_screenshot_isolated(src: Path, dst: Path, timeout: int = 60) -> dict:
+    """회원이 올린 서비스 화면 그림을 자식 프로세스에서 WebP 로 다시 그린다"""
+    result = _run_child(["--screenshot-from", str(src), str(dst)], 1536 * 1024 * 1024, timeout)
     return {"error": "그림을 처리하지 못했습니다."} if result.get("failed") else result
 
 
@@ -664,6 +694,9 @@ def _main() -> None:  # pragma: no cover - CLI (run_isolated 가 부른다)
 
     if sys.argv[1:2] == ["--icon-from"] and len(sys.argv) == 4:
         json.dump(normalize_icon(sys.argv[2], sys.argv[3]), sys.stdout, ensure_ascii=False)
+        return
+    if sys.argv[1:2] == ["--screenshot-from"] and len(sys.argv) == 4:
+        json.dump(normalize_screenshot(sys.argv[2], sys.argv[3]), sys.stdout, ensure_ascii=False)
         return
     parser = argparse.ArgumentParser(description="Windows 바이너리 메타데이터/아이콘 추출")
     parser.add_argument("file")

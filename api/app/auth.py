@@ -30,6 +30,7 @@ from .db import AuthSession, LoginFailure, LoginToken, User, utcnow
 from .mailer import Mail, Mailer, send_quietly
 from .passwords import burn_time, hash_password, needs_rehash, password_problem, verify_password
 from .security import ip_hash, new_token, normalize_email, safe_next, token_hash
+from .showroom import service as showroom
 from .store import service as store
 
 log = logging.getLogger("johnnystudio.auth")
@@ -460,9 +461,10 @@ def delete_account(
     settings: SettingsDep,
     session: Annotated[AuthSession, Depends(required_session)],
 ) -> None:
-    """회원 탈퇴: 계정·세션·남은 로그인 링크, Store 에 올린 앱과 파일을 바로 지운다 (ideation R8)."""
+    """회원 탈퇴: 계정·세션·남은 로그인 링크, Store 에 올린 앱과 파일, Showroom 서비스를 바로 지운다 (ideation R8)."""
     user = db.get(User, session.user_id)
     store.purge_user(db, settings, session.user_id)  # Store 에 올린 앱·파일 (ADR-0012)
+    showroom.purge_user(db, settings, session.user_id)  # Showroom 서비스·그림
     db.execute(delete(AuthSession).where(AuthSession.user_id == session.user_id))
     if user is not None:
         db.execute(delete(LoginToken).where(LoginToken.email == user.email))

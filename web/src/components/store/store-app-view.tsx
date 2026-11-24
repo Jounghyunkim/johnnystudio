@@ -4,6 +4,7 @@ import { Download, Flag, LoaderCircle, ShieldAlert, ShieldCheck, Upload } from "
 import Link from "next/link";
 import { type FormEvent, type RefObject, useEffect, useId, useRef, useState } from "react";
 
+import type { ApiResult } from "@/lib/auth";
 import { formatBytes } from "@/lib/format";
 import {
   APP_STATUS_LABELS,
@@ -105,7 +106,20 @@ function ReleasePanel({ r, review }: { r: StoreRelease; review: boolean }) {
   );
 }
 
-function ReportDialog({ app, reasons, dialog }: { app: StoreApp; reasons: Record<string, string>; dialog: RefObject<HTMLDialogElement | null> }) {
+export type ReportBody = { reason: string; detail: string; contact: string };
+
+/** 신고 대화상자 (Store 앱·Showroom 서비스가 함께 쓴다). send 가 실제로 보낸다 */
+export function ReportDialog({
+  name,
+  reasons,
+  dialog,
+  send,
+}: {
+  name: string;
+  reasons: Record<string, string>;
+  dialog: RefObject<HTMLDialogElement | null>;
+  send: (body: ReportBody) => Promise<ApiResult<unknown>>;
+}) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -116,7 +130,7 @@ function ReportDialog({ app, reasons, dialog }: { app: StoreApp; reasons: Record
     const form = new FormData(e.currentTarget);
     setBusy(true);
     setError(null);
-    const r = await storeApi.report(app.code, {
+    const r = await send({
       reason: String(form.get("reason") ?? ""),
       detail: String(form.get("detail") ?? ""),
       contact: String(form.get("contact") ?? ""),
@@ -145,7 +159,7 @@ function ReportDialog({ app, reasons, dialog }: { app: StoreApp; reasons: Record
       ) : (
         <form onSubmit={submit} className="mt-4 space-y-4">
           <p className="text-sm text-fg-muted">
-            <strong className="font-semibold text-fg">{app.name}</strong>에 문제가 있다면 알려 주세요. 권리 침해 신고는{" "}
+            <strong className="font-semibold text-fg">{name}</strong>에 문제가 있다면 알려 주세요. 권리 침해 신고는{" "}
             <Link href="/store/terms/#takedown" className="underline underline-offset-4">
               이용약관 제9조
             </Link>
@@ -340,7 +354,7 @@ export function StoreAppView() {
         </aside>
       </div>
 
-      {meta?.status === "ready" && <ReportDialog app={a} reasons={meta.data.report_reasons} dialog={reportDialog} />}
+      {meta?.status === "ready" && <ReportDialog name={a.name} reasons={meta.data.report_reasons} dialog={reportDialog} send={(body) => storeApi.report(a.code, body)} />}
     </div>
   );
 }

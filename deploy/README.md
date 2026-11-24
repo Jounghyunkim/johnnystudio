@@ -180,7 +180,7 @@ clamscan --version                               # ClamAV 1.x/<시그니처 번�
 # 3) api.env 에 운영자 이메일 (가입한 계정의 주소). 나머지 Store 값은 기본값이면 된다 (api.env.example)
 #    JOHNNYSTUDIO_STORE_ADMINS=운영자@example.com
 
-# 4) nginx 템플릿을 다시 설치한다 (§2-3). /api/store/uploads 와 /_store_files/ 가 새로 들어 있다
+# 4) nginx 템플릿을 다시 설치한다 (§2-3). /api/store/uploads · /api/showroom/uploads(Showroom 그림) · /_store_files/ 가 새로 들어 있다
 # 5) API 서비스 설정을 다시 설치한다 (ReadWritePaths 가 새로 들어 있다)
 sudo install -m 644 deploy/systemd/johnnystudio-api.service /etc/systemd/system/
 sudo systemctl daemon-reload && sudo systemctl restart johnnystudio-api
@@ -198,6 +198,7 @@ curl -s -H "Host: $DOMAIN" http://127.0.0.1:8081/api/store/meta    # "scanner":t
 4. 내려받기 응답 헤더: `curl -sI -H "Host: $DOMAIN" "http://127.0.0.1:8081/api/store/apps/<코드>/releases/<번호>/download"` →
    `content-type: application/octet-stream`, `content-disposition: attachment; …`, `x-content-type-options: nosniff`
 5. `http://127.0.0.1:8081/_store_files/<아무 값>` 은 404 (바깥에서 직접 열 수 없다)
+6. Showroom: 일반 회원으로 `/showroom/new/` 에서 서비스 하나를 소개하고 화면 그림을 넣는다 → 운영자가 `/store/manage/` 아래 Showroom 절에서 승인 → `/showroom/` 에 보인다
 
 문제가 생기면 `JOHNNYSTUDIO_STORE_UPLOADS_OPEN=0` 으로 새 업로드를 막고 API 를 다시 시작한다. 이미 공개된 앱은 그대로 받을 수 있다.
 

@@ -10,7 +10,7 @@
 코드는 GitHub `Jounghyunkim/johnnystudio` 에 올렸다 (2026-11-06). CI 는 아직 없다.
 **작품 등록·관리 도구**를 만들었다 (2026-11-09, [ADR-0009](04_architecture/adr/0009-local-portfolio-manager.md)): `dev.sh` 의 관리 화면 `/admin/` 과 CLI 로 작품을 만들고, 채우고, 공개한다. 콘텐츠 채우기(아래 2번)는 이 도구로 한다.
 **JohnnyStore 를 흡수하기로 했다** (2026-11-22, [통합 문서](02_planning/features/johnnystore-integration.md), [ADR-0011](04_architecture/adr/0011-absorb-johnnystore.md)). 파일을 올리는 사람은 운영자뿐이다. 스토어의 Windows 앱 9개를 작품으로 옮겨 공개했다 (공개 작품 10개). 스토어 서비스와 저장소(`../johnnystore`)는 보관본을 남기고 지웠다. 다음은 설치 파일 분석·ClamAV 검사(S2) (아래 "JohnnyStore 통합").
-**회원 Store 를 만들었다** (2026-11-24, [ADR-0012](04_architecture/adr/0012-member-store.md) 제안됨, [기능 명세](02_planning/features/store.md)): 메뉴 Store(`/store/`), 회원이 Windows 앱을 올리면 ClamAV 검사와 운영자 승인을 거쳐 공개된다. ADR-0011 의 '운영자만 올린다'를 바꿨다. 운영 서버 설정(§3-7)이 남았다 (아래 "Store").
+**회원 Store 와 Showroom(회원 웹 서비스 소개)을 만들었다** (2026-11-24, 메뉴 Library ▾ 아래, [ADR-0012](04_architecture/adr/0012-member-store.md) 제안됨, [기능 명세](02_planning/features/store.md)): 메뉴 Store(`/store/`), 회원이 Windows 앱을 올리면 ClamAV 검사와 운영자 승인을 거쳐 공개된다. ADR-0011 의 '운영자만 올린다'를 바꿨다. 운영 서버 설정(§3-7)이 남았다 (아래 "Store").
 남은 일은 다음 네 가지다.
 
 1. ideation §9 열린 질문에 답한다 (§9-6 큰 파일 배포 채널은 답함: 홈 서버만)
@@ -61,7 +61,9 @@
 - [ ] 앱 9개의 설치 파일(180MB, 지금 `.local/files/`)을 서버 설정(deploy/README §2-1) 뒤 `/opt/johnnystudio/files/` 로 옮기기: `rsync -a .local/files/ /opt/johnnystudio/files/`
 - [ ] 작품 이미지 (webp), 다운로드 파일 업로드
 - [ ] `profile.yaml` 의 서비스 목록·연락처, About 운영자 소개 (`grep -rn "TODO(content)"`)
-- [ ] 실제 작품이 생기면 `sample-*` 정리
+- [x] 뷰어 예시 `sample-*` 5개 지움 (2026-11-24, 커밋 `7ec8ffc` 에 남아 있다)
+- [x] Microsoft Store 주소 (`microsoftStore`): CMG Monitor·Johnny-Dir·WLT·Screen-REC·TakeScreenShot (2026-11-24)
+- [ ] 사용자: JohnnyPlanner·SpaceSense AI 의 Microsoft Store 주소 (받은 주소가 각각 CMG Monitor·Screen-REC 의 것이었다), 나머지 앱(Johnny Mecro·SmartFolder Organizer·SentinelLite-AV)도 있으면
 
 ### 품질 ⏳
 
@@ -95,6 +97,17 @@
 - [ ] Store 파일 백업 (DB 백업과 같은 주기) `[확인 필요]`
 - [ ] (재검토 조건이 생기면) 공개 내려받기를 별도 등록 도메인으로: `JOHNNYSTUDIO_STORE_FILES_ORIGIN` + 그 도메인의 nginx server 블록
 - [ ] (나중에) 공유 키트(바로 받기 링크·배지·QR)를 Store 앱에도
+
+## Showroom (회원 웹 서비스) ⏳ (구현 완료, 운영 설정 전)
+
+> [기능 명세](02_planning/features/showroom.md) · [ADR-0012](04_architecture/adr/0012-member-store.md) 결정 12·13: Store 와 같은 수준에서 회원이 만든 웹 서비스를 소개한다. 메뉴는 Library ▾ 아래 (작품 전체 · Store · Showroom).
+
+- [x] 메뉴: Library 를 펼침 메뉴로, 그 아래 작품 전체 · Store · Showroom (2026-11-24, 주소는 그대로)
+- [x] API `api/app/showroom/`, 화면 `/showroom/` · `/showroom/service/` · `/showroom/new/` · `/showroom/mine/`, 검토는 `/store/manage/` 안
+- [x] Library 의 웹 서비스(Arkurator)를 '공식'으로 함께
+- [x] 약관에 Showroom 조항 (판 `2026-11-24.2`, 올리는 회원이 다시 동의), 개인정보처리방침
+- [ ] 사용자: 이름(Showroom)·분류 9개·한도(24시간 10개, 회원당 50개) 확인
+- [ ] 운영 서버: nginx 다시 설치 (deploy/README §3-7 확인 6)
 
 ## JohnnyStore 통합 ⏳ (S1·S5 완료)
 

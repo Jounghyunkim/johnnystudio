@@ -50,7 +50,8 @@ JohnnyStudio/
 │   └── out/                빌드 결과 (git 에 넣지 않음)
 ├── api/                    회원·Store API (FastAPI, Python 3.14, uv)
 │   ├── app/                main(앱·CSRF 검사) · auth(엔드포인트) · db(테이블) · security · mailer · config
-│   │   └── store/          Store: models · router · service · analyze(설치 파일 분석, 자식 프로세스) · scan(ClamAV) · files
+│   │   ├── store/          Store: models · router · service · analyze(설치 파일 분석·그림 다시 그리기, 자식 프로세스) · scan(ClamAV) · files
+│   │   └── showroom/       Showroom: models · router · service (회원 웹 서비스 소개, 올리는 회원·약관은 Store 와 공유)
 │   └── tests/              pytest (SQLite 기본, JOHNNYSTUDIO_TEST_DATABASE_URL 로 PostgreSQL)
 ├── content/                콘텐츠 원본: assets/*.md, lifelog.yaml, profile.yaml, pages/*.md
 ├── deploy/                 deploy.sh · rollback.sh · nginx/ · cloudflared/ · systemd/ · api.env.example
@@ -125,6 +126,9 @@ JohnnyStudio/
 - 데이터: `store_*` 테이블 5개 + `/opt/johnnystudio/store/{uploads,files,icons}`. 회원이 탈퇴하면 그 회원의 앱·파일을 지운다
 - 목록에는 Library 의 공개된 Windows 앱도 '공식'으로 함께 나온다 (`getOfficialStoreApps()` → 빌드된 HTML). Store DB 에 사본을 두지 않는다
 - 자세한 것: [Store 기능 명세](../02_planning/features/store.md), 설치: [deploy/README.md §3-7](../../deploy/README.md)
+
+**Showroom** (회원 웹 서비스, ADR-0012 결정 12): Store 와 같은 원칙(운영자 승인 뒤 공개)으로 이름·https 주소·설명·그림을 받는다. 파일은 받지 않는다.
+승인 뒤 주소를 바꾸면 다시 검토 대기. 바깥 링크는 `rel="noopener noreferrer nofollow ugc"`. 테이블 `showroom_*` 2개, 그림은 `/opt/johnnystudio/store/showroom/`. 자세한 것: [Showroom 기능 명세](../02_planning/features/showroom.md)
 
 ## 5. 콘텐츠 파이프라인
 
