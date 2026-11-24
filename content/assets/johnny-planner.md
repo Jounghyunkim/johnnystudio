@@ -8,11 +8,16 @@ tags: [교육, 생산성, 데스크톱]
 cover: /media/johnny-planner/cover.webp
 coverAlt: JohnnyPlanner의 오늘의 플래너 화면. 다음 약속 카드, 부모님의 한마디, 순공부 시간 요약, A·B·C 우선순위 할 일, 시간대별 일정, 색칠된 10분 타임테이블이 한 화면에 보인다
 icon: /media/johnny-planner/icon.png
-draft: true
 requirements: Windows 10 버전 1809 이상 또는 Windows 11 (x64), Microsoft Edge WebView2 런타임(Windows 11에는 기본 포함). 앱 화면은 한국어로 제공됩니다.
-# TODO(content): 설치 파일을 받으면 ./scripts/file-meta.sh <파일> johnny-planner 로 downloads 를 채운다.
-#   저장소의 Store/JohnnyPlanner_0.1.0.0_x64.msix 는 MS Store 제출용(서명 없음)이라 사용자가 직접 설치할 수 없어 쓰지 않았다.
-downloads: []
+downloads:
+  - label: Windows 설치 파일 (x64)
+    file: /files/johnny-planner/JohnnyPlanner_0.1.0_x64-setup.exe
+    version: 0.1.0
+    os: [windows]
+    size: 21598779
+    sha256: c26066f78235e7717851da189b211d9b9e1386ffb897edec2996e6c944efd506
+    released: 2026-11-24
+    signed: false
 ---
 
 **공부를 대신 해 주지는 못하지만, 시작하는 건 조니가 도울게요.**
