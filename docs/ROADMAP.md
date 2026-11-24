@@ -10,7 +10,7 @@
 코드는 GitHub `Jounghyunkim/johnnystudio` 에 올렸다 (2026-11-06). CI 는 아직 없다.
 **작품 등록·관리 도구**를 만들었다 (2026-11-09, [ADR-0009](04_architecture/adr/0009-local-portfolio-manager.md)): `dev.sh` 의 관리 화면 `/admin/` 과 CLI 로 작품을 만들고, 채우고, 공개한다. 콘텐츠 채우기(아래 2번)는 이 도구로 한다.
 **JohnnyStore 를 흡수하기로 했다** (2026-11-22, [통합 문서](02_planning/features/johnnystore-integration.md), [ADR-0011](04_architecture/adr/0011-absorb-johnnystore.md)). 파일을 올리는 사람은 운영자뿐이다. 스토어의 Windows 앱 9개를 작품으로 옮겨 공개했다 (공개 작품 10개). 스토어 서비스와 저장소(`../johnnystore`)는 보관본을 남기고 지웠다. 다음은 설치 파일 분석·ClamAV 검사(S2) (아래 "JohnnyStore 통합").
-**회원 Store 와 Showroom(회원 웹 서비스 소개)을 만들었다** (2026-11-24, 메뉴 Library ▾ 아래, [ADR-0012](04_architecture/adr/0012-member-store.md) 제안됨, [기능 명세](02_planning/features/store.md)): 메뉴 Store(`/store/`), 회원이 Windows 앱을 올리면 ClamAV 검사와 운영자 승인을 거쳐 공개된다. ADR-0011 의 '운영자만 올린다'를 바꿨다. 운영 서버 설정(§3-7)이 남았다 (아래 "Store").
+**회원 Store 와 Showroom(회원 웹 서비스 소개)을 만들었다** (2026-11-24, 메뉴 About 오른쪽 구분선 뒤, [ADR-0012](04_architecture/adr/0012-member-store.md) 제안됨, [기능 명세](02_planning/features/store.md)): 메뉴 Store(`/store/`), 회원이 Windows 앱을 올리면 ClamAV 검사와 운영자 승인을 거쳐 공개된다. ADR-0011 의 '운영자만 올린다'를 바꿨다. 운영 서버 설정(§3-7)이 남았다 (아래 "Store").
 남은 일은 다음 네 가지다.
 
 1. ideation §9 열린 질문에 답한다 (§9-6 큰 파일 배포 채널은 답함: 홈 서버만)
@@ -106,9 +106,9 @@
 
 ## Showroom (회원 웹 서비스) ⏳ (구현 완료, 운영 설정 전)
 
-> [기능 명세](02_planning/features/showroom.md) · [ADR-0012](04_architecture/adr/0012-member-store.md) 결정 12·13: Store 와 같은 수준에서 회원이 만든 웹 서비스를 소개한다. 메뉴는 Library ▾ 아래 (작품 전체 · Store · Showroom).
+> [기능 명세](02_planning/features/showroom.md) · [ADR-0012](04_architecture/adr/0012-member-store.md) 결정 12·13: Store 와 같은 수준에서 회원이 만든 웹 서비스를 소개한다. 메뉴는 About 오른쪽 구분선 뒤 (Store · Showroom).
 
-- [x] 메뉴: Library 를 펼침 메뉴로, 그 아래 작품 전체 · Store · Showroom (2026-11-24, 주소는 그대로)
+- [x] 메뉴: Library · Life Log · Work with me · About | Store · Showroom, 홈 히어로에 Store·Showroom 버튼 (2026-11-24. 처음의 Library 펼침 메뉴는 같은 날 바꿨다)
 - [x] API `api/app/showroom/`, 화면 `/showroom/` · `/showroom/service/` · `/showroom/new/` · `/showroom/mine/`, 검토는 `/store/manage/` 안
 - [x] Library 의 웹 서비스(Arkurator)를 '공식'으로 함께
 - [x] 약관에 Showroom 조항 (판 `2026-11-24.2`, 올리는 회원이 다시 동의), 개인정보처리방침

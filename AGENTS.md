@@ -12,7 +12,7 @@ JohnnyStudio 의 **포털(허브) 웹사이트**다. 정현 님이 만든 모든
 
 - **현재 단계**: Phase 1(공개 허브) 구현 완료. Phase 2 의 회원 가입·로그인(매직 링크, `api/`)을 구현했고 서버 설치·메일 설정이 남았다.
   작품 등록·관리는 개발 서버 전용 관리 화면(`/admin/`)과 CLI 로 한다 (2026-11-09).
-  회원이 Windows 앱을 올리고 운영자가 승인하면 공개되는 **Store**(`/store/`)와, 회원 웹 서비스를 소개하는 **Showroom**(`/showroom/`)을 만들었다. 둘 다 메뉴 **Library** 아래에 있다 (2026-11-24, [ADR-0012](docs/04_architecture/adr/0012-member-store.md) 제안됨).
+  회원이 Windows 앱을 올리고 운영자가 승인하면 공개되는 **Store**(`/store/`)와, 회원 웹 서비스를 소개하는 **Showroom**(`/showroom/`)을 만들었다. 메뉴는 About 오른쪽 구분선 뒤에 있다 (2026-11-24, [ADR-0012](docs/04_architecture/adr/0012-member-store.md) 제안됨).
   남은 일은 실제 콘텐츠 채우기와 도메인·Tunnel 공개다. 진행 상황은 [docs/ROADMAP.md](docs/ROADMAP.md).
 - **기획의 기준**: [docs/ideation.md](docs/ideation.md) v2 (네 구역·원칙·리스크·단계 계획)와 [docs/01_vision/PHILOSOPHY.md](docs/01_vision/PHILOSOPHY.md) 초안 v1.
   둘 다 사용자 확인 전이다. 기획안이 ADR 과 다르면 ADR 이 우선한다. 바꾸려면 새 ADR 을 쓴다.

@@ -1,4 +1,4 @@
-import { ArrowRight, BookMarked } from "lucide-react";
+import { ArrowRight, BookMarked, Globe, Store } from "lucide-react";
 import Link from "next/link";
 
 import { AssetGrid } from "@/components/asset-card";
@@ -52,6 +52,15 @@ export default function HomePage() {
               <ButtonLink href="/library/">
                 Library 둘러보기
                 <ArrowRight aria-hidden="true" className="size-4" />
+              </ButtonLink>
+              {/* 회원이 함께 올리는 곳 (ADR-0012): Windows 앱(Store), 웹 서비스(Showroom) */}
+              <ButtonLink href="/store/" variant="secondary">
+                <Store aria-hidden="true" className="size-4" />
+                Store
+              </ButtonLink>
+              <ButtonLink href="/showroom/" variant="secondary">
+                <Globe aria-hidden="true" className="size-4" />
+                Showroom
               </ButtonLink>
               <ButtonLink href="/work/" variant="secondary">
                 함께 일하기

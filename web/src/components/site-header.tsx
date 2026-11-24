@@ -16,7 +16,8 @@ export function SiteHeader() {
           <span>JohnnyStudio</span>
         </Link>
 
-        <nav aria-label="주 메뉴" className="ml-4 hidden shrink-0 md:block">
+        {/* 메뉴가 6개라 1024px(lg) 부터 펼쳐 보인다. 그보다 좁으면 메뉴 버튼 안에 있다 */}
+        <nav aria-label="주 메뉴" className="ml-4 hidden shrink-0 lg:block">
           <NavLinks />
         </nav>
 
@@ -27,7 +28,7 @@ export function SiteHeader() {
           <StudioLink />
           <AccountLink />
           {/* 모바일 메뉴: JS 없이도 열린다 */}
-          <details className="relative shrink-0 md:hidden">
+          <details className="relative shrink-0 lg:hidden">
             <summary className="flex size-9 cursor-pointer list-none items-center justify-center rounded-full border border-line text-fg-muted hover:text-fg [&::-webkit-details-marker]:hidden">
               <Menu aria-hidden="true" className="size-4" />
               <span className="sr-only">메뉴</span>

@@ -7,7 +7,7 @@
 
 | 주소 | 구역 | 페이지 | 역할 | 상태 |
 |---|---|---|---|---|
-| `/` | — | 홈 (랜딩) | 히어로(한 줄 정의 + 다루는 작품 7가지 유형과 공개 개수), 이렇게 쓰세요(둘러보기·바로 쓰기·모아 두기·함께 일하기), 대표 작품(하나면 넓은 카드), 일하는 원칙, 함께 일하는 방식, 최근 기록, 자주 묻는 질문, 마지막 안내. 문구는 `profile.yaml` 의 `landing` | ✅ |
+| `/` | — | 홈 (랜딩) | 히어로(한 줄 정의 + 다루는 작품 7가지 유형과 공개 개수, 버튼: Library 둘러보기 · Store · Showroom · 함께 일하기), 이렇게 쓰세요(둘러보기·바로 쓰기·모아 두기·함께 일하기), 대표 작품(하나면 넓은 카드), 일하는 원칙, 함께 일하는 방식, 최근 기록, 자주 묻는 질문, 마지막 안내. 문구는 `profile.yaml` 의 `landing` | ✅ |
 | `/library/` | Showcase | Library | 전체 작품: 검색, 유형 필터, 정렬. 상태가 주소(`?q=&type=&sort=`)에 남는다 | ✅ |
 | `/library/<slug>/` | Showcase | 작품 상세 | 유형별 뷰어(실행·다운로드·체험·영상·사진·원문), 소개, 비슷한 작품 | ✅ |
 | `/store/` | Store | Store 목록 | Library 의 Windows 앱('공식', 누르면 Library 상세) + 회원이 올리고 운영자가 승인한 앱: 검색·분류·정렬(`?q=&category=&sort=`). 회원 앱은 브라우저에서 API 로 읽는다 ([ADR-0012](../04_architecture/adr/0012-member-store.md), [기능 명세](features/store.md)) | ✅ |
@@ -37,10 +37,10 @@
 
 ## 메뉴
 
-- **헤더**: **Library ▾**(펼침: 작품 전체 · Store · Showroom) · Life Log · Work with me · About, 오른쪽에 ★ My Studio (즐겨찾기 개수)와 **로그인 / 로그인한 이메일**(→ `/account/`).
+- **헤더**: Library · Life Log · Work with me · About **|** Store · Showroom (1024px 보다 좁으면 메뉴 버튼 안, 구분선 뒤에 Store · Showroom), 오른쪽에 ★ My Studio (즐겨찾기 개수)와 **로그인 / 로그인한 이메일**(→ `/account/`).
   - 이메일은 남는 폭만큼만 보이고 넘치면 `…` 로 줄인다. 전체 주소는 마우스를 올리면 보인다
   - 휴대폰 폭에서는 @ 앞부분만 보이고, 메뉴 버튼(`<details>`, JS 없이도 열림) 맨 위에 전체 이메일이 있다
-- **바닥글**: 같은 메뉴를 한 줄로(Library · Store · Showroom · Life Log · …) + My Studio, 운영 방식 한 줄, 개인정보처리방침, 외부 채널 링크(`profile.yaml` 의 `links`), 테마 선택(어둡게·밝게·시스템)
+- **바닥글**: 같은 메뉴를 한 줄로(Library · Life Log · Work with me · About · Store · Showroom) + My Studio, 운영 방식 한 줄, 개인정보처리방침, 외부 채널 링크(`profile.yaml` 의 `links`), 테마 선택(어둡게·밝게·시스템)
 - **테마 버튼**: 헤더 오른쪽(넓은 화면), 휴대폰 메뉴 맨 아래
 
 ## 콘텐츠 목록

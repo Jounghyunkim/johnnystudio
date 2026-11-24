@@ -2,29 +2,21 @@
  * 주 메뉴. 서버 컴포넌트(바닥글)와 클라이언트 컴포넌트(헤더) 양쪽에서 쓰므로 "use client" 파일에 두지 않는다.
  * ("use client" 파일에서 내보낸 값은 서버 쪽에서 실제 값이 아니라 참조로만 보인다)
  *
- * Library 는 묶음이다: 작품 전체(/library/) · Store(Windows 앱) · Showroom(웹 서비스). 주소는 각자 그대로 둔다 (ADR-0012).
+ * 헤더: NAV(JohnnyStudio 의 것) | NAV_MEMBER(회원이 함께 올리는 곳: Store·Showroom). 사이에 구분선 "|" 를 둔다 (ADR-0012 결정 13).
  */
-export type NavItem = {
-  href: string;
-  label: string;
-  /** 펼침 메뉴에서 이름 아래에 보이는 한 줄 */
-  description?: string;
-  children?: readonly NavItem[];
-};
+export type NavItem = { href: string; label: string };
 
 export const NAV: readonly NavItem[] = [
-  {
-    href: "/library/",
-    label: "Library",
-    children: [
-      { href: "/library/", label: "작품 전체", description: "JohnnyStudio가 만든 모든 작품" },
-      { href: "/store/", label: "Store", description: "Windows 앱 내려받기 (공식 + 회원)" },
-      { href: "/showroom/", label: "Showroom", description: "회원이 만든 웹 서비스 소개 (공식 + 회원)" },
-    ],
-  },
+  { href: "/library/", label: "Library" },
   { href: "/log/", label: "Life Log" },
   { href: "/work/", label: "Work with me" },
   { href: "/about/", label: "About" },
+];
+
+/** About 오른쪽, 구분선 뒤: 회원 앱(Store)과 회원 웹 서비스(Showroom) */
+export const NAV_MEMBER: readonly NavItem[] = [
+  { href: "/store/", label: "Store" },
+  { href: "/showroom/", label: "Showroom" },
 ];
 
 const trim = (p: string) => (p.length > 1 ? p.replace(/\/+$/, "") : p);
@@ -36,16 +28,7 @@ export function isActive(pathname: string, href: string): boolean {
   return p === h || p.startsWith(`${h}/`);
 }
 
-/** 묶음이면 하위 항목 중 하나라도 해당하는가 */
-export function isItemActive(pathname: string, item: NavItem): boolean {
-  return item.children ? item.children.some((c) => isActive(pathname, c.href)) : isActive(pathname, item.href);
-}
-
-/** 바닥글처럼 한 줄로 늘어놓을 때: 묶음은 그 이름(첫 항목 주소) + 나머지 하위 항목 */
-export function flatNav(items: readonly NavItem[] = NAV): { href: string; label: string }[] {
-  return items.flatMap((item) =>
-    item.children
-      ? [{ href: item.href, label: item.label }, ...item.children.filter((c) => c.href !== item.href).map(({ href, label }) => ({ href, label }))]
-      : [{ href: item.href, label: item.label }],
-  );
+/** 바닥글처럼 한 줄로 늘어놓을 때 */
+export function flatNav(): NavItem[] {
+  return [...NAV, ...NAV_MEMBER];
 }

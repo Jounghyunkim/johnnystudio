@@ -31,7 +31,7 @@
 | `/showroom/mine/` | 내 서비스: 상태·사유, 열기, 고치기(`<dialog>`), 아이콘·화면 그림 넣기/바꾸기, 지우기 | 회원 |
 | `/store/manage/` | 검토 화면 아래 "Showroom" 절: 검토 대기(주소 열어 보기·승인·반려), 신고(숨기기·조치함·기각), 최근 공개(숨기기), 숨긴 서비스(검토 대기로 되돌리기) | 운영자 |
 
-메뉴: 헤더의 **Library ▾** 아래에 작품 전체 · Store · Showroom (모바일 메뉴는 들여 쓴 묶음, 바닥글은 한 줄).
+메뉴: Library · Life Log · Work with me · About **|** Store · Showroom (1024px 보다 좁으면 메뉴 버튼 안). 홈 히어로에도 Store·Showroom 버튼.
 
 ### 상태
 

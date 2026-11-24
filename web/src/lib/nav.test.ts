@@ -1,21 +1,20 @@
 import { describe, expect, it } from "vitest";
 
-import { flatNav, isActive, isItemActive, NAV } from "./nav";
+import { flatNav, isActive, NAV, NAV_MEMBER } from "./nav";
 
 describe("주 메뉴", () => {
-  const library = NAV.find((i) => i.label === "Library")!;
-
-  it("Library 묶음 아래에 작품 전체·Store·Showroom 이 있다", () => {
-    expect(library.children?.map((c) => c.href)).toEqual(["/library/", "/store/", "/showroom/"]);
+  it("About 오른쪽(구분선 뒤)에 Store·Showroom", () => {
+    expect(NAV.map((i) => i.label)).toEqual(["Library", "Life Log", "Work with me", "About"]);
+    expect(NAV_MEMBER.map((i) => i.href)).toEqual(["/store/", "/showroom/"]);
   });
 
-  it("하위 페이지에 있으면 묶음이 켜진다", () => {
-    for (const p of ["/library/", "/library/wlt/", "/store/", "/store/app/", "/showroom/service/"]) expect(isItemActive(p, library)).toBe(true);
-    expect(isItemActive("/log/", library)).toBe(false);
-    expect(isActive("/store/app/", "/library/")).toBe(false); // '작품 전체'는 Store 에서 켜지지 않는다
+  it("하위 페이지에서도 켜진다", () => {
+    expect(isActive("/store/app/", "/store/")).toBe(true);
+    expect(isActive("/showroom/service/", "/showroom/")).toBe(true);
+    expect(isActive("/store/app/", "/library/")).toBe(false);
   });
 
   it("바닥글은 한 줄로 늘어놓는다", () => {
-    expect(flatNav().map((i) => i.label)).toEqual(["Library", "Store", "Showroom", "Life Log", "Work with me", "About"]);
+    expect(flatNav().map((i) => i.label)).toEqual(["Library", "Life Log", "Work with me", "About", "Store", "Showroom"]);
   });
 });
