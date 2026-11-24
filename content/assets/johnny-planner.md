@@ -5,8 +5,6 @@ summary: 미루지 않고 제시간에 시작하는 습관을 만드는 학생·
 status: dev
 date: 2026-11-22
 tags: [교육, 생산성, 데스크톱]
-cover: /media/johnny-planner/cover.webp
-coverAlt: JohnnyPlanner의 오늘의 플래너 화면. 다음 약속 카드, 부모님의 한마디, 순공부 시간 요약, A·B·C 우선순위 할 일, 시간대별 일정, 색칠된 10분 타임테이블이 한 화면에 보인다
 icon: /media/johnny-planner/icon.png
 requirements: Windows 10 버전 1809 이상 또는 Windows 11 (x64), Microsoft Edge WebView2 런타임(Windows 11에는 기본 포함). 앱 화면은 한국어로 제공됩니다.
 downloads:
@@ -25,6 +23,8 @@ downloads:
 JohnnyPlanner는 해야 하는 건 알지만 자꾸 뒤로 미루는 중학생·청소년이 제시간에 책상에 앉아 스스로 공부 리듬을 만들도록 돕는 Windows 학습 플래너입니다. 학생이 직접 계획을 세우고 실행하며, 부모님은 하루가 끝난 뒤 숫자로 된 요약을 보고 응원 한마디를 남깁니다.
 
 ## 오늘의 플래너
+
+![JohnnyPlanner의 오늘의 플래너 화면. 다음 약속 카드, 부모님의 한마디, 순공부 시간 요약, A·B·C 우선순위 할 일, 시간대별 일정, 색칠된 10분 타임테이블이 한 화면에 보인다](/media/johnny-planner/cover.webp)
 
 - **우선순위 할 일(A/B/C)**: 오늘 꼭 끝낼 필수(A)·중요(B)·선택(C) 과제를 나누고, 가장 먼저 시작할 A1을 중심으로 하루를 짭니다.
 - **고정 일정과 시간대별 블록**: 학교·학원·저녁 식사 같은 반복 일정을 등록해 두면 빈 시간에만 공부 블록을 놓습니다.
