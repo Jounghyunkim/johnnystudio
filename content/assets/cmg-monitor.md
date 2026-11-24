@@ -7,6 +7,7 @@ date: 2026-11-16
 tags: [시스템, 데스크톱, 모니터링]
 icon: /media/cmg-monitor/icon.png
 requirements: Windows 10/11 (x64). 앱 화면은 한국어로 제공됩니다.
+microsoftStore: https://apps.microsoft.com/detail/9PCP2R7RSDQ8?hl=ko-kr&gl=KR
 downloads:
   - label: Windows 설치 파일 (x64)
     file: /files/cmg-monitor/CMG-Monitor-Setup-1.0.0.exe

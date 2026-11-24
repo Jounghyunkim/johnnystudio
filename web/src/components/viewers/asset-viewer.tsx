@@ -11,7 +11,7 @@ export function AssetViewer({ asset }: { asset: Asset }) {
     case "web-app":
       return <LaunchPanel url={asset.url} />;
     case "desktop-app":
-      return <DownloadPanel downloads={asset.downloads} requirements={asset.requirements} />;
+      return <DownloadPanel downloads={asset.downloads} requirements={asset.requirements} microsoftStore={asset.microsoftStore} />;
     case "web-package":
       return (
         <div className="space-y-6">

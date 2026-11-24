@@ -1,11 +1,11 @@
-import { Download, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Download, ShieldAlert, ShieldCheck, Store } from "lucide-react";
 
 import { formatBytes, formatDate } from "@/lib/format";
 import { OS_LABELS } from "@/lib/labels";
 import type { Download as DownloadInfo } from "@/lib/schema";
 
 import { CopyButton } from "../copy-button";
-import { buttonClass, cx } from "../ui";
+import { ExternalButton, buttonClass, cx } from "../ui";
 
 function fileName(path: string): string {
   return decodeURIComponent(path.split("?")[0]?.split("/").pop() ?? path);
@@ -14,8 +14,32 @@ function fileName(path: string): string {
 /**
  * 다운로드 패널: 버전·OS·크기·SHA-256 과 검증 방법을 보여 준다. (ideation 1-5 Trust by Design, R3)
  */
-export function DownloadPanel({ downloads, requirements }: { downloads: readonly DownloadInfo[]; requirements?: string }) {
+export function DownloadPanel({
+  downloads,
+  requirements,
+  microsoftStore,
+}: {
+  downloads: readonly DownloadInfo[];
+  requirements?: string;
+  /** Microsoft Store 주소. 있으면 설치 파일 위에 Store 에서 받는 길을 함께 보여 준다 */
+  microsoftStore?: string;
+}) {
+  const store = microsoftStore && (
+    <section aria-label="Microsoft Store" className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-line bg-surface p-5 sm:p-6">
+      <div className="flex items-start gap-3">
+        <Store aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-fg-muted" />
+        <div>
+          <p className="font-semibold text-fg">Microsoft Store</p>
+          <p className="mt-1 text-sm text-fg-subtle">Microsoft Store에서도 설치할 수 있습니다.</p>
+        </div>
+      </div>
+      <ExternalButton href={microsoftStore} variant="secondary">
+        Microsoft Store에서 받기
+      </ExternalButton>
+    </section>
+  );
   if (downloads.length === 0) {
+    if (store) return store;
     return (
       <div className="rounded-card border border-dashed border-line-strong p-6 text-sm text-fg-muted">
         다운로드 파일을 준비하고 있습니다.
@@ -29,6 +53,7 @@ export function DownloadPanel({ downloads, requirements }: { downloads: readonly
           <span className="font-semibold text-fg">필요 환경</span> · {requirements}
         </p>
       )}
+      {store}
       {downloads.map((d) => {
         const name = fileName(d.file);
         return (

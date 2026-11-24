@@ -513,6 +513,14 @@ function TypeSection({
       return (
         <Section id="sec-type" title={title} description="파일을 올리면 크기·SHA-256 을 계산해 채웁니다. 버전마다 파일 이름을 바꿔 주세요.">
           <TextField label="실행 환경" value={str(data.requirements)} onChange={(v) => set("requirements", v)} placeholder="Windows 10 이상" error={errorAt("requirements")} />
+          <TextField
+            label="Microsoft Store 주소 (선택)"
+            mono
+            value={str(data.microsoftStore)}
+            onChange={(v) => set("microsoftStore", v)}
+            placeholder="https://apps.microsoft.com/detail/9ABCDEFGHIJK"
+            error={errorAt("microsoftStore")}
+          />
           <DownloadsField slug={slug} value={list(data.downloads)} onChange={(v) => set("downloads", v)} errorAt={errorAt} />
         </Section>
       );

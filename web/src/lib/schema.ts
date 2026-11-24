@@ -31,6 +31,12 @@ const MediaPath = z
 
 const HttpUrl = z.url({ protocol: /^https?$/, error: "http(s):// 로 시작하는 주소를 쓴다" });
 
+/** Microsoft Store 앱 상세 주소: https://apps.microsoft.com/detail/<제품 ID 12자>[?hl=…] */
+const MicrosoftStoreUrl = HttpUrl.refine((v) => {
+  const u = new URL(v);
+  return u.protocol === "https:" && u.hostname === "apps.microsoft.com" && /^\/detail\/[0-9A-Za-z]{12}\/?$/.test(u.pathname);
+}, "Microsoft Store 앱 주소(https://apps.microsoft.com/detail/<제품 ID>)를 쓴다");
+
 const YoutubeId = z.string().regex(/^[A-Za-z0-9_-]{11}$/, "YouTube 영상 ID 는 11자다 (watch?v= 뒤의 값)");
 
 const Photo = z.strictObject({
@@ -92,6 +98,8 @@ export const AssetFrontmatter = z.discriminatedUnion("type", [
     type: z.literal("desktop-app"),
     downloads: z.array(Download).default([]),
     requirements: z.string().optional(),
+    /** Microsoft Store 에도 올렸으면 그 주소. 다운로드 패널과 Library·Store 카드에 'Microsoft Store' 버튼이 생긴다 */
+    microsoftStore: MicrosoftStoreUrl.optional(),
   }),
   z.strictObject({
     ...base,

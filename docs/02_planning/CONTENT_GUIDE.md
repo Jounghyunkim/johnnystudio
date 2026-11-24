@@ -84,7 +84,7 @@ npm --prefix web run admin -- unpublish my-tool
 | 유형 | 필드 | 출시하려면 |
 |---|---|---|
 | `web-app` | `url` | `url` |
-| `desktop-app` | `downloads` (목록), `requirements` | 다운로드 1개 이상, 각각 `size`·`sha256` |
+| `desktop-app` | `downloads` (목록), `requirements`, `microsoftStore` (Microsoft Store 앱 주소 `https://apps.microsoft.com/detail/<제품 ID>`, 선택. 다운로드 패널에 'Microsoft Store에서 받기', Library·Store 카드에 'MS Store' 바로가기) | 다운로드 1개 이상, 각각 `size`·`sha256` |
 | `web-package` | `playUrl`(샌드박스 주소), `download` | 둘 중 하나 |
 | `video` | `youtubeId` (watch?v= 뒤의 11자) | `youtubeId` |
 | `gallery` | `photos` (목록: `src`, `alt`, `caption`) | 사진 1장 이상 |
@@ -104,6 +104,7 @@ tags: [데스크톱, 모니터링]
 cover: /media/hardware-monitor/cover.webp
 coverAlt: 작은 창에 CPU·GPU 그래프가 보이는 화면
 requirements: Windows 10 이상
+microsoftStore: https://apps.microsoft.com/detail/9ABCDEFGHIJK?hl=ko-kr&gl=KR   # 있으면 (공유 주소 끝의 &ocid=… 는 빼도 된다)
 downloads:
   - label: Windows 설치 파일
     file: /files/hardware-monitor/hw-monitor-1.2.0-setup.exe
@@ -150,12 +151,12 @@ install -D -m 644 ~/build/hw-monitor-1.2.0-setup.exe /opt/johnnystudio/files/har
 
 작품은 `date` 만 있으면 자동으로 타임라인에 들어간다. 그 작품을 가리키는 마일스톤이 있으면 작품 항목은 따로 넣지 않는다.
 
-## 5. 초안과 샘플
+## 5. 초안
 
 - `draft: true`: 개발 미리보기(`dev.sh`)에서만 보이고 "초안" 표시가 붙는다. 출시 빌드(`check.sh`, `deploy.sh`, `preview.sh`)에서는 빠진다
 - 초안을 지우고 출시하려면 **완성도 검사**를 통과해야 한다: 날짜, 유형별 필수 값, 실제 체크섬, 머리말과 본문에 `TODO(` 표시 없음
 - 채울 곳에는 `TODO(content)` 를 남긴다 (관리 화면이 만드는 새 작품도 한 줄 소개·본문에 넣어 둔다). 그러면 채우기 전에는 공개되지 않는다
-- `sample-*` 파일은 뷰어 예시다. 실제 작품을 몇 개 등록한 뒤 지워도 된다 (출시는 검사가 막는다)
+- 유형별 뷰어 예시였던 `sample-*` 5개는 지웠다 (2026-11-24). 필요하면 커밋 `7ec8ffc` 에서 꺼낸다 (`git show 7ec8ffc:content/assets/sample-video.md`). `sample-` 로 시작하는 작품은 지금도 완성도 검사가 공개를 막는다
 
 ## 6. 출시 전 확인
 

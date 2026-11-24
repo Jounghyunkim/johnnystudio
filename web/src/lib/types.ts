@@ -39,6 +39,8 @@ export interface OfficialStoreApp {
   size?: number;
   /** 최신 Windows 파일의 공개일, 없으면 작품 날짜 */
   date?: string;
+  /** Microsoft Store 주소 (있으면 카드에 바로가기) */
+  microsoftStore?: string;
 }
 
 export interface TimelineItem {

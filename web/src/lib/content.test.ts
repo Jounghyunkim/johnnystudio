@@ -16,6 +16,7 @@ import {
   mediaPaths,
   missingFields,
   renderMarkdown,
+  toSummary,
 } from "./content";
 
 const assets = loadAllAssets();
@@ -197,5 +198,29 @@ describe("content/profile.yaml 의 landing", () => {
     const { landing } = getProfile();
     const hrefs = [...landing.steps.map((s) => s.href), ...landing.faq.flatMap((f) => (f.link ? [f.link.href] : []))];
     expect(hrefs.filter((h) => !pageExists(h))).toEqual([]);
+  });
+});
+
+describe("Microsoft Store 주소 (desktop-app 의 microsoftStore)", () => {
+  const desktop = (microsoftStore: string) =>
+    AssetFrontmatter.safeParse({ title: "t", type: "desktop-app", summary: "t", status: "live", microsoftStore }).success;
+
+  it("apps.microsoft.com 의 앱 상세 주소만 받는다", () => {
+    expect(desktop("https://apps.microsoft.com/detail/9PCP2R7RSDQ8?hl=ko-kr&gl=KR")).toBe(true);
+    expect(desktop("https://apps.microsoft.com/detail/9PCP2R7RSDQ8")).toBe(true);
+    expect(desktop("http://apps.microsoft.com/detail/9PCP2R7RSDQ8")).toBe(false);
+    expect(desktop("https://apps.microsoft.com.evil.example/detail/9PCP2R7RSDQ8")).toBe(false);
+    expect(desktop("https://apps.microsoft.com/search?query=wlt")).toBe(false);
+    expect(desktop("https://apps.microsoft.com/detail/short")).toBe(false);
+    expect(AssetFrontmatter.safeParse({ title: "t", type: "web-app", summary: "t", status: "live", microsoftStore: "https://apps.microsoft.com/detail/9PCP2R7RSDQ8" }).success).toBe(false);
+  });
+
+  it("카드에 'MS Store' 바로가기가 생긴다", () => {
+    const asset = {
+      slug: "t", html: "", title: "t", summary: "t", status: "live" as const, tags: [], featured: false, draft: false, links: [],
+      type: "desktop-app" as const, downloads: [], microsoftStore: "https://apps.microsoft.com/detail/9PCP2R7RSDQ8",
+    };
+    expect(toSummary(asset).quickAction).toEqual({ label: "MS Store", href: "https://apps.microsoft.com/detail/9PCP2R7RSDQ8" });
+    expect(toSummary({ ...asset, microsoftStore: undefined }).quickAction).toBeUndefined();
   });
 });

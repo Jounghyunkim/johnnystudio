@@ -165,7 +165,17 @@ export function getOfficialStoreApps(): OfficialStoreApp[] {
     if (a.type !== "desktop-app" || a.draft) continue;
     const win = a.downloads.find((d) => d.os.includes("windows"));
     if (!win) continue;
-    apps.push({ slug: a.slug, title: a.title, summary: a.summary, tags: a.tags, image: a.icon ?? a.cover, version: win.version, size: win.size, date: win.released ?? a.date });
+    apps.push({
+      slug: a.slug,
+      title: a.title,
+      summary: a.summary,
+      tags: a.tags,
+      image: a.icon ?? a.cover,
+      version: win.version,
+      size: win.size,
+      date: win.released ?? a.date,
+      microsoftStore: a.microsoftStore,
+    });
   }
   return apps;
 }
@@ -183,6 +193,8 @@ function quickAction(a: Asset): AssetSummary["quickAction"] {
       return a.playUrl ? { label: "체험", href: a.playUrl } : undefined;
     case "article":
       return a.url ? { label: "읽기", href: a.url } : undefined;
+    case "desktop-app":
+      return a.microsoftStore ? { label: "MS Store", href: a.microsoftStore } : undefined;
     default:
       return undefined;
   }

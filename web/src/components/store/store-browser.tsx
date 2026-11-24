@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Upload, X } from "lucide-react";
+import { ArrowUpRight, Search, Upload, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useId, useMemo } from "react";
 
@@ -45,10 +45,25 @@ function OfficialCard({ app, categoryLabel }: { app: OfficialStoreApp; categoryL
         </h3>
         <p className="truncate text-xs text-fg-subtle">JohnnyStudio{categoryLabel && ` · ${categoryLabel}`}</p>
         {app.summary && <p className="line-clamp-2 text-sm leading-relaxed text-fg-muted">{app.summary}</p>}
-        <p className="mt-auto pt-1 font-mono text-xs text-fg-subtle">
-          v{app.version}
-          {app.size !== undefined && ` · ${formatBytes(app.size)}`}
-        </p>
+        <div className="mt-auto flex items-center justify-between gap-2 pt-1">
+          <p className="font-mono text-xs text-fg-subtle">
+            v{app.version}
+            {app.size !== undefined && ` · ${formatBytes(app.size)}`}
+          </p>
+          {/* z-10: 카드 전체 링크(Library 상세) 위에서 따로 눌리게 */}
+          {app.microsoftStore && (
+            <a
+              href={app.microsoftStore}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="relative z-10 inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2.5 text-xs font-semibold text-accent hover:bg-accent/10 light:hover:text-accent-hover"
+            >
+              MS Store
+              <ArrowUpRight aria-hidden="true" className="size-3.5" />
+              <span className="sr-only">: {app.title} (새 탭에서 열림)</span>
+            </a>
+          )}
+        </div>
       </div>
     </article>
   );
