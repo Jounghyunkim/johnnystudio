@@ -23,7 +23,7 @@ import {
   Profile,
   SLUG_PATTERN,
 } from "./schema";
-import type { AssetSummary, TimelineItem } from "./types";
+import type { AssetSummary, OfficialStoreApp, TimelineItem } from "./types";
 
 export const CONTENT_DIR = process.env.CONTENT_DIR ?? path.join(process.cwd(), "..", "content");
 export const PUBLIC_DIR = path.join(process.cwd(), "public");
@@ -156,6 +156,18 @@ export function getAssets(): Asset[] {
 
 export function getAsset(slug: string): Asset | undefined {
   return getAssets().find((a) => a.slug === slug);
+}
+
+/** Store 목록에 함께 보일 공개된 Windows 앱 (초안 제외, 최신 Windows 파일 기준) */
+export function getOfficialStoreApps(): OfficialStoreApp[] {
+  const apps: OfficialStoreApp[] = [];
+  for (const a of getAssets()) {
+    if (a.type !== "desktop-app" || a.draft) continue;
+    const win = a.downloads.find((d) => d.os.includes("windows"));
+    if (!win) continue;
+    apps.push({ slug: a.slug, title: a.title, summary: a.summary, tags: a.tags, image: a.icon ?? a.cover, version: win.version, size: win.size, date: win.released ?? a.date });
+  }
+  return apps;
 }
 
 export function detailHref(slug: string): string {

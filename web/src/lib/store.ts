@@ -9,6 +9,7 @@
 import { useSyncExternalStore } from "react";
 
 import { type ApiError, type ApiResult, toApiError } from "./auth";
+import type { OfficialStoreApp } from "./types";
 
 export type AppStatus = "pending" | "published" | "rejected" | "hidden";
 export type ReleaseStatus = "pending" | "published" | "rejected";
@@ -332,6 +333,47 @@ export function toStoreSearch(q: StoreQuery): string {
   if (q.sort !== "new") p.set("sort", q.sort);
   const s = p.toString();
   return s ? `?${s}` : "";
+}
+
+// ── 공식 앱(Library)과 회원 앱을 한 목록으로 ──
+
+export type StoreEntry =
+  | { kind: "official"; app: OfficialStoreApp; category: string; categoryLabel: string; sortDate: string }
+  | { kind: "member"; app: StoreCard; sortDate: string };
+
+/** 작품 태그 중 Store 분류 이름과 같은 것 (없으면 기타). categories 는 /api/store/meta 의 값 */
+export function officialCategory(tags: readonly string[], categories: Record<string, string>): [string, string] {
+  for (const [key, label] of Object.entries(categories)) if (tags.includes(label)) return [key, label];
+  return ["other", categories.other ?? "기타"];
+}
+
+const matchesText = (q: string, ...fields: string[]) => {
+  const words = q.trim().toLowerCase();
+  return !words || fields.some((f) => f.toLowerCase().includes(words));
+};
+
+/**
+ * 검색·분류·정렬을 함께 적용한 목록. 회원 앱(members)은 API 가 이미 거른 것이고, 공식 앱은 여기서 거른다 (API 와 같은 규칙: 이름·소개 포함).
+ * 분류(categories)를 아직 모르면 분류로 거를 때 공식 앱은 빠진다.
+ */
+export function storeEntries(
+  official: readonly OfficialStoreApp[],
+  members: readonly StoreCard[],
+  query: StoreQuery,
+  categories: Record<string, string> | null,
+): StoreEntry[] {
+  const entries: StoreEntry[] = [];
+  for (const app of official) {
+    const [category, categoryLabel] = categories ? officialCategory(app.tags, categories) : ["", ""];
+    if (query.category && query.category !== category) continue;
+    if (!matchesText(query.q, app.title, app.summary)) continue;
+    entries.push({ kind: "official", app, category, categoryLabel, sortDate: app.date ?? "" });
+  }
+  for (const app of members) entries.push({ kind: "member", app, sortDate: app.updated_at ?? "" });
+  const name = (e: StoreEntry) => (e.kind === "official" ? e.app.title : e.app.name);
+  return entries.sort((a, b) =>
+    query.sort === "name" ? name(a).localeCompare(name(b), "ko") : b.sortDate.slice(0, 10).localeCompare(a.sortDate.slice(0, 10)) || name(a).localeCompare(name(b), "ko"),
+  );
 }
 
 // ── 불러온 값 (useSyncExternalStore) ──

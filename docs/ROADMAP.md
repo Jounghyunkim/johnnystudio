@@ -85,10 +85,11 @@
 - [x] 결정 (2026-11-24, 사용자): 운영자 승인 후 공개, Windows 파일 내려받기만, 지금은 johnnystudio.net, 메뉴 이름 Store → ADR-0012
 - [x] API `api/app/store/`: 조각 업로드, 설치 파일 분석(JohnnyStore `pe_extractor`, 자식 프로세스), ClamAV, 검토·숨김·차단·신고, X-Accel 내려받기, 아이콘 바꾸기, 탈퇴 정리. 의존성 4개 추가 (pefile·icoextract·pillow·olefile)
 - [x] 화면: `/store/` · `/store/app/` · `/store/new/` · `/store/mine/` · `/store/manage/` · `/store/terms/`, 메뉴 Store
+- [x] Store 목록에 Library 의 공개된 Windows 앱 10개를 '공식'으로 함께 (2026-11-24, 원본은 `content/` 그대로)
+- [x] 개발 서버 운영자 이메일 설정 (`api/.env.local`, 2026-11-24)
 - [x] 문서: Store 이용약관(JohnnyStore 문안을 고침), 개인정보처리방침, nginx·systemd·`api.env.example`, deploy/README §3-7
 - [x] 확인: API 테스트 107개, 실제 nginx 로 22개 항목, 헤드리스 Chrome 화면 15장, `check.sh` 통과
 - [ ] 사용자: ADR-0012 확정, 한도 기본값(300MB · 2GB · 24시간 10번)과 신고 보관 기간(1년) 확인
-- [ ] 사용자: 개발 서버에서 승인해 보려면 `api/.env.local` 에 `JOHNNYSTUDIO_STORE_ADMINS=<가입한 이메일>` (지금은 비어 있어 아무도 승인할 수 없다)
 - [ ] 사용자: Store 이용약관의 운영자 이름·연락처·시행일 (`TODO(content)`), 법률 검토 여부 `[확인 필요]`
 - [ ] 운영 서버 설정 (deploy/README §3-7, sudo: 사용자): `/opt/johnnystudio/store`, `sudo apt install clamav clamav-freshclam`, 운영자 이메일, nginx·systemd 다시 설치, 확인 1~5
 - [ ] Store 파일 백업 (DB 백업과 같은 주기) `[확인 필요]`

@@ -32,7 +32,7 @@
 ```
 
 - 공개 페이지는 모두 미리 만든 정적 파일이다. 서버에서 도는 코드는 회원·Store API(`/api/`) 하나뿐이다.
-- Store 의 회원 앱은 빌드된 HTML 에 없다. `/store/` 페이지(정적 셸)가 브라우저에서 `/api/store/` 를 읽는다 (§4-1).
+- Store 의 회원 앱은 빌드된 HTML 에 없다. `/store/` 페이지(정적 셸)가 브라우저에서 `/api/store/` 를 읽는다. 함께 보이는 Library 의 Windows 앱('공식')은 빌드 때 `content/` 에서 넣는다 (§4-1).
 - 같은 nginx 의 Arkurator 백엔드(80/443 → 127.0.0.1:8000)와 포트·DB 가 분리되어 있다.
 
 ## 2. 저장소 구조
@@ -123,6 +123,7 @@ JohnnyStudio/
 - 운영자(`JOHNNYSTUDIO_STORE_ADMINS`)가 `/store/manage/` 에서 승인해야 공개된다. 운영은 '탐지 없음'이어야 승인할 수 있다
 - 내려받기: API 가 공개 여부를 확인하고 `X-Accel-Redirect` 로 nginx 에 넘긴다. 파일 이름은 무작위 키, 응답은 `attachment`·`octet-stream`·`nosniff`·`CSP: sandbox`
 - 데이터: `store_*` 테이블 5개 + `/opt/johnnystudio/store/{uploads,files,icons}`. 회원이 탈퇴하면 그 회원의 앱·파일을 지운다
+- 목록에는 Library 의 공개된 Windows 앱도 '공식'으로 함께 나온다 (`getOfficialStoreApps()` → 빌드된 HTML). Store DB 에 사본을 두지 않는다
 - 자세한 것: [Store 기능 명세](../02_planning/features/store.md), 설치: [deploy/README.md §3-7](../../deploy/README.md)
 
 ## 5. 콘텐츠 파이프라인

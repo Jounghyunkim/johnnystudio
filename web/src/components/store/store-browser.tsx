@@ -10,20 +10,57 @@ import {
   loadRemote,
   parseStoreQuery,
   type StoreCard,
+  type StoreEntry,
   type StoreMeta,
   type StoreQuery,
   storeApi,
+  storeEntries,
   toStoreSearch,
   useRemote,
 } from "@/lib/store";
+import type { OfficialStoreApp } from "@/lib/types";
 import { useLocationSearch } from "@/lib/use-location-search";
 
 import { ButtonLink, cx } from "../ui";
-import { AppIcon, ErrorBox, Loading } from "./store-ui";
+import { AppIcon, ErrorBox, Loading, Pill } from "./store-ui";
+
+const cardClass =
+  "group relative flex h-full gap-4 rounded-card border border-line bg-surface p-5 transition-colors hover:border-line-strong hover:bg-raised has-[.card-link:focus-visible]:outline-2 has-[.card-link:focus-visible]:outline-offset-2 has-[.card-link:focus-visible]:outline-accent";
+
+/** Library 의 공식 앱. 누르면 Library 상세로 간다 */
+function OfficialCard({ app, categoryLabel }: { app: OfficialStoreApp; categoryLabel: string }) {
+  return (
+    <article className={cardClass}>
+      {app.image ? (
+        <img src={app.image} alt={`${app.title} 아이콘`} width={256} height={256} className="size-14 shrink-0 rounded-2xl bg-raised object-contain" />
+      ) : (
+        <AppIcon code="none" hasIcon={false} name={app.title} className="size-14 shrink-0" />
+      )}
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <h3 className="flex min-w-0 items-center gap-2 text-base font-semibold text-fg">
+          <Link href={`/library/${app.slug}/`} className="card-link truncate outline-none after:absolute after:inset-0 after:content-['']">
+            {app.title}
+          </Link>
+          <Pill tone="ok">공식</Pill>
+        </h3>
+        <p className="truncate text-xs text-fg-subtle">JohnnyStudio{categoryLabel && ` · ${categoryLabel}`}</p>
+        {app.summary && <p className="line-clamp-2 text-sm leading-relaxed text-fg-muted">{app.summary}</p>}
+        <p className="mt-auto pt-1 font-mono text-xs text-fg-subtle">
+          v{app.version}
+          {app.size !== undefined && ` · ${formatBytes(app.size)}`}
+        </p>
+      </div>
+    </article>
+  );
+}
+
+function EntryCard({ entry }: { entry: StoreEntry }) {
+  return entry.kind === "official" ? <OfficialCard app={entry.app} categoryLabel={entry.categoryLabel} /> : <Card app={entry.app} />;
+}
 
 function Card({ app }: { app: StoreCard }) {
   return (
-    <article className="group relative flex h-full gap-4 rounded-card border border-line bg-surface p-5 transition-colors hover:border-line-strong hover:bg-raised has-[.card-link:focus-visible]:outline-2 has-[.card-link:focus-visible]:outline-offset-2 has-[.card-link:focus-visible]:outline-accent">
+    <article className={cardClass}>
       <AppIcon code={app.code} hasIcon={app.has_icon} name={app.name} className="size-14 shrink-0" />
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <h3 className="truncate text-base font-semibold text-fg">
@@ -43,8 +80,11 @@ function Card({ app }: { app: StoreCard }) {
   );
 }
 
-/** 공개된 회원 앱 목록. 검색 상태는 주소(?q=&category=&sort=)에 남는다 */
-export function StoreBrowser() {
+/**
+ * Store 목록: Library 의 공식 앱(빌드 때 넘겨받아 HTML 에 들어 있다) + 공개된 회원 앱(API).
+ * 검색 상태는 주소(?q=&category=&sort=)에 남는다
+ */
+export function StoreBrowser({ official }: { official: readonly OfficialStoreApp[] }) {
   const [search, setSearch] = useLocationSearch();
   const query = useMemo(() => parseStoreQuery(search), [search]);
   const apiSearch = toStoreSearch(query);
@@ -64,7 +104,11 @@ export function StoreBrowser() {
   }, [key, apiSearch]);
 
   const update = (patch: Partial<StoreQuery>) => setSearch(toStoreSearch({ ...query, ...patch }));
-  const categories = meta?.status === "ready" ? Object.entries(meta.data.categories) : [];
+  const categoryMap = meta?.status === "ready" ? meta.data.categories : null;
+  const categories = categoryMap ? Object.entries(categoryMap) : [];
+  const members = list?.status === "ready" ? list.data.apps : null;
+  const entries = useMemo(() => storeEntries(official, members ?? [], query, categoryMap), [official, members, query, categoryMap]);
+  const membersPending = !list || list.status === "loading";
 
   return (
     <div>
@@ -134,21 +178,20 @@ export function StoreBrowser() {
         </div>
       )}
 
-      <div className="mt-8">
-        {!list || list.status === "loading" ? (
+      <div className="mt-8 space-y-6">
+        {list?.status === "error" && <ErrorBox error={list.error} title="회원 앱을 불러오지 못했습니다" />}
+        {entries.length === 0 && membersPending ? (
           <Loading />
-        ) : list.status === "error" ? (
-          <ErrorBox error={list.error} title="앱 목록을 불러오지 못했습니다" />
         ) : (
           <>
-            <p aria-live="polite" className="mb-6 text-sm text-fg-subtle">
-              {list.data.apps.length}개의 앱
+            <p aria-live="polite" className="text-sm text-fg-subtle">
+              {entries.length}개의 앱{membersPending && " · 회원 앱을 불러오는 중…"}
             </p>
-            {list.data.apps.length > 0 ? (
+            {entries.length > 0 ? (
               <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {list.data.apps.map((a) => (
-                  <li key={a.code}>
-                    <Card app={a} />
+                {entries.map((e) => (
+                  <li key={e.kind === "official" ? `o:${e.app.slug}` : `m:${e.app.code}`}>
+                    <EntryCard entry={e} />
                   </li>
                 ))}
               </ul>

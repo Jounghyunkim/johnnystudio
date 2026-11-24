@@ -25,6 +25,22 @@ export interface AssetSummary {
   quickAction?: QuickAction;
 }
 
+/**
+ * Store 목록에 '공식'으로 함께 보이는 Library 의 Windows 앱 (ADR-0012). 원본은 content/ 그대로이고, 누르면 Library 상세로 간다.
+ */
+export interface OfficialStoreApp {
+  slug: string;
+  title: string;
+  summary: string;
+  tags: string[];
+  /** 아이콘, 없으면 대표 이미지 */
+  image?: string;
+  version: string;
+  size?: number;
+  /** 최신 Windows 파일의 공개일, 없으면 작품 날짜 */
+  date?: string;
+}
+
 export interface TimelineItem {
   date: string;
   title: string;

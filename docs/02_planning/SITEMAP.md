@@ -10,7 +10,7 @@
 | `/` | — | 홈 (랜딩) | 히어로(한 줄 정의 + 다루는 작품 7가지 유형과 공개 개수), 이렇게 쓰세요(둘러보기·바로 쓰기·모아 두기·함께 일하기), 대표 작품(하나면 넓은 카드), 일하는 원칙, 함께 일하는 방식, 최근 기록, 자주 묻는 질문, 마지막 안내. 문구는 `profile.yaml` 의 `landing` | ✅ |
 | `/library/` | Showcase | Library | 전체 작품: 검색, 유형 필터, 정렬. 상태가 주소(`?q=&type=&sort=`)에 남는다 | ✅ |
 | `/library/<slug>/` | Showcase | 작품 상세 | 유형별 뷰어(실행·다운로드·체험·영상·사진·원문), 소개, 비슷한 작품 | ✅ |
-| `/store/` | Store | Store 목록 | 회원이 올리고 운영자가 승인한 Windows 앱: 검색·분류·정렬(`?q=&category=&sort=`). 내용은 브라우저에서 API 로 읽는다 ([ADR-0012](../04_architecture/adr/0012-member-store.md), [기능 명세](features/store.md)) | ✅ |
+| `/store/` | Store | Store 목록 | Library 의 Windows 앱('공식', 누르면 Library 상세) + 회원이 올리고 운영자가 승인한 앱: 검색·분류·정렬(`?q=&category=&sort=`). 회원 앱은 브라우저에서 API 로 읽는다 ([ADR-0012](../04_architecture/adr/0012-member-store.md), [기능 명세](features/store.md)) | ✅ |
 | `/store/app/?id=<코드>` | Store | Store 앱 상세 | 내려받기, 검사 결과·SHA-256·서명 문구·VirusTotal 검색 링크, 소개, 이전 버전, 공유 주소, 신고 | ✅ |
 | `/store/new/` | Store | 앱 올리기 | 로그인 → 표시 이름·약관 동의 → 파일 → 분석으로 채운 양식 → 검토 요청. `?app=<코드>` 는 새 버전. 색인 안 함 | ✅ |
 | `/store/mine/` | Store | 내 앱 | 검토 상태·사유·검사 결과, 고치기·아이콘·새 버전·지우기. 색인 안 함 | ✅ |
