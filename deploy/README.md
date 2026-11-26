@@ -1,6 +1,6 @@
 # 배포 가이드: 홈 서버 M8 (nginx + Cloudflare Tunnel)
 
-> **Last Updated**: 2026-11-24
+> **Last Updated**: 2026-11-26
 > **상태**: 서버 설정 전. 도메인이 정해지면 §2 → §3 → §4 순서로 진행한다. 로그인을 쓰지 않을 동안은 §3 을 미뤄도 된다.
 > Store(회원 앱, [ADR-0012](../docs/04_architecture/adr/0012-member-store.md))는 §3 다음에 §3-7 을 한다.
 > 결정 배경: [ADR-0002](../docs/04_architecture/adr/0002-deploy-home-server-nginx.md) (릴리스 + current),
@@ -181,6 +181,8 @@ clamscan --version                               # ClamAV 1.x/<시그니처 번�
 #    JOHNNYSTUDIO_STORE_ADMINS=운영자@example.com
 
 # 4) nginx 템플릿을 다시 설치한다 (§2-3). /api/store/uploads · /api/showroom/uploads(Showroom 그림) · /_store_files/ 가 새로 들어 있다
+#    2026-11-25 (ADR-0013): /api/store/apps · /api/showroom/services (본문 128k, 그림 요청 제한 johnnystudio_media) 도 새로 들어 있다.
+#    이미 설치했다면 다시 설치하고 sudo nginx -t && sudo systemctl reload nginx
 # 5) API 서비스 설정을 다시 설치한다 (ReadWritePaths 가 새로 들어 있다)
 sudo install -m 644 deploy/systemd/johnnystudio-api.service /etc/systemd/system/
 sudo systemctl daemon-reload && sudo systemctl restart johnnystudio-api
@@ -201,6 +203,23 @@ curl -s -H "Host: $DOMAIN" http://127.0.0.1:8081/api/store/meta    # "scanner":t
 6. Showroom: 일반 회원으로 `/showroom/new/` 에서 서비스 하나를 소개하고 화면 그림을 넣는다 → 운영자가 `/store/manage/` 아래 Showroom 절에서 승인 → `/showroom/` 에 보인다
 
 문제가 생기면 `JOHNNYSTUDIO_STORE_UPLOADS_OPEN=0` 으로 새 업로드를 막고 API 를 다시 시작한다. 이미 공개된 앱은 그대로 받을 수 있다.
+
+### 3-8. 공식 앱·서비스를 운영 DB 로 옮기기 (1회, ADR-0014)
+
+운영자 작품(Store 의 Windows 앱, Showroom 의 웹 서비스)도 DB 에서 관리한다. 운영 DB 를 만든 뒤(§3-1~3-7) 한 번 돌린다. 여러 번 돌려도 된다.
+작품 파일의 `storeApp`·`showroomService` 코드로 같은 코드를 만들어서, Library 의 'Store에서 내려받기' 링크가 그대로 맞는다.
+
+```bash
+# 0) 운영자 이메일로 사이트에 한 번 로그인(가입)해 둔다 (주인이 될 계정)
+# 1) 미리 보기: 무엇을 옮길지만 본다 (DB·작품 파일을 바꾸지 않는다)
+JOHNNYSTUDIO_ENV_FILE=/opt/johnnystudio/api.env JOHNNYSTUDIO_FILES_DIR=/opt/johnnystudio/files ./scripts/import-official.sh --dry-run
+# 2) 옮긴다 (설치 파일은 /opt/johnnystudio/files 에서 /opt/johnnystudio/store/files 로 복사, ClamAV 검사)
+JOHNNYSTUDIO_ENV_FILE=/opt/johnnystudio/api.env JOHNNYSTUDIO_FILES_DIR=/opt/johnnystudio/files ./scripts/import-official.sh
+```
+
+- API 서비스 계정이 `/opt/johnnystudio/store` 에 쓸 수 있는 사용자로 돌린다 (§3-7 의 1번)
+- 운영 DB 에는 작품 파일의 **처음 버전**이 들어간다. 개발 DB 에서 올린 새 버전은 운영의 Store 에서 다시 올린다
+- 확인: 로그아웃한 브라우저에서 `/store/` 의 앱마다 '공식' 표시, Library 상세의 'Store에서 내려받기'가 그 앱으로 간다
 
 ## 4. Cloudflare Tunnel 로 공개
 

@@ -3,10 +3,11 @@
 import { Search, X } from "lucide-react";
 import { useId, useMemo } from "react";
 
-import { countByType, filterAssets, type LibraryQuery, parseQuery, type TypeFilter, toSearch } from "@/lib/filter";
+import { countByType, filterAssets, groupByType, type LibraryQuery, parseQuery, type TypeFilter, toSearch } from "@/lib/filter";
 import { TYPE_LABELS } from "@/lib/labels";
 import { ASSET_TYPES } from "@/lib/asset-types";
 import type { AssetSummary } from "@/lib/types";
+import { TYPE_STYLE } from "@/lib/type-style";
 import { useLocationSearch } from "@/lib/use-location-search";
 
 import { AssetGrid } from "./asset-card";
@@ -20,6 +21,7 @@ export function LibraryBrowser({ assets }: { assets: AssetSummary[] }) {
   const [search, setSearch] = useLocationSearch();
   const query = useMemo(() => parseQuery(search), [search]);
   const results = useMemo(() => filterAssets(assets, query), [assets, query]);
+  const groups = useMemo(() => groupByType(results), [results]);
   const counts = useMemo(() => countByType(assets, query.q), [assets, query.q]);
   const searchId = useId();
   const sortId = useId();
@@ -96,7 +98,22 @@ export function LibraryBrowser({ assets }: { assets: AssetSummary[] }) {
       </p>
 
       {results.length > 0 ? (
-        <AssetGrid assets={results} />
+        // 유형(카테고리)마다 칸을 나누고, 칸 사이에 가로 점선 (2026-11-26 사용자 요청). 카드 제목은 칸 제목(h2) 아래라 h3
+        <div>
+          {groups.map((g, i) => {
+            const { icon: Icon, ink } = TYPE_STYLE[g.type];
+            return (
+              <section key={g.type} aria-labelledby={`library-${g.type}`} className={cx(i > 0 && "mt-12 border-t border-dashed border-line-strong pt-10")}>
+                <h2 id={`library-${g.type}`} className="mb-5 flex items-center gap-2 text-lg font-semibold tracking-tight text-fg">
+                  <Icon aria-hidden="true" className={cx("size-5", ink)} />
+                  {TYPE_LABELS[g.type]}
+                  <span className="text-sm font-normal tabular-nums text-fg-subtle">{g.assets.length}</span>
+                </h2>
+                <AssetGrid assets={g.assets} columns={4} />
+              </section>
+            );
+          })}
+        </div>
       ) : (
         <div className="rounded-card border border-dashed border-line-strong px-6 py-16 text-center">
           <p className="font-semibold text-fg">찾는 작품이 없습니다</p>

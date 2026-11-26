@@ -10,11 +10,15 @@
 
 올리는 회원 (로그인)
   GET  /me · POST /me/publisher                표시 이름·약관 동의, 한도·사용량
+  PATCH /me/publisher                          표시 이름만 바꾸기 (이미 정한 회원. 설정 화면, 약관에 다시 동의하지 않는다)
   GET  /me/apps                                내 앱 (상태·반려 사유 포함)
   POST /uploads → PUT /uploads/{id}?offset= (8MB 조각) → POST /uploads/{id}/complete (분석) → POST /apps 또는 /apps/{code}/releases
   PATCH·DELETE /apps/{code}, DELETE /apps/{code}/releases/{id}
   PUT  /uploads/icons/{code}                   아이콘 바꾸기 (그림 1MB 까지 → 256px PNG 로 다시 그린다.
                                                nginx 의 /api/store/uploads 본문 한도 안에 두려고 이 경로에 있다)
+  PUT  /apps/{code}/page                       소개 자료 (기능·사용 방법·질문·링크·그림 순서와 설명, ADR-0013)
+  PUT  /uploads/gallery/{code}                 소개 그림 하나 올리기 (5MB 까지 → 긴 변 1600px WebP 로 다시 그린다)
+  GET  /apps/{code}/gallery/{image_id}         소개 그림 (누구나, 앱을 볼 수 있으면)
 
 운영자 (JOHNNYSTUDIO_STORE_ADMINS 의 이메일)
   GET  /admin/overview                         검토 대기·신고·차단 목록
@@ -44,6 +48,7 @@ from starlette.concurrency import run_in_threadpool
 from ..auth import DbDep, SettingsDep, api_error, client_ip, optional_session, required_session
 from ..config import Settings
 from ..db import AuthSession, User, utcnow
+from ..listing import GALLERY_MAX, IMAGE_ID, IMAGE_UPLOAD_MAX_BYTES, Gallery, ListingError, PageIn, clean_page, meta_out
 from ..security import ip_hash
 from . import service
 from .analyze import BinaryValidationError, run_icon_isolated, run_isolated, validate_binary
@@ -52,6 +57,7 @@ from .models import (
     CATEGORIES,
     REPORT_REASONS,
     StoreApp,
+    StoreAppPage,
     StorePublisher,
     StoreRelease,
     StoreReport,
@@ -72,6 +78,10 @@ VERSION = re.compile(r"^[0-9A-Za-z][0-9A-Za-z.+_-]{0,39}$")
 RESERVED_NAMES = ("johnnystudio", "johnny studio", "운영자", "관리자", "admin", "administrator", "moderator")
 ICON_MAX_BYTES = 512 * 1024  # 다시 그린 256px PNG
 ICON_UPLOAD_MAX_BYTES = 1024 * 1024  # 회원이 올리는 아이콘 그림
+DESCRIPTION_MAX = 10000  # 설명 (Markdown 일부를 글자로 그린다. Microsoft Store 설명 한도와 같다, ADR-0013)
+NOTES_MAX = 1500  # 바뀐 점 (Microsoft Store '이번 버전의 새로운 기능' 한도와 같다)
+# 그림·아이콘을 내줄 때. 그림 ID 는 무작위라 한 번 올린 그림은 바뀌지 않는다 (숨긴 앱의 그림은 그 브라우저에만 남는다)
+IMAGE_CACHE = "private, max-age=604800"
 
 _chunk_lock = threading.Lock()
 
@@ -155,11 +165,11 @@ def _deletable_app(db: Session, settings: Settings, code: str, user: User) -> tu
     raise api_error(status.HTTP_404_NOT_FOUND, "not_found", "앱을 찾을 수 없습니다.")
 
 
-def _edited_out(db: Session, app: StoreApp, as_admin: bool) -> dict[str, Any]:
+def _edited_out(db: Session, settings: Settings, app: StoreApp, as_admin: bool) -> dict[str, Any]:
     if as_admin:
         log.info("Store 운영자가 앱 정보를 고침: %s", app.code)
-        return _owner_view(db, app)
-    return service.app_out(app, _publisher(db, app.owner_id), private=True)
+        return _owner_view(db, app, settings)
+    return service.app_out(app, _publisher(db, app.owner_id), private=True, official=service.is_official(db, settings, app.owner_id))
 
 
 def _ready_publisher(db: Session, settings: Settings, user: User) -> StorePublisher:
@@ -230,7 +240,7 @@ class AppIn(BaseModel):
     upload_id: str = Field(max_length=64)
     name: str = Field(max_length=400)
     summary: str = Field(default="", max_length=800)
-    description: str = Field(default="", max_length=12000)
+    description: str = Field(default="", max_length=40000)
     category: str = Field(default="other", max_length=40)
     version: str = Field(max_length=100)
     notes: str = Field(default="", max_length=6000)
@@ -247,7 +257,7 @@ class ReleaseIn(BaseModel):
 class AppPatch(BaseModel):
     name: str | None = Field(default=None, max_length=400)
     summary: str | None = Field(default=None, max_length=800)
-    description: str | None = Field(default=None, max_length=12000)
+    description: str | None = Field(default=None, max_length=40000)
     category: str | None = Field(default=None, max_length=40)
 
 
@@ -280,12 +290,14 @@ def meta(settings: SettingsDep) -> dict[str, Any]:
         "uploads_open": settings.store_uploads_open,
         "scan_required": settings.store_require_scan,
         "scanner": find_clamscan(settings.store_clamscan) is not None,
+        "listing": meta_out(),
     }
 
 
 @router.get("/apps")
 def list_apps(
     db: DbDep,
+    settings: SettingsDep,
     q: Annotated[str, Query(max_length=100)] = "",
     category: Annotated[str, Query(max_length=40)] = "",
     sort: Literal["new", "name"] = "new",
@@ -293,6 +305,7 @@ def list_apps(
     stmt = (
         select(StoreApp, StorePublisher)
         .join(StorePublisher, StorePublisher.user_id == StoreApp.owner_id)
+        .outerjoin(StoreAppPage, StoreAppPage.app_id == StoreApp.id)
         .where(StoreApp.status == "published", StorePublisher.blocked_at.is_(None))
     )
     if category in CATEGORIES:
@@ -300,13 +313,16 @@ def list_apps(
     words = service.clean_line(q).lower()
     if words:
         like = f"%{words.replace('%', '').replace('_', '')}%"
-        stmt = stmt.where(func.lower(StoreApp.name).like(like) | func.lower(StoreApp.summary).like(like))
+        stmt = stmt.where(
+            func.lower(StoreApp.name).like(like) | func.lower(StoreApp.summary).like(like) | func.coalesce(StoreAppPage.search_text, "").like(like)
+        )
     if sort == "name":
         stmt = stmt.order_by(func.lower(StoreApp.name), StoreApp.id)
     else:
         stmt = stmt.order_by(func.coalesce(StoreApp.published_at, StoreApp.created_at).desc(), StoreApp.id.desc())
     rows = db.execute(stmt.limit(500)).all()
-    apps = [service.card_out(app, pub) for app, pub in rows if service.is_public(app, pub)]
+    official = service.official_ids(db, settings)
+    apps = [service.card_out(app, pub, official=app.owner_id in official) for app, pub in rows if service.is_public(app, pub)]
     return {"apps": apps}
 
 
@@ -314,7 +330,7 @@ def list_apps(
 def get_app(code: str, db: DbDep, settings: SettingsDep, session: OptionalSessionDep) -> dict[str, Any]:
     user = _user(db, session)
     app, publisher, private = _visible_app(db, settings, code, user)
-    out = service.app_out(app, publisher, private=private, files_origin=settings.store_files_origin)
+    out = service.app_out(app, publisher, private=private, files_origin=settings.store_files_origin, official=service.is_official(db, settings, app.owner_id))
     out["viewer"] = {"owner": user is not None and user.id == app.owner_id, "admin": service.is_admin(settings, user)}
     return out
 
@@ -326,6 +342,16 @@ def app_icon(code: str, db: DbDep, settings: SettingsDep, session: OptionalSessi
     if not app.has_icon or not path.is_file():
         raise api_error(status.HTTP_404_NOT_FOUND, "not_found", "아이콘이 없습니다.")
     return FileResponse(path, media_type="image/png", headers={"X-Content-Type-Options": "nosniff"})
+
+
+@router.get("/apps/{code}/gallery/{image_id}")
+def app_gallery_image(code: str, image_id: str, db: DbDep, settings: SettingsDep, session: OptionalSessionDep) -> Response:
+    app, _, _ = _visible_app(db, settings, code, _user(db, session))
+    ids = {g.get("id") for g in (app.page.data.get("gallery", []) if app.page else [])}
+    path = Gallery(settings, "store", app.code).path(image_id) if IMAGE_ID.match(image_id) and image_id in ids else None
+    if path is None or not path.is_file():
+        raise api_error(status.HTTP_404_NOT_FOUND, "not_found", "그림이 없습니다.")
+    return FileResponse(path, media_type="image/webp", headers={"X-Content-Type-Options": "nosniff", "Cache-Control": IMAGE_CACHE})
 
 
 @router.get("/apps/{code}/releases/{release_id}/download")
@@ -408,19 +434,33 @@ def my_store(db: DbDep, settings: SettingsDep, session: SessionDep) -> dict[str,
     }
 
 
-@router.post("/me/publisher")
-def set_publisher(body: PublisherIn, db: DbDep, settings: SettingsDep, session: SessionDep) -> dict[str, Any]:
-    user = _signed_in(db, session)
-    name = _field(body.display_name, service.clean_line, "표시 이름", 30, required=True)
+def _display_name(raw: str, settings: Settings, user: User) -> str:
+    """표시 이름 검사: 2~30자, 운영자로 오해할 이름 금지 (운영자 본인은 써도 된다)"""
+    name = _field(raw, service.clean_line, "표시 이름", 30, required=True)
     if len(name) < 2:
         raise api_error(status.HTTP_400_BAD_REQUEST, "invalid_field", "표시 이름은 2자 이상 씁니다.")
     folded = name.casefold().replace(" ", "")
     if not service.is_admin(settings, user) and any(word.replace(" ", "") in folded for word in RESERVED_NAMES):
         raise api_error(status.HTTP_400_BAD_REQUEST, "reserved_name", "운영자로 오해할 수 있는 이름은 쓸 수 없습니다.")
+    return name
+
+
+def _check_rename(p: StorePublisher, name: str) -> None:
+    """이용 제한(차단)된 회원은 표시 이름을 바꾸지 못한다 (검토·신고 기록의 이름이 흐려지지 않게)"""
+    if p.blocked_at is not None and name != p.display_name:
+        raise api_error(status.HTTP_403_FORBIDDEN, "blocked", "이용 제한 중에는 표시 이름을 바꿀 수 없습니다.")
+
+
+@router.post("/me/publisher")
+def set_publisher(body: PublisherIn, db: DbDep, settings: SettingsDep, session: SessionDep) -> dict[str, Any]:
+    user = _signed_in(db, session)
+    name = _display_name(body.display_name, settings, user)
     if not body.agree_terms or not body.age_14:
         raise api_error(status.HTTP_400_BAD_REQUEST, "needs_agreement", "Store 이용약관 동의와 만 14세 이상 확인이 필요합니다.")
     now = utcnow()
     p = _publisher(db, user.id)
+    if p is not None:
+        _check_rename(p, name)
     if p is None:
         p = StorePublisher(user_id=user.id, display_name=name, terms_version=service.TERMS_VERSION, agreed_at=now, created_at=now)
         db.add(p)
@@ -433,12 +473,31 @@ def set_publisher(body: PublisherIn, db: DbDep, settings: SettingsDep, session: 
     return {"publisher": service.publisher_out(p)}
 
 
+class PublisherRename(BaseModel):
+    display_name: str = Field(max_length=200)
+
+
+@router.patch("/me/publisher")
+def rename_publisher(body: PublisherRename, db: DbDep, settings: SettingsDep, session: SessionDep) -> dict[str, Any]:
+    """표시 이름만 바꾼다. 처음 정할 때는 약관 동의가 필요하므로 POST 를 쓴다. 바꾼 이름은 앱·서비스 화면에 바로 보인다"""
+    user = _signed_in(db, session)
+    p = _publisher(db, user.id)
+    if p is None:
+        raise api_error(status.HTTP_409_CONFLICT, "needs_publisher", "아직 표시 이름이 없습니다. 이용약관에 동의하고 처음 정해 주세요.")
+    name = _display_name(body.display_name, settings, user)
+    _check_rename(p, name)
+    p.display_name = name
+    db.commit()
+    return {"publisher": service.publisher_out(p)}
+
+
 @router.get("/me/apps")
-def my_apps(db: DbDep, session: SessionDep) -> dict[str, Any]:
+def my_apps(db: DbDep, settings: SettingsDep, session: SessionDep) -> dict[str, Any]:
     user = _signed_in(db, session)
     publisher = _publisher(db, user.id)
     apps = db.scalars(select(StoreApp).where(StoreApp.owner_id == user.id).order_by(StoreApp.created_at.desc()))
-    return {"apps": [service.app_out(a, publisher, private=True) for a in apps]}
+    official = service.is_admin(settings, user)
+    return {"apps": [service.app_out(a, publisher, private=True, official=official) for a in apps]}
 
 
 @router.post("/uploads", status_code=status.HTTP_201_CREATED)
@@ -655,17 +714,24 @@ def _new_release(settings: Settings, app: StoreApp, u: StoreUpload, version: str
     return r
 
 
-@router.put("/uploads/icons/{code}")
-async def upload_icon(code: str, request: Request, db: DbDep, settings: SettingsDep, session: SessionDep) -> dict[str, Any]:
+async def read_limited(request: Request, limit: int, label: str) -> bytes:
+    """본문을 limit 까지만 읽는다 (넘으면 413). Showroom 그림 올리기도 쓴다"""
     declared = request.headers.get("content-length")
-    if declared and declared.isdigit() and int(declared) > ICON_UPLOAD_MAX_BYTES:
-        raise api_error(status.HTTP_413_CONTENT_TOO_LARGE, "too_large", "아이콘 그림은 1MB 까지 올릴 수 있습니다.")
+    too_big = api_error(status.HTTP_413_CONTENT_TOO_LARGE, "too_large", f"{label}은(는) {limit // (1024 * 1024)}MB 까지 올릴 수 있습니다.")
+    if declared and declared.isdigit() and int(declared) > limit:
+        raise too_big
     data = bytearray()
     async for part in request.stream():
         data += part
-        if len(data) > ICON_UPLOAD_MAX_BYTES:
-            raise api_error(status.HTTP_413_CONTENT_TOO_LARGE, "too_large", "아이콘 그림은 1MB 까지 올릴 수 있습니다.")
-    return await run_in_threadpool(_save_icon, db, settings, session, code, bytes(data))
+        if len(data) > limit:
+            raise too_big
+    return bytes(data)
+
+
+@router.put("/uploads/icons/{code}")
+async def upload_icon(code: str, request: Request, db: DbDep, settings: SettingsDep, session: SessionDep) -> dict[str, Any]:
+    data = await read_limited(request, ICON_UPLOAD_MAX_BYTES, "아이콘 그림")
+    return await run_in_threadpool(_save_icon, db, settings, session, code, data)
 
 
 def _save_icon(db: Session, settings: Settings, session: AuthSession, code: str, data: bytes) -> dict[str, Any]:
@@ -689,7 +755,55 @@ def _save_icon(db: Session, settings: Settings, session: AuthSession, code: str,
     app.has_icon = True
     app.updated_at = utcnow()
     db.commit()
-    return _edited_out(db, app, as_admin)
+    return _edited_out(db, settings, app, as_admin)
+
+
+def _listing_error(err: ListingError) -> Exception:
+    return api_error(status.HTTP_400_BAD_REQUEST, "invalid_field", str(err))
+
+
+@router.put("/uploads/gallery/{code}", status_code=status.HTTP_201_CREATED)
+async def upload_gallery_image(code: str, request: Request, db: DbDep, settings: SettingsDep, session: SessionDep) -> dict[str, Any]:
+    data = await read_limited(request, IMAGE_UPLOAD_MAX_BYTES, "그림")
+    return await run_in_threadpool(_save_gallery_image, db, settings, session, code, data)
+
+
+def _save_gallery_image(db: Session, settings: Settings, session: AuthSession, code: str, data: bytes) -> dict[str, Any]:
+    """그림 하나를 다시 그려 그림 모음 끝에 넣는다. 순서·설명·기능 연결은 PUT /apps/{code}/page 로 정한다"""
+    user = _signed_in(db, session)
+    app, as_admin = _editable_app(db, settings, code, user)
+    page = dict(app.page.data) if app.page else {}
+    gallery = list(page.get("gallery", []))
+    if len(gallery) >= GALLERY_MAX:
+        raise api_error(status.HTTP_409_CONFLICT, "gallery_full", f"그림은 {GALLERY_MAX}장까지 넣을 수 있습니다. 쓰지 않는 그림을 빼고 저장한 뒤 올려 주세요.")
+    try:
+        image = Gallery(settings, "store", app.code).save(data)
+    except ListingError as err:
+        raise api_error(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, "bad_image", str(err)) from None
+    now = utcnow()
+    service.set_page(app, {**page, "gallery": [*gallery, image]}, now)
+    app.updated_at = now
+    db.commit()
+    if as_admin:
+        log.info("Store 운영자가 앱 그림을 올림: %s", app.code)
+    return {"image": image}
+
+
+@router.put("/apps/{code}/page")
+def save_page(code: str, body: PageIn, db: DbDep, settings: SettingsDep, session: SessionDep) -> dict[str, Any]:
+    """소개 자료 저장. 이름·소개·설명·분류처럼 바로 반영한다 (신고·숨김으로 사후 대응, ADR-0012 결정 9)"""
+    user = _signed_in(db, session)
+    app, as_admin = _editable_app(db, settings, code, user)
+    try:
+        data = clean_page(body, app.page.data if app.page else None)
+    except ListingError as err:
+        raise _listing_error(err) from None
+    now = utcnow()
+    service.set_page(app, data, now)
+    app.updated_at = now
+    db.commit()
+    Gallery(settings, "store", app.code).keep_only({g["id"] for g in data["gallery"]})
+    return _edited_out(db, settings, app, as_admin)
 
 
 @router.post("/apps", status_code=status.HTTP_201_CREATED)
@@ -700,8 +814,8 @@ def create_app(
     publisher = _ready_publisher(db, settings, user)
     name = _field(body.name, service.clean_line, "앱 이름", 80, required=True)
     summary = _field(body.summary, service.clean_line, "한 줄 소개", 160)
-    description = _field(body.description, service.clean_text, "설명", 5000)
-    notes = _field(body.notes, service.clean_text, "바뀐 점", 2000)
+    description = _field(body.description, service.clean_text, "설명", DESCRIPTION_MAX)
+    notes = _field(body.notes, service.clean_text, "바뀐 점", NOTES_MAX)
     category = _category(body.category)
     version = _version(body.version)
     u = _take_upload(db, settings, body.upload_id, user.id)
@@ -717,7 +831,7 @@ def create_app(
     db.commit()
     background.add_task(service.scan_release, request.app.state.db, settings, r.id)
     log.info("Store 새 앱 접수: %s (검토 대기)", app.code)
-    return service.app_out(app, publisher, private=True)
+    return service.app_out(app, publisher, private=True, official=service.is_admin(settings, user))
 
 
 @router.post("/apps/{code}/releases", status_code=status.HTTP_201_CREATED)
@@ -730,7 +844,7 @@ def add_release(
     if app.status == "hidden":
         raise api_error(status.HTTP_403_FORBIDDEN, "hidden", "운영자가 숨긴 앱에는 새 버전을 올릴 수 없습니다. 운영자에게 문의해 주세요.")
     version = _version(body.version)
-    notes = _field(body.notes, service.clean_text, "바뀐 점", 2000)
+    notes = _field(body.notes, service.clean_text, "바뀐 점", NOTES_MAX)
     same = next((r for r in app.releases if r.version == version), None)
     if same is not None:
         if same.status != "rejected":
@@ -745,7 +859,7 @@ def add_release(
     db.commit()
     background.add_task(service.scan_release, request.app.state.db, settings, r.id)
     log.info("Store 새 버전 접수: %s %s (검토 대기)", app.code, version)
-    return service.app_out(app, publisher, private=True)
+    return service.app_out(app, publisher, private=True, official=service.is_admin(settings, user))
 
 
 @router.patch("/apps/{code}")
@@ -757,12 +871,12 @@ def edit_app(code: str, body: AppPatch, db: DbDep, settings: SettingsDep, sessio
     if body.summary is not None:
         app.summary = _field(body.summary, service.clean_line, "한 줄 소개", 160)
     if body.description is not None:
-        app.description = _field(body.description, service.clean_text, "설명", 5000)
+        app.description = _field(body.description, service.clean_text, "설명", DESCRIPTION_MAX)
     if body.category is not None:
         app.category = _category(body.category)
     app.updated_at = utcnow()
     db.commit()
-    return _edited_out(db, app, as_admin)
+    return _edited_out(db, settings, app, as_admin)
 
 
 @router.delete("/apps/{code}", status_code=status.HTTP_204_NO_CONTENT)
@@ -794,8 +908,10 @@ def delete_release(code: str, release_id: int, db: DbDep, settings: SettingsDep,
 # ── 운영자 ──
 
 
-def _owner_view(db: Session, app: StoreApp) -> dict[str, Any]:
-    return service.app_out(app, _publisher(db, app.owner_id), private=True, owner=db.get(User, app.owner_id))
+def _owner_view(db: Session, app: StoreApp, settings: Settings) -> dict[str, Any]:
+    owner = db.get(User, app.owner_id)
+    official = service.is_admin(settings, owner)
+    return service.app_out(app, _publisher(db, app.owner_id), private=True, owner=owner, official=official)
 
 
 @router.get("/admin/overview")
@@ -817,7 +933,7 @@ def admin_overview(db: DbDep, settings: SettingsDep, session: SessionDep) -> dic
     return {
         "scan_required": settings.store_require_scan,
         "scanner": find_clamscan(settings.store_clamscan) is not None,
-        "pending": [_owner_view(db, a) for a in pending if a is not None],
+        "pending": [_owner_view(db, a, settings) for a in pending if a is not None],
         "reports": [
             {
                 "id": r.id,
@@ -833,8 +949,8 @@ def admin_overview(db: DbDep, settings: SettingsDep, session: SessionDep) -> dic
             }
             for r in reports
         ],
-        "hidden": [_owner_view(db, a) for a in hidden],
-        "recent": [_owner_view(db, a) for a in recent],
+        "hidden": [_owner_view(db, a, settings) for a in hidden],
+        "recent": [_owner_view(db, a, settings) for a in recent],
         "blocked": [
             {"user_id": p.user_id, "email": u.email, "display_name": p.display_name, "reason": p.blocked_reason, "blocked_at": service.iso(p.blocked_at)}
             for p, u in blocked
@@ -874,7 +990,7 @@ def approve_release(release_id: int, db: DbDep, settings: SettingsDep, session: 
     app.updated_at = now
     db.commit()
     log.info("Store 승인: %s %s", app.code, r.version)
-    return _owner_view(db, app)
+    return _owner_view(db, app, settings)
 
 
 @router.post("/admin/releases/{release_id}/reject")
@@ -887,7 +1003,7 @@ def reject_release(release_id: int, body: ReasonIn, db: DbDep, settings: Setting
     service.reject_release(settings, r, reason, utcnow())
     db.commit()
     log.info("Store 반려: %s %s", r.app.code, r.version)
-    return _owner_view(db, r.app)
+    return _owner_view(db, r.app, settings)
 
 
 @router.post("/admin/releases/{release_id}/rescan", status_code=status.HTTP_202_ACCEPTED)
@@ -913,7 +1029,7 @@ def hide_app(code: str, body: ReasonIn, db: DbDep, settings: SettingsDep, sessio
     app.updated_at = utcnow()
     db.commit()
     log.info("Store 숨김: %s", code)
-    return _owner_view(db, app)
+    return _owner_view(db, app, settings)
 
 
 @router.post("/admin/apps/{code}/unhide")
@@ -926,7 +1042,7 @@ def unhide_app(code: str, db: DbDep, settings: SettingsDep, session: SessionDep)
     app.status_reason = ""
     app.updated_at = utcnow()
     db.commit()
-    return _owner_view(db, app)
+    return _owner_view(db, app, settings)
 
 
 @router.post("/admin/reports/{report_id}/resolve")

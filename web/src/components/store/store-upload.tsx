@@ -19,10 +19,15 @@ import {
   parseAppCode,
   setRemote,
   storeApi,
+  storeListingApi,
   useRemote,
 } from "@/lib/store";
+import { LISTING_LIMITS, emptyPage, listingEditHref } from "@/lib/listing";
+import { type ListingDraft, newDraft, saveListing } from "@/lib/listing-draft";
 import { useLocationSearch } from "@/lib/use-location-search";
 
+import { ListingEditor, importListing } from "../listing/listing-editor";
+import { ListingKit } from "../listing/listing-kit";
 import { ButtonLink, buttonClass, cx } from "../ui";
 import { AppIcon, ErrorBox, Loading, inputClass, panelClass } from "./store-ui";
 
@@ -102,14 +107,145 @@ export function PublisherForm({ me }: { me: StoreMe }) {
   );
 }
 
-type Phase = { step: "pick"; error?: string } | { step: "uploading"; name: string; ratio: number } | { step: "form"; analysis: Analysis } | { step: "done"; app: StoreApp };
+/** 설치 파일 분석 결과 (아이콘·형식·아키텍처·서명·SHA-256·경고) */
+function AnalysisPanel({ a }: { a: Analysis }) {
+  return (
+    <section aria-label="파일 분석 결과" className={panelClass}>
+      <div className="flex items-start gap-4">
+        {a.icon ? (
+          <img src={a.icon} alt="파일에서 찾은 아이콘" width={256} height={256} className="size-16 shrink-0 rounded-2xl bg-raised" />
+        ) : (
+          <AppIcon code="none" hasIcon={false} name="" className="size-16 shrink-0" />
+        )}
+        <div className="min-w-0">
+          <p className="break-all font-semibold text-fg">{a.file_name}</p>
+          <p className="mt-1 text-sm text-fg-subtle">
+            {[formatBytes(a.size), a.file_type.toUpperCase(), ARCH_LABELS[a.arch] ?? a.arch, a.signed ? "코드 서명 포함" : "코드 서명 없음"].join("  ·  ")}
+          </p>
+          <p className="mt-2 break-all font-mono text-xs text-fg-subtle">SHA-256 {a.sha256}</p>
+        </div>
+      </div>
+      {a.warnings.length > 0 && (
+        <ul className="mt-4 space-y-1 text-sm text-amber-300 light:text-amber-800">
+          {a.warnings.map((w) => (
+            <li key={w} className="flex items-start gap-2">
+              <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+              {w}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+/**
+ * 새 앱: 분석 결과 → AI 키트(프롬프트 복사·소개 자료 불러오기) → 소개 자료 편집 → 버전 → 검토 요청 (ADR-0013).
+ * 앱을 만든 뒤 아이콘·그림·소개 자료를 이어서 올린다. 그림 하나가 실패해도 앱은 접수된다.
+ */
+function NewAppForm({ analysis: a, meta, onDone, onCancel }: { analysis: Analysis; meta: StoreMeta; onDone: (app: StoreApp, failed: string[]) => void; onCancel: () => void }) {
+  const [draft, setDraft] = useState<ListingDraft>(() =>
+    newDraft(
+      { name: a.suggested.name, summary: a.suggested.summary, version: a.suggested.version, category: "utility" in meta.categories ? "utility" : Object.keys(meta.categories)[0] },
+      { ...emptyPage(), developer: a.company_name.slice(0, LISTING_LIMITS.developer), copyright: a.legal_copyright.slice(0, LISTING_LIMITS.copyright) },
+    ),
+  );
+  const [arch, setArch] = useState(a.arch);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const ids = { version: useId(), arch: useId(), notes: useId() };
+  const msCategories = meta.listing.ms_categories;
+
+  async function submit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    setBusy("앱을 접수하는 중");
+    const r = await storeApi.createApp({
+      upload_id: a.upload_id,
+      name: draft.name,
+      summary: draft.summary,
+      description: draft.description,
+      category: draft.category,
+      version: draft.version,
+      notes: draft.notes,
+      arch,
+    });
+    if (!r.ok) {
+      setBusy(null);
+      return setError(r.message);
+    }
+    const s = await saveListing(storeListingApi, r.data.code, draft, setBusy);
+    const failed = s.ok ? s.failed : [...s.failed, `소개 자료: ${s.message}`];
+    const fresh = await storeApi.app(r.data.code);
+    setBusy(null);
+    const app = fresh.ok ? fresh.data : r.data;
+    setRemote(`app:${app.code}`, app);
+    onDone(app, failed);
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-6">
+      <AnalysisPanel a={a} />
+      <ListingKit
+        kind="store"
+        categories={meta.categories}
+        msCategories={msCategories}
+        onImport={async (imp) => {
+          const r = await importListing(draft, imp, meta.categories, msCategories);
+          setDraft(r.draft);
+          return r.notes;
+        }}
+      />
+      <ListingEditor kind="store" draft={draft} onChange={setDraft} categories={meta.categories} msCategories={msCategories} iconSrc={a.icon} releaseNotes />
+      <fieldset className={cx(panelClass, "space-y-5")}>
+        <legend className="sr-only">버전</legend>
+        <p aria-hidden="true" className="text-base font-semibold text-fg">
+          버전
+        </p>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field id={ids.version} label="버전" hint="예: 1.2.0">
+            <input id={ids.version} required maxLength={40} value={draft.version} onChange={(e) => setDraft({ ...draft, version: e.target.value })} className={cx(inputClass, "h-12 font-mono")} />
+          </Field>
+          <Field id={ids.arch} label="아키텍처" hint="설치 프로그램은 32비트라도 64비트 앱을 깔 수 있습니다.">
+            <select id={ids.arch} value={arch} onChange={(e) => setArch(e.target.value)} className={cx(inputClass, "h-12")}>
+              {Object.entries(ARCH_LABELS).map(([v, label]) => (
+                <option key={v} value={v}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+        <Field id={ids.notes} label="바뀐 점 (선택)" hint={`${LISTING_LIMITS.notes}자까지 (Microsoft Store 의 '이번 버전의 새로운 기능'과 같은 한도)`}>
+          <textarea id={ids.notes} maxLength={LISTING_LIMITS.notes} rows={3} value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} className={cx(inputClass, "py-3")} />
+        </Field>
+      </fieldset>
+      {error && (
+        <p role="alert" className="text-sm text-danger">
+          {error}
+        </p>
+      )}
+      <div className="flex flex-wrap gap-3">
+        <button type="submit" disabled={busy !== null} className={cx(buttonClass("primary"), "disabled:opacity-60")}>
+          {busy && <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />}
+          {busy ?? "검토 요청하기"}
+        </button>
+        <button type="button" disabled={busy !== null} onClick={onCancel} className={buttonClass("ghost")}>
+          취소하고 파일 지우기
+        </button>
+      </div>
+    </form>
+  );
+}
+
+type Phase = { step: "pick"; error?: string } | { step: "uploading"; name: string; ratio: number } | { step: "form"; analysis: Analysis } | { step: "done"; app: StoreApp; failed: string[] };
 
 function Uploader({ me, meta, target }: { me: StoreMe; meta: StoreMeta; target: StoreApp | null }) {
   const [phase, setPhase] = useState<Phase>({ step: "pick" });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
-  const ids = { file: useId(), name: useId(), summary: useId(), description: useId(), category: useId(), version: useId(), notes: useId(), arch: useId() };
+  const ids = { file: useId(), version: useId(), notes: useId(), arch: useId() };
   const { limits, usage } = me;
 
   async function start(file: File) {
@@ -137,14 +273,13 @@ function Uploader({ me, meta, target }: { me: StoreMe; meta: StoreMeta; target: 
     const text = (k: string) => String(f.get(k) ?? "");
     setSaving(true);
     setError(null);
+    if (!target) return;
     const release = { upload_id: analysis.upload_id, version: text("version"), notes: text("notes"), arch: text("arch") };
-    const r = target
-      ? await storeApi.addRelease(target.code, release)
-      : await storeApi.createApp({ ...release, name: text("name"), summary: text("summary"), description: text("description"), category: text("category") });
+    const r = await storeApi.addRelease(target.code, release);
     setSaving(false);
     if (!r.ok) return setError(r.message);
     setRemote(`app:${r.data.code}`, r.data);
-    setPhase({ step: "done", app: r.data });
+    setPhase({ step: "done", app: r.data, failed: [] });
   }
 
   async function cancel(analysis: Analysis) {
@@ -163,8 +298,19 @@ function Uploader({ me, meta, target }: { me: StoreMe; meta: StoreMeta; target: 
         <p className="mt-2 text-sm leading-relaxed text-fg-muted">
           바이러스 검사를 거쳐 운영자가 검토한 뒤 공개합니다. 결과는 <Link href="/store/mine/" className="underline underline-offset-4">내 앱</Link>에서 볼 수 있습니다.
         </p>
+        {phase.failed.length > 0 && (
+          <ul role="alert" className="mt-3 space-y-1 text-sm text-danger">
+            {phase.failed.map((f) => (
+              <li key={f}>{f}</li>
+            ))}
+            <li className="text-fg-muted">&lsquo;소개 꾸미기&rsquo;에서 다시 올릴 수 있습니다.</li>
+          </ul>
+        )}
         <div className="mt-6 flex flex-wrap gap-3">
           <ButtonLink href={appHref(phase.app.code)}>앱 화면 보기</ButtonLink>
+          <ButtonLink href={listingEditHref(phase.app.code)} variant="secondary">
+            소개 꾸미기
+          </ButtonLink>
           <ButtonLink href="/store/mine/" variant="secondary">
             내 앱
           </ButtonLink>
@@ -173,60 +319,18 @@ function Uploader({ me, meta, target }: { me: StoreMe; meta: StoreMeta; target: 
     );
   }
 
+  if (phase.step === "form" && !target) {
+    const analysis = phase.analysis;
+    return <NewAppForm analysis={analysis} meta={meta} onDone={(app, failed) => setPhase({ step: "done", app, failed })} onCancel={() => void cancel(analysis)} />;
+  }
+
   if (phase.step === "form") {
     const a = phase.analysis;
     return (
       <form onSubmit={(e) => submit(e, a)} className="space-y-6">
-        <section aria-label="파일 분석 결과" className={panelClass}>
-          <div className="flex items-start gap-4">
-            {a.icon ? (
-              <img src={a.icon} alt="파일에서 찾은 아이콘" width={256} height={256} className="size-16 shrink-0 rounded-2xl bg-raised" />
-            ) : (
-              <AppIcon code="none" hasIcon={false} name="" className="size-16 shrink-0" />
-            )}
-            <div className="min-w-0">
-              <p className="break-all font-semibold text-fg">{a.file_name}</p>
-              <p className="mt-1 text-sm text-fg-subtle">
-                {[formatBytes(a.size), a.file_type.toUpperCase(), ARCH_LABELS[a.arch] ?? a.arch, a.signed ? "코드 서명 포함" : "코드 서명 없음"].join("  ·  ")}
-              </p>
-              <p className="mt-2 break-all font-mono text-xs text-fg-subtle">SHA-256 {a.sha256}</p>
-            </div>
-          </div>
-          {a.warnings.length > 0 && (
-            <ul className="mt-4 space-y-1 text-sm text-amber-300 light:text-amber-800">
-              {a.warnings.map((w) => (
-                <li key={w} className="flex items-start gap-2">
-                  <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-                  {w}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        <AnalysisPanel a={a} />
 
         <div className={cx(panelClass, "space-y-5")}>
-          {!target && (
-            <>
-              <Field id={ids.name} label="앱 이름">
-                <input id={ids.name} name="name" required maxLength={80} defaultValue={a.suggested.name} className={cx(inputClass, "h-12")} />
-              </Field>
-              <Field id={ids.summary} label="한 줄 소개" hint="160자까지. 목록 카드에 보입니다.">
-                <input id={ids.summary} name="summary" maxLength={160} defaultValue={a.suggested.summary} className={cx(inputClass, "h-12")} />
-              </Field>
-              <Field id={ids.description} label="설명" hint="무엇을 하는 프로그램인지, 필요한 환경, 주의할 점을 적어 주세요. 5000자까지.">
-                <textarea id={ids.description} name="description" maxLength={5000} rows={7} className={cx(inputClass, "py-3")} />
-              </Field>
-              <Field id={ids.category} label="분류">
-                <select id={ids.category} name="category" defaultValue="utility" className={cx(inputClass, "h-12")}>
-                  {Object.entries(meta.categories).map(([v, label]) => (
-                    <option key={v} value={v}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            </>
-          )}
           <div className="grid gap-5 sm:grid-cols-2">
             <Field id={ids.version} label="버전" hint="예: 1.2.0">
               <input id={ids.version} name="version" required maxLength={40} defaultValue={a.suggested.version} className={cx(inputClass, "h-12 font-mono")} />
@@ -241,8 +345,8 @@ function Uploader({ me, meta, target }: { me: StoreMe; meta: StoreMeta; target: 
               </select>
             </Field>
           </div>
-          <Field id={ids.notes} label="바뀐 점 (선택)" hint="2000자까지">
-            <textarea id={ids.notes} name="notes" maxLength={2000} rows={3} className={cx(inputClass, "py-3")} />
+          <Field id={ids.notes} label="바뀐 점 (선택)" hint="1500자까지 (Microsoft Store 의 '이번 버전의 새로운 기능'과 같은 한도)">
+            <textarea id={ids.notes} name="notes" maxLength={1500} rows={3} className={cx(inputClass, "py-3")} />
           </Field>
         </div>
 

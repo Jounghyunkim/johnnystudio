@@ -2,16 +2,19 @@
 
 import { CheckCircle2, LoaderCircle } from "lucide-react";
 import Link from "next/link";
-import { type FormEvent, type ReactNode, useEffect, useId, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useState } from "react";
 
 import { loginHref, useSession } from "@/lib/auth";
 import { useIsClient } from "@/lib/bookmarks";
-import { formatBytes } from "@/lib/format";
-import { IMAGE_ACCEPT, type ShowroomMeta, type ShowroomService, looksLikeServiceUrl, serviceHref, showroomApi } from "@/lib/showroom";
-import { ICON_ACCEPT, type StoreMe, loadRemote, setRemote, storeApi, useRemote } from "@/lib/store";
+import { listingEditHref } from "@/lib/listing";
+import { type ListingDraft, newDraft, saveListing } from "@/lib/listing-draft";
+import { type ShowroomMeta, type ShowroomService, looksLikeServiceUrl, serviceHref, showroomApi, showroomListingApi } from "@/lib/showroom";
+import { type StoreMe, loadRemote, setRemote, storeApi, useRemote } from "@/lib/store";
 
+import { ListingEditor, importListing } from "../listing/listing-editor";
+import { ListingKit } from "../listing/listing-kit";
 import { PublisherForm } from "../store/store-upload";
-import { ErrorBox, Loading, inputClass, panelClass } from "../store/store-ui";
+import { ErrorBox, Loading, panelClass } from "../store/store-ui";
 import { ButtonLink, buttonClass, cx } from "../ui";
 
 export function Field({ id, label, hint, children }: { id: string; label: string; hint?: string; children: ReactNode }) {
@@ -27,41 +30,30 @@ export function Field({ id, label, hint, children }: { id: string; label: string
 }
 
 function SubmitForm({ meta }: { meta: ShowroomMeta }) {
+  const [draft, setDraft] = useState<ListingDraft>(() => newDraft({ category: "productivity" in meta.categories ? "productivity" : Object.keys(meta.categories)[0] }));
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState<{ service: ShowroomService; warning: string | null } | null>(null);
-  const ids = { name: useId(), url: useId(), summary: useId(), description: useId(), category: useId(), icon: useId(), shot: useId() };
+  const [done, setDone] = useState<{ service: ShowroomService; failed: string[] } | null>(null);
+  const msCategories = meta.listing.ms_categories;
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const f = new FormData(e.currentTarget);
-    const text = (k: string) => String(f.get(k) ?? "");
-    const icon = f.get("icon");
-    const shot = f.get("screenshot");
-    const iconFile = icon instanceof File && icon.size > 0 ? icon : null;
-    const shotFile = shot instanceof File && shot.size > 0 ? shot : null;
-    if (!looksLikeServiceUrl(text("url"))) return setError("서비스 주소는 https:// 로 시작하는 도메인 주소여야 합니다.");
-    if (iconFile && iconFile.size > meta.limits.icon_max_bytes) return setError(`아이콘 그림은 ${formatBytes(meta.limits.icon_max_bytes)}까지 올릴 수 있습니다.`);
-    if (shotFile && shotFile.size > meta.limits.screenshot_max_bytes) return setError(`화면 그림은 ${formatBytes(meta.limits.screenshot_max_bytes)}까지 올릴 수 있습니다.`);
+    if (!looksLikeServiceUrl(draft.url)) return setError("서비스 주소는 https:// 로 시작하는 도메인 주소여야 합니다.");
     setError(null);
     setBusy("등록하는 중");
-    const r = await showroomApi.create({ name: text("name"), url: text("url"), summary: text("summary"), description: text("description"), category: text("category") });
+    const r = await showroomApi.create({ name: draft.name, url: draft.url, summary: draft.summary, description: draft.description, category: draft.category });
     if (!r.ok) {
       setBusy(null);
       return setError(r.message);
     }
-    let service = r.data;
-    const failed: string[] = [];
-    for (const [kind, file, label] of [["icon", iconFile, "아이콘"], ["screenshot", shotFile, "화면 그림"]] as const) {
-      if (!file) continue;
-      setBusy(`${label}을(를) 올리는 중`);
-      const up = await showroomApi.uploadImage(service.code, kind, file);
-      if (up.ok) service = up.data;
-      else failed.push(`${label}: ${up.message}`);
-    }
+    // 아이콘·그림·소개 자료를 이어서 올린다 (하나가 실패해도 서비스는 접수된다)
+    const s = await saveListing(showroomListingApi, r.data.code, draft, setBusy);
+    const failed = s.ok ? s.failed : [...s.failed, `소개 자료: ${s.message}`];
+    const fresh = await showroomApi.service(r.data.code);
     setBusy(null);
+    const service = fresh.ok ? fresh.data : r.data;
     setRemote(`showroom:service:${service.code}`, service);
-    setDone({ service, warning: failed.length ? `${failed.join(" / ")} (내 서비스에서 다시 올릴 수 있습니다)` : null });
+    setDone({ service, failed });
   }
 
   if (done) {
@@ -78,14 +70,20 @@ function SubmitForm({ meta }: { meta: ShowroomMeta }) {
           </Link>
           에서 볼 수 있습니다.
         </p>
-        {done.warning && (
-          <p role="alert" className="mt-3 text-sm text-danger">
-            {done.warning}
-          </p>
+        {done.failed.length > 0 && (
+          <ul role="alert" className="mt-3 space-y-1 text-sm text-danger">
+            {done.failed.map((f) => (
+              <li key={f}>{f}</li>
+            ))}
+            <li className="text-fg-muted">&lsquo;소개 꾸미기&rsquo;에서 다시 올릴 수 있습니다.</li>
+          </ul>
         )}
         <div className="mt-6 flex flex-wrap gap-3">
           <ButtonLink href={serviceHref(done.service.code)}>소개 화면 보기</ButtonLink>
-          <ButtonLink href="/showroom/mine/" variant="secondary">
+          <ButtonLink href={listingEditHref(done.service.code, "showroom")} variant="secondary">
+            소개 꾸미기
+          </ButtonLink>
+          <ButtonLink href="/showroom/mine/" variant="ghost">
             내 서비스
           </ButtonLink>
         </div>
@@ -95,37 +93,17 @@ function SubmitForm({ meta }: { meta: ShowroomMeta }) {
 
   return (
     <form onSubmit={submit} className="space-y-6">
-      <div className={cx(panelClass, "space-y-5")}>
-        <Field id={ids.name} label="서비스 이름">
-          <input id={ids.name} name="name" required maxLength={80} className={cx(inputClass, "h-12")} />
-        </Field>
-        <Field id={ids.url} label="서비스 주소" hint="https:// 로 시작하는 주소. 공개한 뒤 주소를 바꾸면 다시 검토합니다.">
-          <input id={ids.url} name="url" type="url" required maxLength={500} placeholder="https://" className={cx(inputClass, "h-12 font-mono")} />
-        </Field>
-        <Field id={ids.summary} label="한 줄 소개" hint="160자까지. 목록 카드에 보입니다.">
-          <input id={ids.summary} name="summary" maxLength={160} className={cx(inputClass, "h-12")} />
-        </Field>
-        <Field id={ids.description} label="설명" hint="무엇을 하는 서비스인지, 누가 쓰면 좋은지, 가입·요금이 필요한지 적어 주세요. 5000자까지.">
-          <textarea id={ids.description} name="description" maxLength={5000} rows={7} className={cx(inputClass, "py-3")} />
-        </Field>
-        <Field id={ids.category} label="분류">
-          <select id={ids.category} name="category" defaultValue="productivity" className={cx(inputClass, "h-12")}>
-            {Object.entries(meta.categories).map(([v, label]) => (
-              <option key={v} value={v}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field id={ids.icon} label="아이콘 (선택)" hint={`PNG·JPEG·WebP·ICO, ${formatBytes(meta.limits.icon_max_bytes)}까지. 256px 로 다시 그립니다.`}>
-            <input id={ids.icon} name="icon" type="file" accept={ICON_ACCEPT} className="block w-full text-sm text-fg-muted file:mr-3 file:rounded-full file:border-0 file:bg-raised file:px-4 file:py-2 file:text-sm file:font-semibold file:text-fg" />
-          </Field>
-          <Field id={ids.shot} label="화면 그림 (선택)" hint={`PNG·JPEG·WebP, ${formatBytes(meta.limits.screenshot_max_bytes)}까지. 긴 변 1600px 로 줄입니다.`}>
-            <input id={ids.shot} name="screenshot" type="file" accept={IMAGE_ACCEPT} className="block w-full text-sm text-fg-muted file:mr-3 file:rounded-full file:border-0 file:bg-raised file:px-4 file:py-2 file:text-sm file:font-semibold file:text-fg" />
-          </Field>
-        </div>
-      </div>
+      <ListingKit
+        kind="showroom"
+        categories={meta.categories}
+        msCategories={msCategories}
+        onImport={async (imp) => {
+          const r = await importListing(draft, imp, meta.categories, msCategories);
+          setDraft(r.draft);
+          return r.notes;
+        }}
+      />
+      <ListingEditor kind="showroom" draft={draft} onChange={setDraft} categories={meta.categories} msCategories={msCategories} />
       {error && (
         <p role="alert" className="text-sm text-danger">
           {error}
@@ -139,7 +117,7 @@ function SubmitForm({ meta }: { meta: ShowroomMeta }) {
   );
 }
 
-/** /showroom/new/: 서비스 소개하기 (로그인 → 표시 이름·약관 → 양식) */
+/** /showroom/new/: 서비스 등록 (로그인 → 표시 이름·약관 → 양식) */
 export function ShowroomSubmit() {
   const session = useSession();
   const isClient = useIsClient();

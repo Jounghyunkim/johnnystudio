@@ -7,6 +7,7 @@ date: 2026-11-16
 tags: [생산성, 데스크톱]
 icon: /media/johnny-mecro/icon.png
 requirements: Windows 10 1809 이상 (x64), Google Chrome 또는 Microsoft Edge, WebView2 런타임
+storeApp: Rdmnr3PU
 downloads:
   - label: Windows 설치 파일 (x64)
     file: /files/johnny-mecro/Johnny-Mecro_1.0.0_x64-setup.exe

@@ -3,7 +3,7 @@
 > 이 저장소에서 일하는 **모든 AI 코딩 도구**(Claude Code, Codex, Gemini, Cursor 등)의 공통 규칙이다.
 > Claude Code 는 `CLAUDE.md` 가 이 파일을 불러온다. 규칙을 바꿀 때는 **이 파일만** 고친다. ([ADR-0003](docs/04_architecture/adr/0003-ai-collaboration-docs.md))
 >
-> **Last Updated**: 2026-11-24
+> **Last Updated**: 2026-11-26
 
 ## 1. 프로젝트 요약
 
@@ -13,6 +13,7 @@ JohnnyStudio 의 **포털(허브) 웹사이트**다. 정현 님이 만든 모든
 - **현재 단계**: Phase 1(공개 허브) 구현 완료. Phase 2 의 회원 가입·로그인(매직 링크, `api/`)을 구현했고 서버 설치·메일 설정이 남았다.
   작품 등록·관리는 개발 서버 전용 관리 화면(`/admin/`)과 CLI 로 한다 (2026-11-09).
   회원이 Windows 앱을 올리고 운영자가 승인하면 공개되는 **Store**(`/store/`)와, 회원 웹 서비스를 소개하는 **Showroom**(`/showroom/`)을 만들었다. 메뉴는 About 오른쪽 구분선 뒤에 있다 (2026-11-24, [ADR-0012](docs/04_architecture/adr/0012-member-store.md) 제안됨).
+  Store·Showroom 게시물의 **소개 자료**(기능·그림 모음·사용 방법·질문·만든 이·지원 정보, Microsoft Store 와 같은 한도)와 AI 프롬프트 복사·md/zip 불러오기를 만들었다 (2026-11-25, [ADR-0013](docs/04_architecture/adr/0013-listing-kit.md) 제안됨).
   남은 일은 실제 콘텐츠 채우기와 도메인·Tunnel 공개다. 진행 상황은 [docs/ROADMAP.md](docs/ROADMAP.md).
 - **기획의 기준**: [docs/ideation.md](docs/ideation.md) v2 (네 구역·원칙·리스크·단계 계획)와 [docs/01_vision/PHILOSOPHY.md](docs/01_vision/PHILOSOPHY.md) 초안 v1.
   둘 다 사용자 확인 전이다. 기획안이 ADR 과 다르면 ADR 이 우선한다. 바꾸려면 새 ADR 을 쓴다.
@@ -28,8 +29,8 @@ JohnnyStudio 의 **포털(허브) 웹사이트**다. 정현 님이 만든 모든
 
 | 경로 | 용도 |
 |---|---|
-| `web/` | **Next.js 앱.** `src/app` 페이지, `src/components` 화면 조각(`viewers/` 유형별 뷰어, `auth/` 로그인·계정, `admin/` 작품 관리, `store/` 회원 Store, `showroom/` 회원 웹 서비스), `src/lib` 스키마·콘텐츠 읽기·로직(`admin/` 작품 관리 서버·파일 쓰기), `scripts/inject-csp.mjs`, `scripts/admin/` 관리 CLI, `public/` 이미지 |
-| `api/` | **회원·Store·Showroom API (FastAPI, Python 3.14, uv).** `app/` 엔드포인트·DB·메일·설정, `app/store/` Store(업로드·분석·ClamAV·검토), `app/showroom/` Showroom(회원 웹 서비스 소개), `tests/` pytest. 구조: [ADR-0007](docs/04_architecture/adr/0007-magic-link-auth-api.md), [ADR-0012](docs/04_architecture/adr/0012-member-store.md) |
+| `web/` | **Next.js 앱.** `src/app` 페이지, `src/components` 화면 조각(`viewers/` 유형별 뷰어, `auth/` 로그인·계정, `admin/` 작품 관리, `store/` 회원 Store, `showroom/` 회원 웹 서비스, `listing/` 소개 자료 보기·편집·AI 키트, `settings/` 설정 화면), `src/lib` 스키마·콘텐츠 읽기·로직(`admin/` 작품 관리 서버·파일 쓰기), `scripts/inject-csp.mjs`, `scripts/admin/` 관리 CLI, `public/` 이미지 |
+| `api/` | **회원·Store·Showroom API (FastAPI, Python 3.14, uv).** `app/` 엔드포인트·DB·메일·설정, `app/store/` Store(업로드·분석·ClamAV·검토), `app/showroom/` Showroom(회원 웹 서비스 소개), `app/listing.py` 소개 자료(항목·한도·그림 모음), `app/site.py` 설정 화면(운영자 현황·캐시 지우기), `app/import_official.py` 공식 앱·서비스를 DB 로 옮기기(ADR-0014), `tests/` pytest. 구조: [ADR-0007](docs/04_architecture/adr/0007-magic-link-auth-api.md), [ADR-0012](docs/04_architecture/adr/0012-member-store.md) |
 | `content/` | **콘텐츠 원본.** `assets/<slug>.md`(작품), `lifelog.yaml`, `profile.yaml`, `pages/<slug>.md`(개인정보처리방침 등). 형식: `web/src/lib/schema.ts` |
 | `docs/` | 기획·설계 문서. "지금 어떻게 되어 있나"를 쓴다 (항상 최신으로 고쳐 쓴다) |
 | `docs/04_architecture/adr/` | 결정 기록(ADR). "왜 이렇게 정했나"를 쓴다 |
@@ -50,6 +51,7 @@ Python 은 시스템 3.14, 패키지 관리는 `uv` 다. API 의존성은 `uv sy
                         # 다른 기기에서: HOST=0.0.0.0 / 인터넷에서(잠깐만): PUBLIC_URL=http://주소:3000 (주소 처리는 dev.sh 머리말)
 ./scripts/preview.sh    # 출시 빌드 미리보기 (초안 제외, CSP 헤더 + /api/) → http://127.0.0.1:8080
 ./scripts/check.sh      # 커밋·배포 전 검사: 타입 → 린트 → 테스트 → API 테스트 → 출시 빌드 → 빌드 결과(CSP 해시) → 셸 → CRLF
+./scripts/import-official.sh [--dry-run] [--fix-files]   # 공식 앱·서비스(작품 파일)를 Store·Showroom DB 로 옮기고 작품 파일에 코드를 적는다 (ADR-0014)
 (cd api && uv run pytest)   # API 테스트만
 ./scripts/file-meta.sh <파일> <slug>   # 다운로드 파일의 size·sha256 YAML
 npm --prefix web run admin -- list|check [slug]|new <slug> --type … --title …|publish <slug>|unpublish <slug>   # 작품 관리 CLI
@@ -77,6 +79,7 @@ npm --prefix web run admin -- list|check [slug]|new <slug> --type … --title �
 - `src/lib/content.ts` 는 서버 전용(fs)이다. 클라이언트 컴포넌트에는 `AssetSummary` 같은 가벼운 타입만 넘긴다.
 - 클라이언트 컴포넌트는 `src/lib/schema.ts` 에서 **값**을 가져오지 않는다 (zod 가 번들에 들어가고 CSP 위반이 기록된다). 필요한 상수는 `lib/asset-types.ts` 처럼 zod 없는 파일에 둔다.
 - **개발 전용 페이지**는 `page.dev.tsx` 로 만든다 (개발 서버에서만 페이지가 되고 출시 빌드에는 없다). 공개 페이지에서 `components/admin`·`lib/admin/{store,server}` 를 가져오지 않는다. 새 개발 전용 경로는 `check_site.py` 의 `DEV_ONLY_PATHS` 에 더한다.
+  공개 페이지에서 작품 관리 서버를 불러야 하면(예: Store·Showroom 공식 카드의 작품 지우기) `lib/admin/client` 만 쓰고, `process.env.NODE_ENV !== "production"` 일 때만 그린다 (`components/store/official-delete.tsx`).
 - `src/lib` 은 관리 서버가 Node 로 빌드 없이 실행한다. **enum·namespace·생성자 매개변수 속성**(`constructor(readonly x)`)을 쓰지 않는다.
 - 로그인 상태는 `lib/auth.ts` 의 `useSession()` 으로만 읽는다. 빌드된 HTML 에는 로그인 상태가 없다.
 - 브라우저 저장소(localStorage)는 `try/catch` 로 감싸고 `useSyncExternalStore` 로 읽는다. `useEffect` 안에서 `setState` 하지 않는다 (React Hooks 린트 규칙).
@@ -111,6 +114,8 @@ npm --prefix web run admin -- list|check [slug]|new <slug> --type … --title �
 - Store (회원이 올린 것): 설치 파일·그림은 API 프로세스에서 파싱하지 않고 `app/store/analyze.py` 자식 프로세스(시간·메모리 한도)에서 다룬다. 아이콘은 다시 그린 PNG 만 내준다.
   회원이 쓴 글은 HTML 로 넣지 않는다 (`dangerouslySetInnerHTML` 금지). 내려받기는 `attachment`·`octet-stream`·`nosniff`·`CSP: sandbox` 다. 공개는 운영자 승인 뒤에만 한다.
   Showroom 의 회원 서비스 링크는 `rel="noopener noreferrer nofollow ugc"` (`lib/showroom.ts` 의 `UGC_REL`), 승인 뒤 주소를 바꾸면 다시 검토한다.
+- 소개 자료 (ADR-0013): md·zip 은 **브라우저에서만** 읽는다 (`lib/listing-bundle.ts`, `lib/zip.ts`). 서버는 zip 을 받지 않고, **회원이 준 주소를 서버에서 열거나 캡처하지 않는다** (홈 서버 내부망 SSRF).
+  회원 설명의 Markdown 은 `components/listing/listing-view.tsx` 의 `SafeMarkdown`(marked 토큰 → React 요소)으로만 그린다. 항목·한도를 바꾸면 `api/app/listing.py`·`lib/listing.ts`·`lib/listing-fields.ts`·`lib/listing-msstore.ts`·양식(`listing-format.ts`·`listing-prompt.ts`)을 함께 고친다 (Microsoft Store 한도와 맞춘다).
 
 ### 접근성
 

@@ -1,8 +1,10 @@
+import { Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
 import { ShowroomBrowser } from "@/components/showroom/showroom-browser";
-import { Container, PageHeader } from "@/components/ui";
+import { ReviewLink } from "@/components/store/review-link";
+import { ButtonLink, Container, PageHeader } from "@/components/ui";
 import { getOfficialShowroomServices } from "@/lib/content";
 
 export const metadata: Metadata = {
@@ -21,13 +23,22 @@ export default function ShowroomPage() {
         eyebrow="Web Services"
         title="Showroom"
         description="회원들이 직접 만든 웹 서비스를 소개하고, 누구나 바로 써 봅니다. 운영자가 주소와 내용을 확인한 서비스만 공개합니다."
+        actions={
+          <>
+            <ButtonLink href="/showroom/new/" variant="secondary">
+              <Plus aria-hidden="true" className="size-4" />
+              서비스 등록
+            </ButtonLink>
+            <ReviewLink />
+          </>
+        }
       >
         <p className="mt-4 text-sm text-fg-subtle">
           &lsquo;공식&rsquo; 표시는 JohnnyStudio가 만든 서비스입니다. 내려받는 Windows 앱은{" "}
           <Link href="/store/" className="underline underline-offset-4 hover:text-fg">
             Store
           </Link>
-          에 있습니다. 소개하기 전에{" "}
+          에 있습니다. 등록하기 전에{" "}
           <Link href="/store/terms/" className="underline underline-offset-4 hover:text-fg">
             이용약관
           </Link>

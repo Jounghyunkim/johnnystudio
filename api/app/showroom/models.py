@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import JSON, Boolean, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..db import Base, UTCDateTime, utcnow
 
@@ -45,6 +46,20 @@ class ShowroomService(Base):
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
     published_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
     reviewed_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+
+    # 소개 자료 (ADR-0013). 없을 수도 있다
+    page: Mapped[ShowroomServicePage | None] = relationship(cascade="all, delete-orphan", passive_deletes=True, lazy="selectin")
+
+
+class ShowroomServicePage(Base):
+    """서비스의 소개 자료. 모양은 app/listing.py (Store 의 store_app_pages 와 같다)"""
+
+    __tablename__ = "showroom_service_pages"
+
+    service_id: Mapped[int] = mapped_column(ForeignKey("showroom_services.id", ondelete="CASCADE"), primary_key=True)
+    data: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    search_text: Mapped[str] = mapped_column(String(400), default="")
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
 
 
 class ShowroomReport(Base):

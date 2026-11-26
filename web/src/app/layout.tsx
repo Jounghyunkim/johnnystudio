@@ -1,4 +1,6 @@
 import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
+// 각진 글꼴 (랜딩 히어로의 이름만, --font-display). 라틴 글자만 있다. 쓰는 곳이 있는 화면에서만 내려받는다 (unicode-range)
+import "@fontsource-variable/oxanium";
 import "./globals.css";
 
 import type { Metadata, Viewport } from "next";

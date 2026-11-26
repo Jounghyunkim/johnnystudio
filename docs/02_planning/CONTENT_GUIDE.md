@@ -2,7 +2,7 @@
 
 > 작품·기록·소개 문구를 추가하거나 고치는 방법. 결정 배경은 [ADR-0005](../04_architecture/adr/0005-file-based-content.md).
 > 형식의 정답은 코드에 있다: [web/src/lib/schema.ts](../../web/src/lib/schema.ts)
-> **Last Updated**: 2026-11-24
+> **Last Updated**: 2026-11-26
 
 ## 0. 관리 화면으로 등록하기 (권장)
 
@@ -83,8 +83,8 @@ npm --prefix web run admin -- unpublish my-tool
 
 | 유형 | 필드 | 출시하려면 |
 |---|---|---|
-| `web-app` | `url` | `url` |
-| `desktop-app` | `downloads` (목록), `requirements`, `microsoftStore` (Microsoft Store 앱 주소 `https://apps.microsoft.com/detail/<제품 ID>`, 선택. 다운로드 패널에 'Microsoft Store에서 받기', Library·Store 카드에 'MS Store' 바로가기) | 다운로드 1개 이상, 각각 `size`·`sha256` |
+| `web-app` | `url`, `showroomService` (Showroom DB 로 옮긴 서비스의 코드, [ADR-0014](../04_architecture/adr/0014-official-apps-in-store-db.md). `scripts/import-official.sh` 가 적는다. 있으면 Showroom 목록은 DB 의 것을 보이고 Library 상세에 'Showroom 소개') | `url` |
+| `desktop-app` | `downloads` (목록), `requirements`, `microsoftStore` (Microsoft Store 앱 주소 `https://apps.microsoft.com/detail/<제품 ID>`, 선택. 다운로드 패널에 'Microsoft Store에서 받기', Library·Store 카드에 'MS Store' 바로가기), `storeApp` (Store DB 로 옮긴 앱의 코드, ADR-0014. `scripts/import-official.sh` 가 적는다. 있으면 Library 상세는 `downloads` 대신 'Store에서 내려받기'를 보이고, 새 버전은 Store 에서 올린다. `downloads` 는 DB 를 새로 채울 때의 처음 버전으로만 쓴다) | 다운로드 1개 이상, 각각 `size`·`sha256` |
 | `web-package` | `playUrl`(샌드박스 주소), `download` | 둘 중 하나 |
 | `video` | `youtubeId` (watch?v= 뒤의 11자) | `youtubeId` |
 | `gallery` | `photos` (목록: `src`, `alt`, `caption`) | 사진 1장 이상 |

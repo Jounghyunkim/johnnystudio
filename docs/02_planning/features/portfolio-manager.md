@@ -1,7 +1,7 @@
 # 기능: 작품 관리 (등록·수정·공개·삭제)
 
 > **상태**: 1단계 완료 (로컬 관리 화면 + 관리 CLI). 2단계 이후는 계획
-> **Last Updated**: 2026-11-09
+> **Last Updated**: 2026-11-26
 > 결정: [ADR-0009](../../04_architecture/adr/0009-local-portfolio-manager.md) · 바탕: [ADR-0005](../../04_architecture/adr/0005-file-based-content.md) (파일 콘텐츠), [ADR-0004](../../04_architecture/adr/0004-nextjs-static-export.md) (정적 내보내기)
 
 ## 왜 (문제와 목적)
@@ -40,6 +40,7 @@ Library 는 작품을 잘 보여 주지만, **작품을 넣고 고치는 일은 
     - 이미지 올리기 → `web/public/media/<slug>/` (형식 확인, 300KB·webp 기준 경고), 대표 이미지·사진 목록에 바로 연결
     - 다운로드 파일 올리기 → 크기·SHA-256 을 계산해 `downloads` 에 채우고, 서버 복사 명령을 보여 준다
     - 공개(완성도 검사를 통과할 때만) · 초안으로 되돌리기 · 삭제(초안만, 참조가 없을 때만, `.local/trash/` 로 옮김)
+    - (2026-11-26) Store·Showroom 목록의 '공식' 카드에서도 지운다: 같은 관리 서버 API 로 초안으로 돌린 뒤 삭제 (개발 서버, 운영자·토큰, `components/store/official-delete.tsx`)
     - 다른 도구(편집기·AI)가 그사이에 파일을 고쳤으면 저장을 거부한다 (덮어쓰기 방지)
   - 관리 CLI `npm --prefix web run admin -- <명령>`: `list` · `check` · `new` · `publish` · `unpublish` · `serve`
   - 개발 미리보기가 콘텐츠 변경을 바로 반영한다 (파일 수정 시각을 보고 다시 읽는다)

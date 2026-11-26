@@ -57,14 +57,28 @@ export function ExternalButton({
   );
 }
 
-export function PageHeader({ eyebrow, title, description, children }: { eyebrow?: string; title: string; description?: string; children?: ReactNode }) {
+/** actions: 머리글 맨 아래(가로줄 위)의 버튼 줄. 있으면 아래 여백을 조금 줄인다 (버튼이 가로줄에서 너무 떠 보이지 않게) */
+export function PageHeader({
+  eyebrow,
+  title,
+  description,
+  actions,
+  children,
+}: {
+  eyebrow?: string;
+  title: string;
+  description?: string;
+  actions?: ReactNode;
+  children?: ReactNode;
+}) {
   return (
     <header className="hero-glow border-b border-line">
-      <Container className="py-14 sm:py-20">
+      <Container className={cx("pt-14 sm:pt-20", actions ? "pb-10 sm:pb-14" : "pb-14 sm:pb-20")}>
         {eyebrow && <p className="mb-3 text-sm font-semibold tracking-wide text-accent">{eyebrow}</p>}
         <h1 className="text-3xl font-bold tracking-tight text-fg sm:text-5xl">{title}</h1>
         {description && <p className="mt-4 max-w-2xl text-base leading-relaxed text-fg-muted sm:text-lg">{description}</p>}
         {children}
+        {actions && <div className="mt-6 flex flex-wrap gap-2">{actions}</div>}
       </Container>
     </header>
   );

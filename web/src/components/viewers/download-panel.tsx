@@ -6,10 +6,55 @@ import type { Download as DownloadInfo } from "@/lib/schema";
 
 import { CopyButton } from "../copy-button";
 import { MsStoreIcon } from "../ms-store-icon";
-import { ExternalButton, buttonClass, cx } from "../ui";
+import { ButtonLink, ExternalButton, buttonClass, cx } from "../ui";
 
 function fileName(path: string): string {
   return decodeURIComponent(path.split("?")[0]?.split("/").pop() ?? path);
+}
+
+function MsStoreSection({ href }: { href: string }) {
+  return (
+    <section aria-label="Microsoft Store" className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-line bg-surface p-5 sm:p-6">
+      <div className="flex items-center gap-3">
+        <MsStoreIcon className="size-10" />
+        <div>
+          <p className="font-semibold text-fg">Microsoft Store</p>
+          <p className="mt-1 text-sm text-fg-subtle">Microsoft Store에서도 설치할 수 있습니다.</p>
+        </div>
+      </div>
+      <ExternalButton href={href} variant="secondary">
+        <MsStoreIcon className="size-5" />
+        Microsoft Store에서 받기
+      </ExternalButton>
+    </section>
+  );
+}
+
+/**
+ * Store DB 로 옮긴 앱 (작품 파일의 storeApp, ADR-0014). 설치 파일·버전·검사 결과는 Store 앱 화면이 원본이라 여기서는 그리로 잇는다.
+ * 작품 파일의 downloads 는 보이지 않는다 (DB 를 새로 채울 때 쓰는 처음 버전)
+ */
+export function StoreAppPanel({ code, requirements, microsoftStore }: { code: string; requirements?: string; microsoftStore?: string }) {
+  return (
+    <div className="space-y-4">
+      {requirements && (
+        <p className="text-sm text-fg-muted">
+          <span className="font-semibold text-fg">필요 환경</span> · {requirements}
+        </p>
+      )}
+      <section aria-label="JohnnyStudio Store" className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-line bg-surface p-5 sm:p-6">
+        <div className="min-w-0">
+          <p className="font-semibold text-fg">JohnnyStudio Store</p>
+          <p className="mt-1 text-sm text-fg-subtle">최신 버전 설치 파일과 SHA-256·바이러스 검사 결과는 Store 앱 화면에 있습니다.</p>
+        </div>
+        <ButtonLink href={`/store/app/?id=${code}`}>
+          <Download aria-hidden="true" className="size-4" />
+          Store에서 내려받기
+        </ButtonLink>
+      </section>
+      {microsoftStore && <MsStoreSection href={microsoftStore} />}
+    </div>
+  );
 }
 
 /**
@@ -25,21 +70,7 @@ export function DownloadPanel({
   /** Microsoft Store 주소. 있으면 설치 파일 위에 Store 에서 받는 길을 함께 보여 준다 */
   microsoftStore?: string;
 }) {
-  const store = microsoftStore && (
-    <section aria-label="Microsoft Store" className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-line bg-surface p-5 sm:p-6">
-      <div className="flex items-center gap-3">
-        <MsStoreIcon className="size-10" />
-        <div>
-          <p className="font-semibold text-fg">Microsoft Store</p>
-          <p className="mt-1 text-sm text-fg-subtle">Microsoft Store에서도 설치할 수 있습니다.</p>
-        </div>
-      </div>
-      <ExternalButton href={microsoftStore} variant="secondary">
-        <MsStoreIcon className="size-5" />
-        Microsoft Store에서 받기
-      </ExternalButton>
-    </section>
-  );
+  const store = microsoftStore && <MsStoreSection href={microsoftStore} />;
   if (downloads.length === 0) {
     if (store) return store;
     return (

@@ -15,10 +15,11 @@ from sqlalchemy.orm import Session
 
 from ..config import Settings
 from ..db import User
+from ..listing import page_out, remove_gallery, search_text
 from ..store.files import remove
 from ..store.models import StorePublisher
 from ..store.service import REPORT_RETENTION, iso
-from .models import SERVICE_CATEGORIES, ShowroomReport, ShowroomService
+from .models import SERVICE_CATEGORIES, ShowroomReport, ShowroomService, ShowroomServicePage
 
 log = logging.getLogger("johnnystudio.showroom")
 
@@ -84,9 +85,12 @@ def is_public(svc: ShowroomService, publisher: StorePublisher | None) -> bool:
     return svc.status == "published" and publisher is not None and publisher.blocked_at is None
 
 
-def service_out(svc: ShowroomService, publisher: StorePublisher | None, *, private: bool, owner: User | None = None) -> dict[str, Any]:
+def service_out(
+    svc: ShowroomService, publisher: StorePublisher | None, *, private: bool, owner: User | None = None, official: bool = False
+) -> dict[str, Any]:
     out: dict[str, Any] = {
         "code": svc.code,
+        "official": official,
         "name": svc.name,
         "url": svc.url,
         "host": host_of(svc.url),
@@ -99,6 +103,7 @@ def service_out(svc: ShowroomService, publisher: StorePublisher | None, *, priva
         "has_screenshot": svc.has_screenshot,
         "published_at": iso(svc.published_at),
         "updated_at": iso(svc.updated_at),
+        "page": page_out(svc.page.data if svc.page else None),
     }
     if private:
         out |= {
@@ -118,9 +123,10 @@ def service_out(svc: ShowroomService, publisher: StorePublisher | None, *, priva
     return out
 
 
-def card_out(svc: ShowroomService, publisher: StorePublisher | None) -> dict[str, Any]:
+def card_out(svc: ShowroomService, publisher: StorePublisher | None, *, official: bool = False) -> dict[str, Any]:
     return {
         "code": svc.code,
+        "official": official,
         "name": svc.name,
         "url": svc.url,
         "host": host_of(svc.url),
@@ -137,6 +143,17 @@ def delete_files(settings: Settings, code: str) -> None:
     d = Dirs(settings)
     remove(d.icon(code))
     remove(d.shot(code))
+    remove_gallery(settings, "showroom", code)
+
+
+def set_page(svc: ShowroomService, data: dict[str, Any], now: datetime) -> None:
+    """소개 자료를 바꾼다 (Store 의 set_page 와 같다)"""
+    if svc.page is None:
+        svc.page = ShowroomServicePage(data=data, search_text=search_text(data), updated_at=now)
+    else:
+        svc.page.data = dict(data)
+        svc.page.search_text = search_text(data)
+        svc.page.updated_at = now
 
 
 def purge_expired(db: Session, now: datetime) -> None:
@@ -151,6 +168,7 @@ def purge_user(db: Session, settings: Settings, user_id: str) -> None:
     ids = [s.id for s in services]
     if ids:
         db.execute(update(ShowroomReport).where(ShowroomReport.service_id.in_(ids)).values(service_id=None))
+        db.execute(delete(ShowroomServicePage).where(ShowroomServicePage.service_id.in_(ids)))
         db.execute(delete(ShowroomService).where(ShowroomService.id.in_(ids)))
         log.info("회원 탈퇴: Showroom 서비스 %d개를 지웠다", len(ids))
     db.execute(update(ShowroomReport).where(ShowroomReport.reporter_id == user_id).values(reporter_id=None))

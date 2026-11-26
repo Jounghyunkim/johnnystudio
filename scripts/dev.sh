@@ -9,7 +9,9 @@
 #                                   → 공유기 포트포워딩으로 인터넷에서 접속 (잠깐 시험할 때만. 아래 경고 참고)
 #   PORT=4000 PUBLIC_URL=https://johnnystudio.net,https://www.johnnystudio.net,http://johnnyhouse.iptime.org:4000 ./scripts/dev.sh
 #                                   → 밖에서 들어오는 주소가 여럿이면 쉼표로 모두 적는다. 첫 주소가 대표(로그인 메일 링크)다.
-#                                     (johnnystudio.net 은 이 서버 nginx 가 443 에서 받아 127.0.0.1:4000 으로 넘긴다. 저장소 밖 설정)
+#                                     (johnnystudio.net 은 이 서버 nginx 가 443 에서 받아 127.0.0.1:4000 으로 넘긴다. 저장소 밖 설정
+#                                      /etc/nginx/sites-available/johnnystudio.net. 그 location 에 client_max_body_size 9m 가 있어야
+#                                      Store 설치 파일 조각(8MB)·그림 올리기가 413 으로 막히지 않는다. nginx 기본값은 1m)
 #                                     빠진 주소로 들어오면 그 화면에서는 버튼(테마·즐겨찾기·로그인 등)이 동작하지 않는다
 #   NO_API=1 ./scripts/dev.sh       → 회원 API 없이 화면만
 #   NO_ADMIN=1 ./scripts/dev.sh     → 작품 관리 서버 없이 (관리 화면 /admin/ 이 '연결할 수 없음'으로 보이고, /files/ 다운로드도 안 된다)

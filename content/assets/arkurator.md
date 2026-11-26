@@ -6,9 +6,9 @@ status: live
 date: 2025-12-19
 tags: [AI, RAG, 지식관리, FastAPI, LangGraph]
 url: https://arkurator.net
-cover: /media/arkurator/logo.webp
-coverAlt: 파도 위의 방주를 그린 Arkurator 로고
+icon: /media/arkurator/icon.png
 featured: true
+showroomService: f7jkS4TB
 ---
 
 ## 무엇을 하나

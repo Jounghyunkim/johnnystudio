@@ -8,7 +8,9 @@
  */
 import { useSyncExternalStore } from "react";
 
-const KEY = "johnnystudio:remembered-email:v1";
+/** 저장소 키. 설정 화면(lib/site.ts)이 이 값으로 지운다 */
+export const REMEMBERED_EMAIL_KEY = "johnnystudio:remembered-email:v1";
+const KEY = REMEMBERED_EMAIL_KEY;
 const EVENT = "johnnystudio:remembered-email";
 
 /** 저장된 값이 이메일처럼 생겼을 때만 쓴다 (손으로 고친 값·옛 형식은 무시) */

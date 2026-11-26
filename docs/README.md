@@ -1,6 +1,6 @@
 # 문서 안내
 
-> **Last Updated**: 2026-11-24
+> **Last Updated**: 2026-11-26
 
 | 문서 | 내용 | 상태 |
 |---|---|---|
@@ -14,6 +14,8 @@
 | [02_planning/features/johnnystore-integration.md](02_planning/features/johnnystore-integration.md) | JohnnyStore 통합: 두 서비스 비교, 철학 충돌(개방 범위 → 운영자 전용 → 2026-11-24 회원 Store), 흡수 통합 구조, 단계 계획 S0~S5 | S1·S5(Store) 완료, S2·S3 남음 |
 | [02_planning/features/showroom.md](02_planning/features/showroom.md) | Showroom (회원 웹 서비스 소개): 범위, 화면·상태, 구조, 확인한 것 | 구현 완료, 운영 설정 전 (ADR-0012 제안됨) |
 | [02_planning/features/store.md](02_planning/features/store.md) | Store (회원 앱): 범위, 화면·상태, API·웹 구조, 한도·설정, 운영 경로, 확인한 것·못 한 것 | 구현 완료, 운영 설정 전 (ADR-0012 제안됨) |
+| [02_planning/features/listing.md](02_planning/features/listing.md) | 소개 자료 (Store·Showroom 게시물 꾸미기): 항목 검토(Microsoft Store 칸과 대조), 파일 양식, AI 키트, 구조, 확인한 것 | 구현 완료, 운영 설정 전 (ADR-0013 제안됨) |
+| [02_planning/features/settings.md](02_planning/features/settings.md) | 설정 화면: 사용자 현황(운영자 전체 현황), 앱 설정, 캐시·저장 값 지우기 | 완료 (2026-11-26) |
 | [02_planning/features/pixtuoid.md](02_planning/features/pixtuoid.md) | pixtuoid 적용 검토: 개발 도구·사이트 데모·실시간 보기·만드는 방식 참고(CI·gitleaks·Playwright·Lighthouse) 비교 | 검토 완료, 결정 전 |
 | [03_design/DESIGN_SYSTEM.md](03_design/DESIGN_SYSTEM.md) | 다크 테마 토큰, 글꼴, 컴포넌트 | v1 (브랜드 색·로고 임시) |
 | [04_architecture/ARCHITECTURE.md](04_architecture/ARCHITECTURE.md) | 시스템 구성, 렌더링 원칙, 회원(매직 링크), Store, 콘텐츠 파이프라인, 보안·캐시, 검사, 이후 구조 | 최신 |

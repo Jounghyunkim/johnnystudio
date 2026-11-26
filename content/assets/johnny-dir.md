@@ -8,6 +8,7 @@ tags: [유틸리티, 데스크톱]
 icon: /media/johnny-dir/icon.png
 requirements: Windows 10/11 (x64), WebView2 런타임 (없으면 설치 중에 자동으로 내려받습니다)
 microsoftStore: https://apps.microsoft.com/detail/9NXKSHDGPD42?hl=ko-kr&gl=KR
+storeApp: fQkX4pk8
 downloads:
   - label: Windows 설치 파일 (x64)
     file: /files/johnny-dir/Johnny-Dir_0.1.1_x64-setup.exe

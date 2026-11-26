@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Trash2, Upload } from "lucide-react";
+import { Pencil, Sparkles, Trash2, Upload } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -18,6 +18,8 @@ import {
   storeApi,
   useRemote,
 } from "@/lib/store";
+
+import { listingEditHref } from "@/lib/listing";
 
 import { ButtonLink, buttonClass } from "../ui";
 import { AppEditDialog, type DeleteTarget, DeleteDialog, IconButton } from "./store-edit";
@@ -55,6 +57,10 @@ function AppRow({ app, onEdit, onDelete }: { app: StoreApp; onEdit: () => void; 
             <Pencil aria-hidden="true" className="size-4" />
             고치기
           </button>
+          <ButtonLink href={listingEditHref(app.code)} variant="ghost" size="sm">
+            <Sparkles aria-hidden="true" className="size-4" />
+            소개 꾸미기
+          </ButtonLink>
           <IconButton app={app} onSaved={reloadMine} />
           <button type="button" onClick={() => onDelete({ kind: "app", app })} className={buttonClass("danger", "sm")}>
             <Trash2 aria-hidden="true" className="size-4" />

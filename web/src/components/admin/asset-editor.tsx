@@ -481,6 +481,14 @@ function TypeSection({
       return (
         <Section id="sec-type" title={title} description="카드의 '실행' 버튼과 상세 화면이 이 주소로 엽니다.">
           <TextField label="서비스 주소" required type="url" mono value={str(data.url)} onChange={(v) => set("url", v)} placeholder="https://…" error={errorAt("url")} />
+          <TextField
+            label="Showroom 서비스 코드 (showroomService, 선택)"
+            mono
+            value={str(data.showroomService)}
+            onChange={(v) => set("showroomService", v)}
+            hint="Showroom DB 로 옮긴 서비스면 scripts/import-official.sh 가 채웁니다. 있으면 Showroom 목록은 DB 의 것을 보입니다 (ADR-0014)."
+            error={errorAt("showroomService")}
+          />
         </Section>
       );
     case "article":
@@ -520,6 +528,14 @@ function TypeSection({
             onChange={(v) => set("microsoftStore", v)}
             placeholder="https://apps.microsoft.com/detail/9ABCDEFGHIJK"
             error={errorAt("microsoftStore")}
+          />
+          <TextField
+            label="Store 앱 코드 (storeApp, 선택)"
+            mono
+            value={str(data.storeApp)}
+            onChange={(v) => set("storeApp", v)}
+            hint="Store DB 로 옮긴 앱이면 scripts/import-official.sh 가 채웁니다. 있으면 Library 는 아래 다운로드 대신 'Store에서 내려받기'를 보이고, 새 버전은 Store 에서 올립니다 (ADR-0014)."
+            error={errorAt("storeApp")}
           />
           <DownloadsField slug={slug} value={list(data.downloads)} onChange={(v) => set("downloads", v)} errorAt={errorAt} />
         </Section>

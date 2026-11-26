@@ -7,6 +7,7 @@ date: 2026-11-16
 tags: [보안, 데스크톱]
 icon: /media/sentinellite-av/icon.png
 requirements: Windows 10/11 (x64), WebView2 런타임 (없으면 설치 중에 자동으로 내려받습니다)
+storeApp: BeGMdkDU
 downloads:
   - label: Windows 설치 파일 (x64)
     file: /files/sentinellite-av/SentinelLite_0.1.0_x64-setup.exe

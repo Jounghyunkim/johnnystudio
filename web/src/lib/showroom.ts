@@ -4,7 +4,9 @@
  * 올리는 회원 정보(표시 이름·약관·차단)는 Store 의 /api/store/me 를 함께 쓴다.
  */
 import { type ApiResult, toApiError } from "./auth";
-import type { StoreQuery } from "./store";
+import type { GalleryImage, ListingPage } from "./listing";
+import type { ListingApi, PageInput } from "./listing-draft";
+import { type StoreQuery, putImage } from "./store";
 import type { OfficialShowroomService } from "./types";
 
 export type ServiceStatus = "pending" | "published" | "rejected" | "hidden";
@@ -15,10 +17,14 @@ export type ShowroomMeta = {
   limits: { daily_submissions: number; max_per_user: number; icon_max_bytes: number; screenshot_max_bytes: number };
   terms_version: string;
   submissions_open: boolean;
+  /** 소개 자료 (ADR-0013): Microsoft Store 분류 */
+  listing: { ms_categories: Record<string, string> };
 };
 
 export type ServiceCard = {
   code: string;
+  /** 운영자 계정이 소개한 서비스 = JohnnyStudio 의 공식 서비스 (ADR-0014) */
+  official?: boolean;
   name: string;
   url: string;
   host: string;
@@ -32,7 +38,10 @@ export type ServiceCard = {
 
 export type ShowroomService = ServiceCard & {
   description: string;
+  /** 예전 화면 그림 한 장 (소개 자료의 그림 모음이 없을 때만 보인다) */
   has_screenshot: boolean;
+  /** 소개 자료 (ADR-0013) */
+  page?: Partial<ListingPage>;
   published_at: string | null;
   status?: ServiceStatus;
   status_reason?: string;
@@ -81,7 +90,7 @@ export function looksLikeServiceUrl(raw: string): boolean {
   }
 }
 
-async function call<T>(method: "GET" | "POST" | "PATCH" | "DELETE", path: string, body?: unknown): Promise<ApiResult<T>> {
+async function call<T>(method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE", path: string, body?: unknown): Promise<ApiResult<T>> {
   let res: Response;
   try {
     res = await fetch(`/api/showroom/${path}`, {
@@ -128,6 +137,8 @@ export const showroomApi = {
   edit: (code: string, body: Partial<ServiceInput>) => call<ShowroomService>("PATCH", `services/${enc(code)}`, body),
   remove: (code: string) => call<undefined>("DELETE", `services/${enc(code)}`),
   uploadImage,
+  uploadGallery: (code: string, file: File) => putImage<{ image: GalleryImage }>(`/api/showroom/uploads/${enc(code)}/gallery`, file),
+  savePage: (code: string, page: PageInput) => call<ShowroomService & { page: ListingPage }>("PUT", `services/${enc(code)}/page`, page),
   admin: {
     overview: () => call<ShowroomOverview>("GET", "admin/overview"),
     approve: (code: string) => call<ShowroomService>("POST", `admin/services/${enc(code)}/approve`),
@@ -136,6 +147,13 @@ export const showroomApi = {
     unhide: (code: string) => call<ShowroomService>("POST", `admin/services/${enc(code)}/unhide`),
     resolve: (id: number, status: "actioned" | "dismissed", note: string) => call<{ ok: true }>("POST", `admin/reports/${id}/resolve`, { status, note }),
   },
+};
+
+/** 소개 자료 저장에 쓰는 Showroom API (lib/listing-draft 의 saveListing) */
+export const showroomListingApi: ListingApi = {
+  uploadIcon: (code, file) => showroomApi.uploadImage(code, "icon", file),
+  uploadImage: showroomApi.uploadGallery,
+  savePage: showroomApi.savePage,
 };
 
 // ── 공식 서비스(Library)와 회원 서비스를 한 목록으로 (Store 의 storeEntries 와 같은 규칙) ──

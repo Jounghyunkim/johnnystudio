@@ -9,6 +9,8 @@
 import { useSyncExternalStore } from "react";
 
 import { type ApiError, type ApiResult, toApiError } from "./auth";
+import type { GalleryImage, ListingPage } from "./listing";
+import type { ListingApi, PageInput } from "./listing-draft";
 import type { OfficialStoreApp } from "./types";
 
 export type AppStatus = "pending" | "published" | "rejected" | "hidden";
@@ -26,10 +28,14 @@ export type StoreMeta = {
   uploads_open: boolean;
   scan_required: boolean;
   scanner: boolean;
+  /** 소개 자료 (ADR-0013): Microsoft Store 분류 */
+  listing: { ms_categories: Record<string, string> };
 };
 
 export type StoreCard = {
   code: string;
+  /** 운영자 계정이 올린 앱 = JohnnyStudio 의 공식 앱 (ADR-0014). 예전 응답에는 없다 */
+  official?: boolean;
   name: string;
   summary: string;
   category: string;
@@ -70,6 +76,8 @@ export type StoreRelease = {
 
 export type StoreApp = {
   code: string;
+  /** 운영자 계정이 올린 앱 = JohnnyStudio 의 공식 앱 (ADR-0014) */
+  official?: boolean;
   name: string;
   summary: string;
   description: string;
@@ -80,6 +88,8 @@ export type StoreApp = {
   published_at: string | null;
   updated_at: string | null;
   releases: StoreRelease[];
+  /** 소개 자료 (ADR-0013). 예전 응답에는 없을 수 있다 (pageOf 로 읽는다) */
+  page?: Partial<ListingPage>;
   status?: AppStatus;
   status_reason?: string;
   public?: boolean;
@@ -200,7 +210,7 @@ export function localDate(iso: string | null | undefined, withTime = false): str
 
 // ── 요청 ──
 
-type Method = "GET" | "POST" | "PATCH" | "DELETE";
+type Method = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 
 async function call<T>(method: Method, path: string, body?: unknown): Promise<ApiResult<T>> {
   let res: Response;
@@ -284,6 +294,25 @@ async function uploadIcon(code: string, file: File): Promise<ApiResult<StoreApp>
   return toApiError(res.ok ? 500 : res.status, json);
 }
 
+/** 그림 원본을 그대로 보낸다 (아이콘·소개 그림). 서버가 자식 프로세스에서 다시 그린다 */
+export async function putImage<T>(url: string, file: File): Promise<ApiResult<T>> {
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "PUT",
+      credentials: "same-origin",
+      cache: "no-store",
+      headers: { Accept: "application/json", "Content-Type": "application/octet-stream" },
+      body: file,
+    });
+  } catch {
+    return toApiError(0, null);
+  }
+  const json: unknown = await res.json().catch(() => null);
+  if (res.ok && json !== null) return { ok: true, data: json as T };
+  return toApiError(res.ok ? 500 : res.status, json);
+}
+
 export const ICON_ACCEPT = "image/png,image/jpeg,image/webp,.ico";
 export const ICON_MAX_BYTES = 1024 * 1024;
 
@@ -295,6 +324,8 @@ export const storeApi = {
 
   me: () => call<StoreMe>("GET", "me"),
   setPublisher: (body: { display_name: string; agree_terms: boolean; age_14: boolean }) => call<{ publisher: Publisher }>("POST", "me/publisher", body),
+  /** 표시 이름만 바꾸기 (이미 정한 회원). 처음 정할 때는 setPublisher (약관 동의) */
+  renamePublisher: (display_name: string) => call<{ publisher: Publisher }>("PATCH", "me/publisher", { display_name }),
   myApps: () => call<{ apps: StoreApp[] }>("GET", "me/apps"),
   upload: uploadFile,
   cancelUpload: (id: string) => call<undefined>("DELETE", `uploads/${enc(id)}`),
@@ -302,6 +333,8 @@ export const storeApi = {
   addRelease: (code: string, body: { upload_id: string; version: string; notes: string; arch: string }) => call<StoreApp>("POST", `apps/${enc(code)}/releases`, body),
   editApp: (code: string, body: Partial<AppInput>) => call<StoreApp>("PATCH", `apps/${enc(code)}`, body),
   uploadIcon,
+  uploadGallery: (code: string, file: File) => putImage<{ image: GalleryImage }>(`/api/store/uploads/gallery/${enc(code)}`, file),
+  savePage: (code: string, page: PageInput) => call<StoreApp & { page: ListingPage }>("PUT", `apps/${enc(code)}/page`, page),
   deleteApp: (code: string) => call<undefined>("DELETE", `apps/${enc(code)}`),
   deleteRelease: (code: string, id: number) => call<undefined>("DELETE", `apps/${enc(code)}/releases/${id}`),
 
@@ -317,6 +350,9 @@ export const storeApi = {
     unblock: (userId: string) => call<{ ok: true }>("POST", `admin/publishers/${enc(userId)}/unblock`),
   },
 };
+
+/** 소개 자료 저장에 쓰는 Store API (lib/listing-draft 의 saveListing) */
+export const storeListingApi: ListingApi = { uploadIcon: storeApi.uploadIcon, uploadImage: storeApi.uploadGallery, savePage: storeApi.savePage };
 
 /** 목록 주소의 ?q=&category=&sort= */
 export type StoreQuery = { q: string; category: string; sort: "new" | "name" };

@@ -1,17 +1,17 @@
 "use client";
 
-import { Plus, Search, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useId, useMemo } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 
 import { type ServiceCard, type ShowroomEntry, type ShowroomMeta, serviceHref, showroomApi, showroomEntries } from "@/lib/showroom";
 import { type StoreQuery, loadRemote, parseStoreQuery, toStoreSearch, useRemote } from "@/lib/store";
 import type { OfficialShowroomService } from "@/lib/types";
 import { useLocationSearch } from "@/lib/use-location-search";
 
-import { ReviewLink } from "../store/review-link";
+import { type OfficialTarget, OfficialDeleteButton, OfficialDeleteDialog, useOfficialDelete } from "../store/official-delete";
 import { Pill, ErrorBox, Loading } from "../store/store-ui";
-import { ButtonLink, cx } from "../ui";
+import { cx } from "../ui";
 import { OpenLink, ServiceIcon } from "./showroom-ui";
 
 const cardClass =
@@ -19,8 +19,11 @@ const cardClass =
 const openClass =
   "relative z-10 inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2.5 text-xs font-semibold text-accent hover:bg-accent/10 light:hover:text-accent-hover";
 
-function Card({ entry }: { entry: ShowroomEntry }) {
+/** onDeleteOfficial: 운영자에게만(개발 서버) 공식 서비스(Library 작품) 지우기 버튼 */
+function Card({ entry, onDeleteOfficial }: { entry: ShowroomEntry; onDeleteOfficial?: (t: OfficialTarget) => void }) {
   const official = entry.kind === "official";
+  // DB 의 서비스 중 운영자 계정이 소개한 것도 '공식'이다 (ADR-0014). 회원 링크(ugc)로 다루지 않는다
+  const officialBadge = official || Boolean(entry.service.official);
   const name = official ? entry.service.title : entry.service.name;
   const href = official ? `/library/${entry.service.slug}/` : serviceHref(entry.service.code);
   const url = entry.service.url;
@@ -38,7 +41,7 @@ function Card({ entry }: { entry: ShowroomEntry }) {
           <Link href={href} className="card-link truncate outline-none after:absolute after:inset-0 after:content-['']">
             {name}
           </Link>
-          {official && <Pill tone="ok">공식</Pill>}
+          {officialBadge && <Pill tone="ok">공식</Pill>}
         </h3>
         <p className="truncate text-xs text-fg-subtle">
           {official ? "JohnnyStudio" : entry.service.publisher}
@@ -47,7 +50,10 @@ function Card({ entry }: { entry: ShowroomEntry }) {
         {entry.service.summary && <p className="line-clamp-2 text-sm leading-relaxed text-fg-muted">{entry.service.summary}</p>}
         <div className="mt-auto flex items-center justify-between gap-2 pt-1">
           <p className="truncate font-mono text-xs text-fg-subtle">{host}</p>
-          <OpenLink href={url} name={name} ugc={!official} className={openClass} />
+          <div className="flex shrink-0 items-center gap-1">
+            <OpenLink href={url} name={name} ugc={!officialBadge} className={openClass} />
+            {official && onDeleteOfficial && <OfficialDeleteButton target={{ slug: entry.service.slug, title: name }} onClick={onDeleteOfficial} />}
+          </div>
         </div>
       </div>
     </article>
@@ -58,6 +64,8 @@ function Card({ entry }: { entry: ShowroomEntry }) {
 export function ShowroomBrowser({ official }: { official: readonly OfficialShowroomService[] }) {
   const [search, setSearch] = useLocationSearch();
   const query = useMemo(() => parseStoreQuery(search), [search]);
+  const canDeleteOfficial = useOfficialDelete();
+  const [deleting, setDeleting] = useState<OfficialTarget | null>(null);
   const apiSearch = toStoreSearch(query);
   const key = `showroom:list:${apiSearch}`;
   const list = useRemote<{ services: ServiceCard[] }>(key);
@@ -120,13 +128,6 @@ export function ShowroomBrowser({ official }: { official: readonly OfficialShowr
             <option value="name">이름순</option>
           </select>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <ButtonLink href="/showroom/new/" variant="secondary">
-            <Plus aria-hidden="true" className="size-4" />
-            서비스 소개하기
-          </ButtonLink>
-          <ReviewLink />
-        </div>
       </div>
 
       {categoryMap && (
@@ -164,7 +165,7 @@ export function ShowroomBrowser({ official }: { official: readonly OfficialShowr
               <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {entries.map((e) => (
                   <li key={e.kind === "official" ? `o:${e.service.slug}` : `m:${e.service.code}`}>
-                    <Card entry={e} />
+                    <Card entry={e} onDeleteOfficial={canDeleteOfficial ? setDeleting : undefined} />
                   </li>
                 ))}
               </ul>
@@ -182,6 +183,7 @@ export function ShowroomBrowser({ official }: { official: readonly OfficialShowr
           </>
         )}
       </div>
+      {deleting && <OfficialDeleteDialog target={deleting} where="Showroom" onClose={() => setDeleting(null)} />}
     </div>
   );
 }

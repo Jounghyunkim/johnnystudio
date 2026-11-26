@@ -65,6 +65,8 @@ links: []
 # 홈(랜딩) 페이지 문구 (web/src/app/page.tsx). 답변은 지금 실제로 동작하는 것만 쓴다
 landing:
   eyebrow: Self-hosted creative studio
+  # 히어로의 큰 제목 (2026-11-26 사용자 요청 문구). 한 줄 정의(tagline)는 바닥글·About 에 쓴다
+  greeting: 당신이 상상했던 것을 Johnny와 함께 마음껏 펼치세요!
   steps:
     - title: 둘러보기
       text: Library에서 이름·설명·태그로 찾고, 유형별로 골라 봅니다.

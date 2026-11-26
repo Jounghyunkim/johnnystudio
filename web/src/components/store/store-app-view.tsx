@@ -1,12 +1,14 @@
 "use client";
 
-import { ClipboardCheck, Download, Flag, LoaderCircle, Pencil, ShieldAlert, ShieldCheck, Trash2, Upload } from "lucide-react";
+import { Download, Flag, LoaderCircle, Pencil, ShieldAlert, ShieldCheck, Trash2, Upload } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, type RefObject, useEffect, useId, useRef, useState } from "react";
 
 import type { ApiResult } from "@/lib/auth";
+import { storeBookmarkId } from "@/lib/bookmarks";
 import { formatBytes } from "@/lib/format";
+import { galleryImageSrc, listingEditHref, pageOf } from "@/lib/listing";
 import {
   APP_STATUS_LABELS,
   ARCH_LABELS,
@@ -25,8 +27,10 @@ import { useIsClient } from "@/lib/bookmarks";
 import { useLocationSearch } from "@/lib/use-location-search";
 
 import { CopyButton } from "../copy-button";
+import { KeywordChips, ListingFacts, ListingMain } from "../listing/listing-view";
+import { StarButton } from "../star-button";
 import { ButtonLink, ExternalButton, buttonClass, cx } from "../ui";
-import { AppEditDialog, type DeleteTarget, DeleteDialog, IconButton } from "./store-edit";
+import { type DeleteTarget, DeleteDialog } from "./store-edit";
 import { AppIcon, ErrorBox, Loading, Pill, PlainText, ScanBadge, dialogClass, inputClass, panelClass, statusTone } from "./store-ui";
 
 function ReleaseFacts({ r }: { r: StoreRelease }) {
@@ -236,7 +240,6 @@ export function StoreAppView() {
   const app = useRemote<StoreApp>(key);
   const meta = useRemote<StoreMeta>("meta");
   const reportDialog = useRef<HTMLDialogElement>(null);
-  const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState<DeleteTarget | null>(null);
   const router = useRouter();
   const reloadApp = () => (code ? loadRemote(`app:${code}`, () => storeApi.app(code)) : Promise.resolve());
@@ -281,13 +284,13 @@ export function StoreAppView() {
 
   const a = app.data;
   const review = Boolean(a.viewer?.owner || a.viewer?.admin) && a.status !== undefined;
-  // 고치기: 올린 사람과 운영자 (API 가 다시 확인한다). 운영자가 남의 앱을 고칠 때는 대화상자에 그렇게 적는다
-  const canEdit = review && meta?.status === "ready";
+  // 이름·설명·분류·아이콘 고치기는 머리글의 '편집'(소개 꾸미기 화면) 하나로 한다 (2026-11-26: 옆 칸의 '정보 고치기'·'아이콘 바꾸기'·'검토 화면'은 겹쳐서 뺐다)
   const asAdmin = Boolean(a.viewer?.admin && !a.viewer.owner);
   const deleteRelease = (r: StoreRelease) => (review ? () => setDeleting({ kind: "release", app: a, id: r.id, version: r.version }) : undefined);
   // 앱을 지우면 이 주소는 404 가 되므로, 올린 사람은 '내 앱'으로, 운영자는 검토 화면으로 간다
   const afterDelete = (t: DeleteTarget) => (t.kind === "app" ? router.replace(asAdmin ? "/store/manage/" : "/store/mine/") : reloadApp());
   const [latest, ...older] = a.releases;
+  const page = pageOf(a.page);
   const link = `${window.location.origin}/store/app/?id=${a.code}`;
 
   return (
@@ -297,9 +300,30 @@ export function StoreAppView() {
         <div className="min-w-0">
           <p className="text-sm text-fg-subtle">
             {a.category_label} · 올린 사람 <span className="text-fg-muted">{a.publisher}</span>
+            {a.official && (
+              <span className="ml-2 align-middle">
+                <Pill tone="ok">공식</Pill>
+              </span>
+            )}
           </p>
           <h1 className="mt-1 break-words text-3xl font-bold tracking-tight text-fg sm:text-4xl">{a.name}</h1>
           {a.summary && <p className="mt-2 text-base text-fg-muted">{a.summary}</p>}
+          {page.keywords.length > 0 && (
+            <div className="mt-3">
+              <KeywordChips keywords={page.keywords} />
+            </div>
+          )}
+          {/* 즐겨찾기는 공개된 앱만 (My Studio 는 공개 목록에서 찾는다). 편집은 올린 사람·운영자 (소개 꾸미기 화면, API 가 다시 확인한다).
+              review 가 아니면 즐겨찾기가, review 면 편집이 보이므로 이 줄은 늘 비지 않는다 */}
+          <div className="mt-4 flex flex-wrap gap-2">
+            {(!review || a.public) && <StarButton slug={storeBookmarkId(a.code)} title={a.name} withLabel />}
+            {review && (
+              <ButtonLink href={listingEditHref(a.code)} variant="secondary">
+                <Pencil aria-hidden="true" className="size-4" />
+                편집
+              </ButtonLink>
+            )}
+          </div>
         </div>
       </header>
 
@@ -317,17 +341,20 @@ export function StoreAppView() {
       )}
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <div className="min-w-0 space-y-8">
-          {latest ? <ReleasePanel r={latest} review={review && latest.status !== "published"} onDelete={deleteRelease(latest)} /> : <p className="text-sm text-fg-muted">내려받을 수 있는 버전이 없습니다.</p>}
-
-          {a.description && (
-            <section aria-labelledby="about-app">
-              <h2 id="about-app" className="text-lg font-semibold text-fg">
-                소개
-              </h2>
-              <PlainText text={a.description} className="mt-3 text-fg-muted" />
-            </section>
-          )}
+        <div className="min-w-0 space-y-10">
+          <ListingMain
+            page={page}
+            description={a.description}
+            imageSrc={(id) => galleryImageSrc("store", a.code, id)}
+            title={a.name}
+            lead={
+              latest ? (
+                <ReleasePanel r={latest} review={review && latest.status !== "published"} onDelete={deleteRelease(latest)} />
+              ) : (
+                <p className="text-sm text-fg-muted">내려받을 수 있는 버전이 없습니다.</p>
+              )
+            }
+          />
 
           {older.length > 0 && (
             <details className="rounded-card border border-line">
@@ -342,19 +369,36 @@ export function StoreAppView() {
         </div>
 
         <aside className="space-y-5">
-          <div className={panelClass}>
-            <p className="text-sm font-semibold text-fg">회원이 올린 앱입니다</p>
-            <p className="mt-2 text-sm leading-relaxed text-fg-muted">
-              운영자가 내용과 바이러스 검사 결과를 보고 공개했지만, 모든 위험을 찾아낸다고 보장하지 않습니다. 믿을 수 있는 개발자의 앱인지 확인하고 설치하세요.
-            </p>
-            <p className="mt-3 text-xs text-fg-subtle">
-              JohnnyStudio가 직접 만든 앱은{" "}
-              <Link href="/library/" className="underline underline-offset-4">
-                Library
-              </Link>
-              에 있습니다.
-            </p>
-          </div>
+          <ListingFacts page={page} kind="store" />
+          {a.official ? (
+            <div className={panelClass}>
+              <p className="flex items-center gap-2 text-sm font-semibold text-fg">
+                <Pill tone="ok">공식</Pill>
+                JohnnyStudio가 직접 만든 앱입니다
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-fg-muted">
+                설치 파일의 SHA-256 으로 내려받은 파일이 같은지 확인할 수 있습니다. 만든 이야기와 다른 작품은{" "}
+                <Link href="/library/" className="underline underline-offset-4">
+                  Library
+                </Link>
+                에 있습니다.
+              </p>
+            </div>
+          ) : (
+            <div className={panelClass}>
+              <p className="text-sm font-semibold text-fg">회원이 올린 앱입니다</p>
+              <p className="mt-2 text-sm leading-relaxed text-fg-muted">
+                운영자가 내용과 바이러스 검사 결과를 보고 공개했지만, 모든 위험을 찾아낸다고 보장하지 않습니다. 믿을 수 있는 개발자의 앱인지 확인하고 설치하세요.
+              </p>
+              <p className="mt-3 text-xs text-fg-subtle">
+                JohnnyStudio가 직접 만든 앱은{" "}
+                <Link href="/library/" className="underline underline-offset-4">
+                  Library
+                </Link>
+                에 있습니다.
+              </p>
+            </div>
+          )}
           <div className={panelClass}>
             <p className="text-sm font-semibold text-fg">공유</p>
             <p className="mt-2 break-all font-mono text-xs text-fg-muted">{link}</p>
@@ -368,26 +412,11 @@ export function StoreAppView() {
                 <Upload aria-hidden="true" className="size-4" />새 버전 올리기
               </ButtonLink>
             )}
-            {canEdit && (
-              <>
-                <button type="button" onClick={() => setEditing(true)} className={buttonClass("ghost", "sm")}>
-                  <Pencil aria-hidden="true" className="size-4" />
-                  정보 고치기
-                </button>
-                <IconButton app={a} onSaved={reloadApp} />
-              </>
-            )}
             {review && (
               <button type="button" onClick={() => setDeleting({ kind: "app", app: a })} className={buttonClass("danger", "sm")}>
                 <Trash2 aria-hidden="true" className="size-4" />
                 앱 지우기
               </button>
-            )}
-            {a.viewer?.admin && (
-              <ButtonLink href="/store/manage/" variant="ghost" size="sm">
-                <ClipboardCheck aria-hidden="true" className="size-4" />
-                검토 화면
-              </ButtonLink>
             )}
             {!a.viewer?.owner && a.status === undefined && meta?.status === "ready" && (
               <button type="button" onClick={() => reportDialog.current?.showModal()} className={buttonClass("ghost", "sm")}>
@@ -399,7 +428,6 @@ export function StoreAppView() {
         </aside>
       </div>
 
-      {editing && meta?.status === "ready" && <AppEditDialog app={a} meta={meta.data} asAdmin={asAdmin} onSaved={reloadApp} onClose={() => setEditing(false)} />}
       {deleting && <DeleteDialog target={deleting} asAdmin={asAdmin} onDone={() => afterDelete(deleting)} onClose={() => setDeleting(null)} />}
       {meta?.status === "ready" && <ReportDialog name={a.name} reasons={meta.data.report_reasons} dialog={reportDialog} send={(body) => storeApi.report(a.code, body)} />}
     </div>

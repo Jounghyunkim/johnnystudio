@@ -11,20 +11,21 @@ import unicodedata
 from datetime import datetime, timedelta
 from typing import Any
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
 from ..config import Settings
 from ..db import Database, User, utcnow
+from ..listing import page_out, remove_gallery, search_text
 from .files import StoreDirs, remove
-from .models import CATEGORIES, StoreApp, StorePublisher, StoreRelease, StoreReport, StoreUpload
+from .models import CATEGORIES, StoreApp, StoreAppPage, StorePublisher, StoreRelease, StoreReport, StoreUpload
 from .scan import scan_file
 
 log = logging.getLogger("johnnystudio.store")
 
 # Store·Showroom 이용약관 판. 약관(content/pages/store-terms.md)을 고칠 때마다 바꾼다. 바꾸면 올리는 회원이 다시 동의한다.
-# 날짜(약관의 updated)를 쓰고, 같은 날 다시 고치면 .2 처럼 붙인다 (2026-11-24.2: Showroom 조항, .3: 운영자가 앱 정보를 고친다)
-TERMS_VERSION = "2026-11-24.3"
+# 날짜(약관의 updated)를 쓰고, 같은 날 다시 고치면 .2 처럼 붙인다 (2026-11-24.2: Showroom 조항, .3: 운영자가 앱 정보를 고친다, 2026-11-26: 소개 자료·서비스 주소까지)
+TERMS_VERSION = "2026-11-26"
 UPLOAD_TTL = timedelta(hours=24)
 # 하루 업로드 횟수를 세려고, 다 쓴 업로드 기록도 이틀 동안 남긴다
 USED_UPLOAD_RETENTION = timedelta(days=2)
@@ -39,6 +40,17 @@ def dirs(settings: Settings) -> StoreDirs:
 
 def is_admin(settings: Settings, user: User | None) -> bool:
     return user is not None and user.email.lower() in settings.store_admins
+
+
+def official_ids(db: Session, settings: Settings) -> set[str]:
+    """운영자 계정(JOHNNYSTUDIO_STORE_ADMINS)의 회원 ID. 이 계정이 올린 앱·서비스는 '공식'이다 (ADR-0014)"""
+    if not settings.store_admins:
+        return set()
+    return set(db.scalars(select(User.id).where(func.lower(User.email).in_(sorted(settings.store_admins)))))
+
+
+def is_official(db: Session, settings: Settings, owner_id: str) -> bool:
+    return owner_id in official_ids(db, settings)
 
 
 def iso(value: datetime | None) -> str | None:
@@ -122,11 +134,18 @@ def release_out(r: StoreRelease, private: bool, files_origin: str = "") -> dict[
 
 
 def app_out(
-    app: StoreApp, publisher: StorePublisher | None, *, private: bool, owner: User | None = None, files_origin: str = ""
+    app: StoreApp,
+    publisher: StorePublisher | None,
+    *,
+    private: bool,
+    owner: User | None = None,
+    files_origin: str = "",
+    official: bool = False,
 ) -> dict[str, Any]:
     releases = releases_newest_first(app) if private else public_releases(app)
     out: dict[str, Any] = {
         "code": app.code,
+        "official": official,
         "name": app.name,
         "summary": app.summary,
         "description": app.description,
@@ -137,6 +156,7 @@ def app_out(
         "published_at": iso(app.published_at),
         "updated_at": iso(app.updated_at),
         "releases": [release_out(r, private, files_origin) for r in releases],
+        "page": page_out(app.page.data if app.page else None),
     }
     if private:
         out |= {
@@ -156,10 +176,11 @@ def app_out(
     return out
 
 
-def card_out(app: StoreApp, publisher: StorePublisher | None) -> dict[str, Any]:
+def card_out(app: StoreApp, publisher: StorePublisher | None, *, official: bool = False) -> dict[str, Any]:
     latest = public_releases(app)[0]
     return {
         "code": app.code,
+        "official": official,
         "name": app.name,
         "summary": app.summary,
         "category": app.category,
@@ -240,6 +261,17 @@ def delete_app_files(settings: Settings, app: StoreApp) -> None:
     for r in app.releases:
         remove(d.release_file(r.storage_key))
     remove(d.app_icon(app.code))
+    remove_gallery(settings, "store", app.code)
+
+
+def set_page(app: StoreApp, data: dict[str, Any], now: datetime) -> None:
+    """소개 자료를 바꾼다 (JSON 은 새 dict 로 넣어야 바뀐 것으로 친다)"""
+    if app.page is None:
+        app.page = StoreAppPage(data=data, search_text=search_text(data), updated_at=now)
+    else:
+        app.page.data = dict(data)
+        app.page.search_text = search_text(data)
+        app.page.updated_at = now
 
 
 def purge_expired(db: Session, settings: Settings, now: datetime) -> None:
@@ -273,6 +305,7 @@ def purge_user(db: Session, settings: Settings, user_id: str) -> None:
     if app_ids:
         db.execute(update(StoreReport).where(StoreReport.app_id.in_(app_ids)).values(app_id=None))
         db.execute(delete(StoreRelease).where(StoreRelease.app_id.in_(app_ids)))
+        db.execute(delete(StoreAppPage).where(StoreAppPage.app_id.in_(app_ids)))
         db.execute(delete(StoreApp).where(StoreApp.id.in_(app_ids)))
     db.execute(delete(StoreUpload).where(StoreUpload.user_id == user_id))
     db.execute(update(StoreReport).where(StoreReport.reporter_id == user_id).values(reporter_id=None))

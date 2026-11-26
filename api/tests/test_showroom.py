@@ -175,6 +175,57 @@ def test_admin_endpoints_need_admin(people: Accounts) -> None:
     assert people.use(None).get("/api/showroom/admin/overview").status_code == 401
 
 
+def test_admin_can_edit_and_delete_member_services(people: Accounts, store_settings: Settings, caplog) -> None:  # noqa: ANN001
+    import logging
+
+    dev = people.use("dev@example.com")
+    become_publisher(dev)
+    code = submit(dev)["code"]
+    approve(people, code)
+
+    # 운영자가 남의 서비스를 고친다. 주소를 바꿔도 공개 그대로이고(운영자가 본 주소), 응답에 소개한 사람이 함께 온다 (검토 화면)
+    with caplog.at_level(logging.INFO, logger="johnnystudio.showroom"):
+        r = people.use(ADMIN).patch(f"/api/showroom/services/{code}", json={"name": "고친 이름", "url": "https://fixed.example.org/", "category": "ai"})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["name"] == "고친 이름" and body["url"] == "https://fixed.example.org/" and body["status"] == "published"
+    assert body["owner"]["email"] == "dev@example.com"
+    assert any("운영자가 서비스 정보를 고침" in m for m in caplog.messages)
+    assert people.use(ADMIN).patch(f"/api/showroom/services/{code}", json={"url": "http://evil.example"}).status_code == 400  # 같은 검사를 거친다
+    assert people.use(None).get(f"/api/showroom/services/{code}").json()["url"] == "https://fixed.example.org/"
+
+    # 아이콘·소개 자료도 고친다
+    r = people.use(ADMIN).put(f"/api/showroom/uploads/{code}/icon", content=png())
+    assert r.status_code == 200 and r.json()["has_icon"] and r.json()["owner"]["email"] == "dev@example.com"
+    r = people.use(ADMIN).put(f"/api/showroom/services/{code}/page", json={"pricing": "무료 (운영자가 고침)"})
+    assert r.status_code == 200, r.text
+    assert r.json()["page"]["pricing"] == "무료 (운영자가 고침)" and r.json()["status"] == "published"
+    mine = people.use("dev@example.com").get("/api/showroom/me/services").json()["services"][0]
+    assert mine["name"] == "고친 이름" and mine["has_icon"] and "owner" not in mine
+
+    # 반려된 서비스를 운영자가 고쳐도 대신 다시 내지 않는다 (소개한 사람이 고치면 다시 검토 대기)
+    assert people.use(ADMIN).post(f"/api/showroom/admin/services/{code}/reject", json={"reason": "시험"}).status_code == 200
+    assert people.use(ADMIN).patch(f"/api/showroom/services/{code}", json={"summary": "운영자가 고침"}).json()["status"] == "rejected"
+    assert people.use(ADMIN).put(f"/api/showroom/services/{code}/page", json={"pricing": "무료"}).json()["status"] == "rejected"
+
+    # 차단된 회원은 자기 서비스를 못 고치지만, 운영자는 고친다
+    owner_id = body["owner"]["id"]
+    assert people.use(ADMIN).post(f"/api/store/admin/publishers/{owner_id}/block", json={"reason": "시험"}).status_code == 200
+    assert people.use("dev@example.com").patch(f"/api/showroom/services/{code}", json={"name": "내가 고침"}).status_code == 403
+    assert people.use(ADMIN).patch(f"/api/showroom/services/{code}", json={"name": "운영자가 고침"}).status_code == 200
+
+    # 다른 회원은 고치지도 지우지도 못한다 (있는지도 알리지 않는다)
+    assert people.use("other@example.com").patch(f"/api/showroom/services/{code}", json={"name": "남이 고침"}).status_code == 404
+    assert people.use("other@example.com").delete(f"/api/showroom/services/{code}").status_code == 404
+
+    # 운영자가 지운다 → 그림도 지워지고 로그에 남는다
+    with caplog.at_level(logging.INFO, logger="johnnystudio.showroom"):
+        assert people.use(ADMIN).delete(f"/api/showroom/services/{code}").status_code == 204
+    assert any("서비스 삭제 (운영자)" in m and code in m for m in caplog.messages)
+    assert people.use("dev@example.com").get("/api/showroom/me/services").json()["services"] == []
+    assert list((store_settings.store_dir / "showroom" / "icons").iterdir()) == []
+
+
 def test_daily_limit(people: Accounts, monkeypatch) -> None:  # noqa: ANN001
     monkeypatch.setattr(service, "DAILY_SUBMISSIONS", 2)
     dev = people.use("dev@example.com")

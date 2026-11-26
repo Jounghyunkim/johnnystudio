@@ -7,6 +7,7 @@ date: 2026-11-16
 tags: [유틸리티, 데스크톱]
 icon: /media/spacesense-ai/icon.png
 requirements: Windows 10 1809 이상 (x64), 메모리 4GB 이상 (8GB 권장), WebView2 런타임
+storeApp: VNW93jqW
 downloads:
   - label: Windows 설치 파일 (x64)
     file: /files/spacesense-ai/SpaceSense-AI_1.0.0_x64-setup.exe

@@ -204,6 +204,37 @@ def test_publisher_setup_is_required_and_checked(people: Accounts) -> None:
     become_publisher(people.use(ADMIN), "JohnnyStudio")
 
 
+def test_rename_publisher_keeps_agreement_and_rules(people: Accounts) -> None:
+    c = people.use("dev@example.com")
+    # 처음 정하기 전에는 이름만 바꿀 수 없다 (약관 동의가 먼저)
+    r = c.patch("/api/store/me/publisher", json={"display_name": "개발자 김"})
+    assert r.status_code == 409 and r.json()["detail"]["code"] == "needs_publisher"
+    become_publisher(c, "개발자 김")
+    code = submit(people.use("dev@example.com"))["code"]
+    dev = people.use("dev@example.com")
+    before = dev.get("/api/store/me").json()["publisher"]
+
+    # 이름만 바뀌고 약관 동의 기록은 그대로다. 같은 검사를 거친다
+    r = dev.patch("/api/store/me/publisher", json={"display_name": "  새 이름‮  "})
+    assert r.status_code == 200, r.text
+    after = r.json()["publisher"]
+    assert after["display_name"] == "새 이름" and after["agreed_at"] == before["agreed_at"] and after["terms_version"] == before["terms_version"]
+    assert dev.patch("/api/store/me/publisher", json={"display_name": "김"}).json()["detail"]["code"] == "invalid_field"
+    assert dev.patch("/api/store/me/publisher", json={"display_name": "관리자 김"}).json()["detail"]["code"] == "reserved_name"
+    assert dev.patch("/api/store/me/publisher", json={"display_name": " "}).status_code == 400
+    # 앱 화면의 '올린 사람'도 바로 바뀐다
+    assert dev.get(f"/api/store/apps/{code}").json()["publisher"] == "새 이름"
+    assert people.use(None).patch("/api/store/me/publisher", json={"display_name": "남의 이름"}).status_code == 401
+
+    # 이용 제한된 회원은 이름을 바꾸지 못한다 (PATCH·POST 모두). 같은 이름으로 약관에 다시 동의하는 것은 된다
+    uid = admin_overview_owner_id(people, code)
+    assert people.use(ADMIN).post(f"/api/store/admin/publishers/{uid}/block", json={"reason": "테스트"}).status_code == 200
+    dev = people.use("dev@example.com")
+    assert dev.patch("/api/store/me/publisher", json={"display_name": "다른 이름"}).json()["detail"]["code"] == "blocked"
+    assert dev.post("/api/store/me/publisher", json={"display_name": "다른 이름", "agree_terms": True, "age_14": True}).json()["detail"]["code"] == "blocked"
+    assert dev.post("/api/store/me/publisher", json={"display_name": "새 이름", "agree_terms": True, "age_14": True}).status_code == 200
+
+
 def test_rejects_wrong_type_and_mismatched_content(people: Accounts, store_settings: Settings) -> None:
     c = people.use("dev@example.com")
     become_publisher(c)

@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import { hostOf } from "@/lib/format";
 
-import { ExternalButton } from "../ui";
+import { ButtonLink, ExternalButton } from "../ui";
 
 function Panel({ icon, title, detail, children }: { icon: ReactNode; title: string; detail?: string; children?: ReactNode }) {
   return (
@@ -25,14 +25,22 @@ function Pending({ children }: { children: ReactNode }) {
 }
 
 /** 웹 서비스: 새 탭에서 실행 */
-export function LaunchPanel({ url }: { url?: string }) {
+/** showroomCode: Showroom DB 로 옮긴 서비스의 코드 (작품 파일의 showroomService, ADR-0014). 있으면 Showroom 소개로도 잇는다 */
+export function LaunchPanel({ url, showroomCode }: { url?: string; showroomCode?: string }) {
   if (!url) return <Pending>서비스 주소를 준비하고 있습니다.</Pending>;
   return (
     <Panel icon={<Globe aria-hidden="true" className="size-5" />} title="웹에서 바로 실행" detail={hostOf(url)}>
-      <ExternalButton href={url}>
-        실행하기
-        <ArrowUpRight aria-hidden="true" className="size-4" />
-      </ExternalButton>
+      <div className="flex flex-wrap gap-2">
+        {showroomCode && (
+          <ButtonLink href={`/showroom/service/?id=${showroomCode}`} variant="ghost">
+            Showroom 소개
+          </ButtonLink>
+        )}
+        <ExternalButton href={url}>
+          실행하기
+          <ArrowUpRight aria-hidden="true" className="size-4" />
+        </ExternalButton>
+      </div>
     </Panel>
   );
 }

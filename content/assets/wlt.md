@@ -8,6 +8,7 @@ tags: [개발 도구, 데스크톱, SSH]
 icon: /media/wlt/icon.png
 requirements: Windows 10/11 (x64), WebView2 런타임 (없으면 설치 중에 자동으로 내려받습니다)
 microsoftStore: https://apps.microsoft.com/detail/9MXKWPH0PCN1?hl=ko-kr&gl=KR
+storeApp: qec2P95d
 downloads:
   - label: Windows 설치 파일 (x64)
     file: /files/wlt/WLT_0.3.2_x64-setup.exe

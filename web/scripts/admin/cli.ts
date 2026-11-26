@@ -6,7 +6,11 @@
  *   npm --prefix web run admin -- new <slug> --type <유형> --title <이름> [--summary <한 줄>] [--date YYYY-MM]
  *   npm --prefix web run admin -- publish <slug>               완성도 검사를 통과하면 공개 (draft 지움)
  *   npm --prefix web run admin -- unpublish <slug>             초안으로 (draft: true)
+ *   npm --prefix web run admin -- remove <slug>                초안을 지운다 (.local/trash 로 옮김. 공개 중이거나 가리키는 곳이 있으면 거절, 관리 화면의 삭제와 같다)
  *   npm --prefix web run admin -- serve                        관리 서버 (dev.sh 가 띄운다)
+ *   npm --prefix web run admin -- official-export              Store·Showroom DB 로 옮길 공식 앱·서비스를 JSON 으로 (ADR-0014)
+ *   npm --prefix web run admin -- official-link <links.json>   옮긴 코드(storeApp·showroomService)를 작품 파일에 적는다
+ *   (두 명령은 scripts/import-official.sh 가 차례로 부른다)
  *
  * 유형: web-app desktop-app web-package video gallery article hardware
  * 환경 변수: CONTENT_DIR, JOHNNYSTUDIO_FILES_DIR(다운로드 보관 폴더), serve 는 JOHNNYSTUDIO_ADMIN_TOKEN_FILE·JOHNNYSTUDIO_ADMIN_PORT
@@ -16,6 +20,7 @@ import path from "node:path";
 import { parseArgs } from "node:util";
 
 import { ASSET_TYPES, type AssetType } from "../../src/lib/asset-types";
+import { parseAssetSource, serializeAssetSource, setField, sourceData, validateFrontmatter } from "../../src/lib/admin/asset-file";
 import { createAdminServer } from "../../src/lib/admin/server";
 import { AdminError, type AdminPaths, createAdminStore } from "../../src/lib/admin/store";
 import type { AdminAssetRow } from "../../src/lib/admin/types";
@@ -61,6 +66,99 @@ function printRows(rows: AdminAssetRow[]): void {
   for (const r of table) console.log(r.map((c, i) => pad(c, widths[i]!)).join("  ").trimEnd());
   const published = rows.filter((a) => !a.draft).length;
   console.log(`\n전체 ${rows.length} · 공개 ${published} · 초안 ${rows.length - published}`);
+}
+
+// ── 공식 앱·서비스를 DB 로 (ADR-0014) ──
+
+/** 사이트 경로(/media/…, /files/…)를 실제 파일 경로로. 폴더 밖으로 나가면 null */
+function resolveInside(root: string, sitePath: string, prefix: string): string | null {
+  if (!sitePath.startsWith(prefix)) return null;
+  const rel = decodeURIComponent(sitePath.slice(prefix.length).split("?")[0]!);
+  const full = path.resolve(root, rel);
+  return full.startsWith(path.resolve(root) + path.sep) ? full : null;
+}
+
+/** 본문에서 그림만 있는 줄(![설명](/media/…))을 빼고, 그 그림을 소개 그림 모음으로 넘긴다 (Store 설명은 그림을 그리지 않는다) */
+function splitBodyImages(body: string, publicDir: string): { description: string; images: { path: string; alt: string }[] } {
+  const images: { path: string; alt: string }[] = [];
+  const kept: string[] = [];
+  for (const line of body.split("\n")) {
+    const m = /^\s*!\[([^\]]*)\]\((\/media\/[^)\s]+)\)\s*$/.exec(line);
+    const file = m ? resolveInside(path.join(publicDir, "media"), m[2]!, "/media/") : null;
+    if (m && file && fs.existsSync(file)) images.push({ path: file, alt: m[1]!.trim() });
+    else kept.push(line);
+  }
+  return { description: kept.join("\n").replace(/\n{3,}/g, "\n\n").trim(), images };
+}
+
+async function officialExport(store: ReturnType<typeof createAdminStore>): Promise<unknown[]> {
+  const { publicDir, filesDir } = store.paths;
+  const media = (p: unknown) => (typeof p === "string" ? resolveInside(path.join(publicDir, "media"), p, "/media/") : null);
+  const items: unknown[] = [];
+  for (const row of await store.list()) {
+    if (row.draft || (row.type !== "desktop-app" && row.type !== "web-app")) continue;
+    const detail = await store.get(row.slug);
+    const valid = validateFrontmatter(detail.data);
+    if (!valid.ok) throw new AdminError(400, "invalid", `${row.slug}: 형식 오류가 있어 옮기지 않습니다. admin check ${row.slug} 로 확인하세요.`);
+    const a = valid.value;
+    const { description, images } = splitBodyImages(detail.body, publicDir);
+    const common = {
+      slug: row.slug,
+      title: a.title,
+      summary: a.summary,
+      date: a.date ?? null,
+      tags: a.tags,
+      description,
+      images,
+      links: a.links.map((l) => ({ label: l.label, url: l.href })),
+      icon: media(a.icon),
+      cover: media(a.cover),
+    };
+    if (a.type === "desktop-app") {
+      const downloads = a.downloads
+        .filter((d) => d.os.includes("windows"))
+        .map((d) => ({
+          label: d.label ?? "",
+          path: resolveInside(filesDir, d.file, "/files/"),
+          fileName: decodeURIComponent(d.file.split("?")[0]!.split("/").pop() ?? ""),
+          version: d.version,
+          size: d.size ?? null,
+          sha256: d.sha256 ?? null,
+          released: d.released ?? null,
+          signed: d.signed,
+          notes: d.notes ?? "",
+        }));
+      if (!downloads.length) continue;
+      items.push({ kind: "store", ...common, requirements: a.requirements ?? "", microsoftStore: a.microsoftStore ?? "", code: a.storeApp ?? null, downloads });
+    } else if (a.type === "web-app" && a.url) {
+      items.push({ kind: "showroom", ...common, url: a.url, code: a.showroomService ?? null });
+    }
+  }
+  return items;
+}
+
+/** 옮긴 코드를 작품 파일에 적는다. 머리말의 다른 줄·주석은 그대로 둔다 (관리 화면과 같은 쓰기) */
+function officialLink(contentDir: string, links: { slug: string; field: string; code: string }[]): number {
+  let changed = 0;
+  for (const { slug, field, code } of links) {
+    if (field !== "storeApp" && field !== "showroomService") throw new Error(`알 수 없는 칸: ${field}`);
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) throw new Error(`slug 형식: ${slug}`);
+    const file = path.join(contentDir, "assets", `${slug}.md`);
+    const source = parseAssetSource(fs.readFileSync(file, "utf8"));
+    if (sourceData(source)[field] === code) {
+      console.log(`· ${slug}: ${field}: ${code} (이미 적혀 있음)`);
+      continue;
+    }
+    setField(source.doc, field, code);
+    const valid = validateFrontmatter(sourceData(source));
+    if (!valid.ok) throw new Error(`${slug}: ${valid.issues.map((i) => `${i.path} ${i.message}`).join(", ")}`);
+    const tmp = `${file}.${process.pid}.tmp`;
+    fs.writeFileSync(tmp, serializeAssetSource(source));
+    fs.renameSync(tmp, file);
+    console.log(`✓ ${slug}: ${field}: ${code}`);
+    changed++;
+  }
+  return changed;
 }
 
 function printDetail(a: AdminAssetRow): void {
@@ -124,6 +222,33 @@ async function main(argv: string[]): Promise<number> {
       const a = command === "publish" ? await store.publish(slug) : await store.unpublish(slug);
       console.log(command === "publish" ? `✓ 공개했습니다: ${slug} (배포는 ./deploy/deploy.sh)` : `✓ 초안으로 돌렸습니다: ${slug}`);
       printDetail(a);
+      return 0;
+    }
+
+    case "official-export":
+      process.stdout.write(`${JSON.stringify(await officialExport(store), null, 2)}\n`);
+      return 0;
+
+    case "official-link": {
+      const [file] = args;
+      if (!file) {
+        console.error("사용법: admin official-link <links.json>");
+        return 2;
+      }
+      const links = JSON.parse(fs.readFileSync(file, "utf8")) as { slug: string; field: string; code: string }[];
+      const n = officialLink(store.paths.contentDir, links);
+      console.log(`작품 파일 ${n}개에 코드를 적었습니다.`);
+      return 0;
+    }
+
+    case "remove": {
+      const [slug] = args;
+      if (!slug) {
+        console.error("사용법: admin remove <slug>");
+        return 2;
+      }
+      const { trashedTo } = await store.remove(slug);
+      console.log(`✓ 휴지통으로 옮겼습니다: ${slug} → ${path.relative(ROOT, trashedTo)} (되살리려면 content/assets 로 되옮긴다)`);
       return 0;
     }
 

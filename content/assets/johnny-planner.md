@@ -7,6 +7,7 @@ date: 2026-11-22
 tags: [교육, 생산성, 데스크톱]
 icon: /media/johnny-planner/icon.png
 requirements: Windows 10 버전 1809 이상 또는 Windows 11 (x64), Microsoft Edge WebView2 런타임(Windows 11에는 기본 포함). 앱 화면은 한국어로 제공됩니다.
+storeApp: EN5LDRC4
 downloads:
   - label: Windows 설치 파일 (x64)
     file: /files/johnny-planner/JohnnyPlanner_0.1.0_x64-setup.exe

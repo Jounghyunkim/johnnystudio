@@ -31,13 +31,18 @@ export default function HomePage() {
         <div aria-hidden="true" className="landing-grid pointer-events-none absolute inset-0" />
         <Container className="relative grid items-center gap-12 pb-20 pt-10 sm:pb-24 sm:pt-14 lg:grid-cols-[1.15fr_1fr] lg:gap-16">
           <div className="rise">
-            {/* 로고 + 이름: 로고는 왼쪽, 이름은 오른쪽 끝(아이콘 높이의 가운데). 그림 속 글자와 겹쳐 두 번 읽히지 않게 그림은 장식(alt=""), 중괄호는 읽지 않는다 */}
-            <div className="mb-8 flex items-center justify-between gap-4 sm:gap-6">
+            {/* 로고 + 이름: 로고는 왼쪽, 이름은 남은 자리의 가운데(아이콘 높이의 가운데, 2026-11-26 사용자 요청). 그림 속 글자와 겹쳐 두 번 읽히지 않게 그림은 장식(alt="") */}
+            {/*
+              이름은 줄 폭에 맞춰 가장 크게 (컨테이너 쿼리 cqw): 글자 폭은 약 7.7em, 로고(80·112px)와 간격(16·24px)을 뺀 자리를 7.9 로 나눈다.
+              줄 바꿈 없이 칸을 넘지 않고, 줄(@container)의 폭이 글자에 끌려 늘지 않는다 (예전에는 휴대폰에서 왼쪽 칸이 화면 밖으로 밀렸다)
+            */}
+            <div className="@container mb-8 flex items-center justify-between gap-4 sm:gap-6">
               <LogoFull alt="" className="size-20 shrink-0 sm:size-28" />
-              <p className="min-w-0 text-right text-xl font-bold tracking-tight text-fg sm:text-4xl">
-                <span aria-hidden="true">{"{{ "}</span>
+              {/* brand-wordmark: 굵은 그라데이션 글자 (globals.css), font-display: 각진 글꼴 Oxanium. 중괄호는 꾸밈이라 읽지 않는다 */}
+              <p className="brand-wordmark min-w-0 flex-1 whitespace-nowrap pb-1 text-center font-display text-[length:clamp(1.375rem,calc((100cqw-6rem)/7.9),2.75rem)] font-extrabold tracking-tight sm:text-[length:clamp(2rem,calc((100cqw-8.5rem)/7.9),4.5rem)]">
+                <span aria-hidden="true">{"{ "}</span>
                 JohnnyStudio
-                <span aria-hidden="true">{" }}"}</span>
+                <span aria-hidden="true">{" }"}</span>
               </p>
             </div>
             <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-line bg-surface/60 px-3 py-1 text-xs font-medium text-fg-muted">
@@ -45,7 +50,7 @@ export default function HomePage() {
               {landing.eyebrow}
             </p>
             <h1 id="hero-title" className="max-w-3xl text-4xl font-bold leading-tight tracking-tight text-fg sm:text-6xl">
-              {profile.tagline}
+              {landing.greeting}
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-relaxed text-fg-muted sm:text-lg">{profile.intro}</p>
             <div className="mt-10 flex flex-wrap gap-3">

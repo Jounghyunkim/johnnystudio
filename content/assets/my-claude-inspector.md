@@ -7,6 +7,7 @@ date: 2026-11-19
 tags: [교육, 개발 도구, 데스크톱, Claude Code]
 icon: /media/my-claude-inspector/icon.png
 requirements: Windows 10·11 (64비트)
+storeApp: 4Byw6AFr
 links:
   - { label: 사용량 랭킹, href: "https://myclaudeinspector.vercel.app/ranking" }
   - { label: GitHub, href: "https://github.com/Jounghyunkim/myclaudeinspector" }

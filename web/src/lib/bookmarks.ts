@@ -2,11 +2,16 @@
  * 즐겨찾기 (My Studio, Phase 1): 로그인 없이 브라우저(localStorage)에 저장한다.
  * Phase 2 에서 로그인하면 이 목록을 서버로 가져간다. (ideation §3-3)
  *
+ * 값은 한 목록에 넣은 순서대로 둔다: Library 작품은 slug, Store 회원 앱은 `store:<앱 코드>`.
+ * Library 의 '공식' 앱은 Store 화면에서 눌러도 slug 로 들어간다 (같은 작품이다).
+ *
  * localStorage 는 사생활 보호 모드나 차단 설정에서 실패할 수 있어서 모든 접근을 try/catch 로 감싼다.
  */
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 
-const KEY = "johnnystudio:bookmarks:v1";
+/** 저장소 키. 설정 화면(lib/site.ts)이 이 값으로 지운다 */
+export const BOOKMARKS_KEY = "johnnystudio:bookmarks:v1";
+const KEY = BOOKMARKS_KEY;
 const EVENT = "johnnystudio:bookmarks";
 
 function readRaw(): string {
@@ -43,6 +48,25 @@ function subscribe(onChange: () => void): () => void {
     window.removeEventListener("storage", onChange);
     window.removeEventListener(EVENT, onChange);
   };
+}
+
+/** Store 회원 앱의 즐겨찾기 값. slug(영문 소문자·숫자·-)에는 ':' 가 없어서 섞이지 않는다 */
+const STORE_PREFIX = "store:";
+const STORE_CODE = /^[0-9A-Za-z]{4,12}$/;
+
+export function storeBookmarkId(code: string): string {
+  return `${STORE_PREFIX}${code}`;
+}
+
+/** My Studio 의 두 구역으로 나눈다. 넣은 순서는 그대로, 모양이 틀린 Store 값은 버린다 */
+export function splitBookmarks(ids: readonly string[]): { library: string[]; store: string[] } {
+  const library: string[] = [];
+  const store: string[] = [];
+  for (const id of ids) {
+    if (!id.startsWith(STORE_PREFIX)) library.push(id);
+    else if (STORE_CODE.test(id.slice(STORE_PREFIX.length))) store.push(id.slice(STORE_PREFIX.length));
+  }
+  return { library, store };
 }
 
 export function toggleSlug(slugs: readonly string[], slug: string): string[] {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { countByType, DEFAULT_QUERY, filterAssets, matches, parseQuery, toSearch } from "./filter";
+import { countByType, DEFAULT_QUERY, filterAssets, groupByType, matches, parseQuery, toSearch } from "./filter";
 import type { AssetSummary } from "./types";
 
 const a = (over: Partial<AssetSummary>): AssetSummary => ({
@@ -70,5 +70,16 @@ describe("parseQuery / toSearch", () => {
   it("기본값은 주소에 쓰지 않는다", () => expect(toSearch(DEFAULT_QUERY)).toBe(""));
   it("모르는 유형·정렬은 기본값으로", () => {
     expect(parseQuery("?type=nope&sort=zzz")).toEqual(DEFAULT_QUERY);
+  });
+});
+
+describe("Library 유형별 칸 (groupByType)", () => {
+  it("유형 순서대로 나누고, 칸 안은 받은 순서(정렬) 그대로, 빈 유형은 뺀다", () => {
+    const list = [a({ slug: "d1", type: "desktop-app" }), a({ slug: "w1", type: "web-app" }), a({ slug: "d2", type: "desktop-app" })];
+    expect(groupByType(list).map((g) => [g.type, g.assets.map((x) => x.slug)])).toEqual([
+      ["web-app", ["w1"]],
+      ["desktop-app", ["d1", "d2"]],
+    ]);
+    expect(groupByType([])).toEqual([]);
   });
 });

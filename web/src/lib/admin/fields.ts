@@ -23,8 +23,8 @@ export const BASE_FIELDS = [
 
 /** 유형마다 더 받는 키 (schema.ts 의 AssetFrontmatter 와 같아야 한다) */
 export const TYPE_FIELDS: Record<AssetType, readonly string[]> = {
-  "web-app": ["url"],
-  "desktop-app": ["downloads", "requirements", "microsoftStore"],
+  "web-app": ["url", "showroomService"],
+  "desktop-app": ["downloads", "requirements", "microsoftStore", "storeApp"],
   "web-package": ["playUrl", "download"],
   video: ["youtubeId"],
   gallery: ["photos"],
@@ -52,6 +52,8 @@ export const FIELD_ORDER = [
   "draft",
   "requirements",
   "microsoftStore",
+  "storeApp",
+  "showroomService",
   "links",
   "photos",
   "download",

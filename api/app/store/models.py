@@ -97,6 +97,20 @@ class StoreApp(Base):
         order_by="StoreRelease.created_at.desc(), StoreRelease.id.desc()",
         lazy="selectin",
     )
+    # 소개 자료 (ADR-0013). 없을 수도 있다. 테이블에 열을 더하지 않으려고 따로 둔다
+    page: Mapped[StoreAppPage | None] = relationship(cascade="all, delete-orphan", passive_deletes=True, lazy="selectin")
+
+
+class StoreAppPage(Base):
+    """앱의 소개 자료 (연관 검색어·기능·사용 방법·질문·링크·그림 모음). 모양은 app/listing.py"""
+
+    __tablename__ = "store_app_pages"
+
+    app_id: Mapped[int] = mapped_column(ForeignKey("store_apps.id", ondelete="CASCADE"), primary_key=True)
+    data: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    # 목록 검색용 (연관 검색어, 소문자)
+    search_text: Mapped[str] = mapped_column(String(400), default="")
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
 
 
 class StoreRelease(Base):

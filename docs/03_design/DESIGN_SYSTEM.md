@@ -2,7 +2,7 @@
 
 > **상태**: v1. ideation §3-7 "Minimalist Dark" 를 구현했다. 어두운 테마가 기본이고 밝은 테마를 고를 수 있다 (2026-11-06). 로고는 Johnny 로봇 아이콘이다. 브랜드 강조색은 아직 임시값이다 `[확인 필요]`.
 > 원본: [web/src/app/globals.css](../../web/src/app/globals.css) (`@theme`), [web/src/lib/type-style.ts](../../web/src/lib/type-style.ts)
-> **Last Updated**: 2026-11-24
+> **Last Updated**: 2026-11-26
 
 ## 원칙
 
@@ -38,19 +38,35 @@
 
 | 토큰 | 값 | 대비 (raised 기준, 가장 낮은 값) |
 |---|---|---|
-| `canvas` / `surface` / `raised` | `#fafafa` / `#ffffff` / `#f4f4f5` | — |
-| `line` / `line-strong` | `#e4e4e7` / `#d4d4d8` | — |
-| `fg` / `fg-muted` / `fg-subtle` | `#18181b` / `#52525b` / `#6b6b75` | 16.1 / 7.0 / 4.8 |
-| `accent` / `accent-hover` / `accent-ink` | `#4d7c0f` / `#3f6212` / `#ffffff` | 4.5 (흰 글자와 5.0) |
-| `danger` / `danger-ink` | `#b91c1c` / `#ffffff` | 5.9 |
+| `canvas` / `surface` / `raised` | `#f7f8fa` / `#ffffff` / `#eef1f5` | — |
+| `line` / `line-strong` | `#e2e6ee` / `#cbd2dc` | — |
+| `fg` / `fg-muted` / `fg-subtle` | `#0b1220` / `#475467` / `#5b6577` | 16.5 / 6.8 / 5.2 |
+| `accent` / `accent-hover` / `accent-ink` | `#127a3a` / `#0d6630` / `#ffffff` | 4.8 · 6.3 (흰 글자와 5.4) |
+| `danger` / `danger-ink` | `#b91c1c` / `#ffffff` | 5.7 |
 
-- 강조색: 어두운 테마의 라임(`#bef264`)은 흰 바탕에서 글자 대비가 1.3:1 이라, 같은 계열의 진한 라임으로 바꾸고 버튼 글자를 흰색으로 했다.
+- 2026-11-26 다듬음 (사용자 요청 "칙칙하지 않게, 세련되고 깔끔하게"): 따뜻한 회색(zinc)을 살짝 푸른 쿨톤으로, 올리브 라임(`#4d7c0f`, raised 위 4.4:1 로 AA 에 조금 못 미쳤다)을 노란기를 뺀 맑은 초록으로,
+  글자는 짙은 남색 계열로 바꿨다. 히어로 뒤의 빛(`.hero-glow`)은 밝은 테마에서 초록을 줄이고 하늘빛을 조금 더했다.
+- 강조색: 어두운 테마의 라임(`#bef264`)은 흰 바탕에서 글자 대비가 1.3:1 이라, 진한 초록으로 바꾸고 버튼 글자를 흰색으로 했다.
 - 옅은 강조색 바탕(`bg-accent/10`) 위의 강조색 글자는 밝은 테마에서 `light:text-accent-hover` 로 한 단계 진하게 쓴다.
 
 ## 글꼴
 
 - 본문·제목: **Pretendard Variable** (npm `pretendard` 의 dynamic subset, 자체 호스팅. 필요한 글자 묶음만 내려받는다)
 - 고정폭(체크섬·버전·코드): 시스템 고정폭 글꼴
+- 각진 글꼴(`font-display`): **Oxanium Variable** (npm `@fontsource-variable/oxanium` 5.3.0, SIL OFL, 자체 호스팅, 라틴 글자만). 랜딩 히어로의 이름 `{ JohnnyStudio }` 에만 쓴다 (2026-11-26 사용자 요청: 크게·각지게)
+  - 이름은 `.brand-wordmark` (globals.css): 굵기 800, 라틴 그라데이션 글자(어두운 테마 라임·하늘·흰빛, 밝은 테마 짙은 초록·청록·파랑, 대비 4.5:1 이상), 9초에 한 번 빛이 흐른다 ('동작 줄이기'면 멈춤, 고대비면 시스템 글자색)
+  - 크기는 줄 폭에 맞춘다 (컨테이너 쿼리 `cqw`): 휴대폰 22~44px, 태블릿 32~72px, 넓은 화면은 왼쪽 칸에 맞춰 약 53px. 줄 바꿈 없이 칸을 넘지 않는다. 로고 오른쪽 남은 자리의 가운데에 둔다
+
+## 차트 (설정 > 전체 현황, 2026-11-26)
+
+| 토큰 | 어두운 / 밝은 | 쓰는 곳 |
+|---|---|---|
+| `accent` | `#bef264` / `#127a3a` | 한 줄짜리 값 (가입 추이·마지막 로그인·내려받기) |
+| `chart-good` · `chart-warn` · `chart-bad` · `chart-neutral` | `#0ea5a4`·`#c99410`·`#e85d75`·`#71717a` / `#059669`·`#c27c0e`·`#be123c`·`#7c8798` | 상태: 공개·검토 대기·반려·숨김 |
+
+- dataviz 지침을 따른다: 막대 24px 이하·끝만 4px 둥글게·바닥은 각지게, 막대 사이 2px, 격자 1px 실선, 글자는 글자 토큰만, 상태 색은 늘 이름·개수와 함께
+- 상태 색은 `validate_palette.js` 로 골랐다 (어두운 테마 모두 통과, 밝은 테마는 색각 구분 ΔE 8.0 경고: 범례·표가 보완한다). 모두 카드 바탕에 3:1 이상
+- 툴팁은 SVG 안에 그린다 (CSP 가 style 속성을 막아 HTML 툴팁을 띄울 위치를 정할 수 없다). 마우스와 키보드(화살표·Home·End)가 같은 툴팁을 보인다
 
 ## 모양·레이아웃
 
@@ -69,7 +85,7 @@
 | Library 검색·필터 | `library-browser.tsx` | 검색어·유형·정렬이 주소에 남는다 |
 | 유형별 뷰어 | `viewers/*` | 실행, 다운로드(체크섬·검증 방법·서명 안내), 샌드박스, YouTube 라이트, 사진 갤러리(`<dialog>`), 원문 |
 | 타임라인 | `timeline.tsx` | 연도별 묶음 |
-| 즐겨찾기 | `star-button.tsx` `studio-view.tsx` | 브라우저 저장 |
+| 즐겨찾기 | `star-button.tsx` `studio-view.tsx` `store/store-cards.tsx` | 브라우저 저장 (`lib/bookmarks.ts`: Library slug 와 `store:<코드>` 를 한 목록에). Library 카드는 오른쪽 아래, Store 카드는 오른쪽 위(아래 줄에 두면 좁은 카드에서 버전·크기가 두 줄로 밀린다). My Studio 는 JohnnyStudio·Store 두 구역 |
 | 홈(랜딩) | `landing.tsx` (TypeBoard·Steps·FeaturedSpotlight·Principles·Process·Faq) | 히어로·마지막 안내 뒤에 옅은 격자(`.landing-grid`), 처음 보일 때 살짝 떠오름(`.rise`, '동작 줄이기'면 꺼짐). FAQ 는 `<details>`(JS 없이 열림). 대표 작품이 하나면 넓은 카드, 여럿이면 격자 |
 | 회원 | `auth/login-form` `auth/link-request-form` `auth/password-form` `auth/verify-view` `auth/account-view` `auth/fields` | 카드(`surface`) 안의 폼. 오류는 `role="alert"` + `text-danger`, 완료는 `role="status"`. 비밀번호 칸에는 보기 버튼(`aria-pressed`)과 정확한 `autocomplete`. 탈퇴 확인은 `<dialog>`, 처음 포커스는 '취소' |
 | 문서 본문 | `.prose-studio` (globals.css) | Markdown. 표는 좁은 화면에서 표만 가로 스크롤 |

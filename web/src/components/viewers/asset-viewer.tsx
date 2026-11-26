@@ -1,6 +1,6 @@
 import type { Asset } from "@/lib/schema";
 
-import { DownloadPanel } from "./download-panel";
+import { DownloadPanel, StoreAppPanel } from "./download-panel";
 import { LaunchPanel, OutlinkPanel, SandboxPanel } from "./link-panels";
 import { PhotoGallery } from "./photo-gallery";
 import { YouTubeLite } from "./youtube-lite";
@@ -9,9 +9,14 @@ import { YouTubeLite } from "./youtube-lite";
 export function AssetViewer({ asset }: { asset: Asset }) {
   switch (asset.type) {
     case "web-app":
-      return <LaunchPanel url={asset.url} />;
+      return <LaunchPanel url={asset.url} showroomCode={asset.showroomService} />;
     case "desktop-app":
-      return <DownloadPanel downloads={asset.downloads} requirements={asset.requirements} microsoftStore={asset.microsoftStore} />;
+      // Store DB 로 옮긴 앱은 설치 파일을 Store 에서 받는다 (ADR-0014)
+      return asset.storeApp ? (
+        <StoreAppPanel code={asset.storeApp} requirements={asset.requirements} microsoftStore={asset.microsoftStore} />
+      ) : (
+        <DownloadPanel downloads={asset.downloads} requirements={asset.requirements} microsoftStore={asset.microsoftStore} />
+      );
     case "web-package":
       return (
         <div className="space-y-6">

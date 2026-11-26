@@ -1,16 +1,12 @@
 "use client";
 
-import { ArrowUpRight, Search, Upload, X } from "lucide-react";
-import Link from "next/link";
-import { useEffect, useId, useMemo } from "react";
+import { Search, X } from "lucide-react";
+import { useEffect, useId, useMemo, useState } from "react";
 
-import { formatBytes } from "@/lib/format";
 import {
-  appHref,
   loadRemote,
   parseStoreQuery,
   type StoreCard,
-  type StoreEntry,
   type StoreMeta,
   type StoreQuery,
   storeApi,
@@ -21,82 +17,10 @@ import {
 import type { OfficialStoreApp } from "@/lib/types";
 import { useLocationSearch } from "@/lib/use-location-search";
 
-import { MsStoreIcon } from "../ms-store-icon";
-import { ButtonLink, cx } from "../ui";
-import { ReviewLink } from "./review-link";
-import { AppIcon, ErrorBox, Loading, Pill } from "./store-ui";
-
-const cardClass =
-  "group relative flex h-full gap-4 rounded-card border border-line bg-surface p-5 transition-colors hover:border-line-strong hover:bg-raised has-[.card-link:focus-visible]:outline-2 has-[.card-link:focus-visible]:outline-offset-2 has-[.card-link:focus-visible]:outline-accent";
-
-/** Library 의 공식 앱. 누르면 Library 상세로 간다 */
-function OfficialCard({ app, categoryLabel }: { app: OfficialStoreApp; categoryLabel: string }) {
-  return (
-    <article className={cardClass}>
-      {app.image ? (
-        <img src={app.image} alt={`${app.title} 아이콘`} width={256} height={256} className="size-14 shrink-0 rounded-2xl bg-raised object-contain" />
-      ) : (
-        <AppIcon code="none" hasIcon={false} name={app.title} className="size-14 shrink-0" />
-      )}
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <h3 className="flex min-w-0 items-center gap-2 text-base font-semibold text-fg">
-          <Link href={`/library/${app.slug}/`} className="card-link truncate outline-none after:absolute after:inset-0 after:content-['']">
-            {app.title}
-          </Link>
-          <Pill tone="ok">공식</Pill>
-        </h3>
-        <p className="truncate text-xs text-fg-subtle">JohnnyStudio{categoryLabel && ` · ${categoryLabel}`}</p>
-        {app.summary && <p className="line-clamp-2 text-sm leading-relaxed text-fg-muted">{app.summary}</p>}
-        <div className="mt-auto flex items-center justify-between gap-2 pt-1">
-          <p className="font-mono text-xs text-fg-subtle">
-            v{app.version}
-            {app.size !== undefined && ` · ${formatBytes(app.size)}`}
-          </p>
-          {/* z-10: 카드 전체 링크(Library 상세) 위에서 따로 눌리게 */}
-          {app.microsoftStore && (
-            <a
-              href={app.microsoftStore}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="relative z-10 inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2.5 text-xs font-semibold text-accent hover:bg-accent/10 light:hover:text-accent-hover"
-            >
-              <MsStoreIcon />
-              MS Store
-              <ArrowUpRight aria-hidden="true" className="size-3.5" />
-              <span className="sr-only">: {app.title} (새 탭에서 열림)</span>
-            </a>
-          )}
-        </div>
-      </div>
-    </article>
-  );
-}
-
-function EntryCard({ entry }: { entry: StoreEntry }) {
-  return entry.kind === "official" ? <OfficialCard app={entry.app} categoryLabel={entry.categoryLabel} /> : <Card app={entry.app} />;
-}
-
-function Card({ app }: { app: StoreCard }) {
-  return (
-    <article className={cardClass}>
-      <AppIcon code={app.code} hasIcon={app.has_icon} name={app.name} className="size-14 shrink-0" />
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <h3 className="truncate text-base font-semibold text-fg">
-          <Link href={appHref(app.code)} className="card-link outline-none after:absolute after:inset-0 after:content-['']">
-            {app.name}
-          </Link>
-        </h3>
-        <p className="truncate text-xs text-fg-subtle">
-          {app.publisher} · {app.category_label}
-        </p>
-        {app.summary && <p className="line-clamp-2 text-sm leading-relaxed text-fg-muted">{app.summary}</p>}
-        <p className="mt-auto pt-1 font-mono text-xs text-fg-subtle">
-          v{app.version} · {formatBytes(app.size)}
-        </p>
-      </div>
-    </article>
-  );
-}
+import { cx } from "../ui";
+import { type OfficialTarget, OfficialDeleteDialog, useOfficialDelete } from "./official-delete";
+import { EntryCard } from "./store-cards";
+import { ErrorBox, Loading } from "./store-ui";
 
 /**
  * Store 목록: Library 의 공식 앱(빌드 때 넘겨받아 HTML 에 들어 있다) + 공개된 회원 앱(API).
@@ -105,6 +29,9 @@ function Card({ app }: { app: StoreCard }) {
 export function StoreBrowser({ official }: { official: readonly OfficialStoreApp[] }) {
   const [search, setSearch] = useLocationSearch();
   const query = useMemo(() => parseStoreQuery(search), [search]);
+  // 공식 앱(Library 작품) 지우기: 운영자, 개발 서버에서만 (official-delete.tsx)
+  const canDeleteOfficial = useOfficialDelete();
+  const [deleting, setDeleting] = useState<OfficialTarget | null>(null);
   const apiSearch = toStoreSearch(query);
   const key = `list:${apiSearch}`;
   const list = useRemote<{ apps: StoreCard[] }>(key);
@@ -169,12 +96,6 @@ export function StoreBrowser({ official }: { official: readonly OfficialStoreApp
             <option value="name">이름순</option>
           </select>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <ButtonLink href="/store/new/" variant="secondary">
-            <Upload aria-hidden="true" className="size-4" />앱 올리기
-          </ButtonLink>
-          <ReviewLink />
-        </div>
       </div>
 
       {categories.length > 0 && (
@@ -212,7 +133,7 @@ export function StoreBrowser({ official }: { official: readonly OfficialStoreApp
               <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {entries.map((e) => (
                   <li key={e.kind === "official" ? `o:${e.app.slug}` : `m:${e.app.code}`}>
-                    <EntryCard entry={e} />
+                    <EntryCard entry={e} onDeleteOfficial={canDeleteOfficial ? setDeleting : undefined} />
                   </li>
                 ))}
               </ul>
@@ -230,6 +151,7 @@ export function StoreBrowser({ official }: { official: readonly OfficialStoreApp
           </>
         )}
       </div>
+      {deleting && <OfficialDeleteDialog target={deleting} where="Store" onClose={() => setDeleting(null)} />}
     </div>
   );
 }

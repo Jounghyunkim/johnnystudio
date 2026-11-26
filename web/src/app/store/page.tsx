@@ -1,8 +1,10 @@
+import { Upload } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { ReviewLink } from "@/components/store/review-link";
 import { StoreBrowser } from "@/components/store/store-browser";
-import { Container, PageHeader } from "@/components/ui";
+import { ButtonLink, Container, PageHeader } from "@/components/ui";
 import { getOfficialStoreApps } from "@/lib/content";
 
 export const metadata: Metadata = {
@@ -20,6 +22,14 @@ export default function StorePage() {
         eyebrow="Windows Apps"
         title="Store"
         description="JohnnyStudio가 만든 Windows 앱과 회원들이 직접 만든 프로그램을 한곳에서 내려받아 써 봅니다. 회원 앱은 운영자가 검토하고 바이러스 검사를 거친 것만 공개합니다."
+        actions={
+          <>
+            <ButtonLink href="/store/new/" variant="secondary">
+              <Upload aria-hidden="true" className="size-4" />앱 올리기
+            </ButtonLink>
+            <ReviewLink />
+          </>
+        }
       >
         <p className="mt-4 text-sm text-fg-subtle">
           &lsquo;공식&rsquo; 표시는 JohnnyStudio가 만든 앱이고, 자세한 소개는{" "}

@@ -37,6 +37,9 @@ const MicrosoftStoreUrl = HttpUrl.refine((v) => {
   return u.protocol === "https:" && u.hostname === "apps.microsoft.com" && /^\/detail\/[0-9A-Za-z]{12}\/?$/.test(u.pathname);
 }, "Microsoft Store 앱 주소(https://apps.microsoft.com/detail/<제품 ID>)를 쓴다");
 
+/** Store 앱·Showroom 서비스 코드 (DB 의 code, 영문·숫자 4~12자). ADR-0014: 공식 앱·서비스를 DB 로 옮긴 작품에 붙는다 */
+const StoreCode = z.string().regex(/^[0-9A-Za-z]{4,12}$/, "Store·Showroom 코드는 영문·숫자 4~12자다");
+
 const YoutubeId = z.string().regex(/^[A-Za-z0-9_-]{11}$/, "YouTube 영상 ID 는 11자다 (watch?v= 뒤의 값)");
 
 const Photo = z.strictObject({
@@ -92,7 +95,13 @@ const base = {
 };
 
 export const AssetFrontmatter = z.discriminatedUnion("type", [
-  z.strictObject({ ...base, type: z.literal("web-app"), url: HttpUrl.optional() }),
+  z.strictObject({
+    ...base,
+    type: z.literal("web-app"),
+    url: HttpUrl.optional(),
+    /** Showroom DB 로 옮긴 서비스의 코드 (ADR-0014). 있으면 Showroom 목록은 DB 의 것을 보이고, Library 상세에서 Showroom 소개로 잇는다 */
+    showroomService: StoreCode.optional(),
+  }),
   z.strictObject({
     ...base,
     type: z.literal("desktop-app"),
@@ -100,6 +109,11 @@ export const AssetFrontmatter = z.discriminatedUnion("type", [
     requirements: z.string().optional(),
     /** Microsoft Store 에도 올렸으면 그 주소. 다운로드 패널과 Library·Store 카드에 'Microsoft Store' 버튼이 생긴다 */
     microsoftStore: MicrosoftStoreUrl.optional(),
+    /**
+     * Store DB 로 옮긴 앱의 코드 (ADR-0014). 있으면 설치 파일·버전은 Store 가 원본이다:
+     * Library 상세는 downloads 대신 'Store에서 내려받기'를 보이고, downloads 는 DB 를 새로 채울 때(scripts/import-official.sh)의 처음 버전으로만 쓴다
+     */
+    storeApp: StoreCode.optional(),
   }),
   z.strictObject({
     ...base,
@@ -182,6 +196,8 @@ export const Profile = z.strictObject({
   /** 홈(랜딩) 페이지 문구. 사이트 안 주소는 / 로 시작한다 */
   landing: z.strictObject({
     eyebrow: z.string().min(1),
+    /** 히어로의 큰 제목. 한 줄 정의(tagline)는 바닥글·About 에 그대로 쓴다 */
+    greeting: z.string().min(1),
     steps: z
       .array(
         z.strictObject({

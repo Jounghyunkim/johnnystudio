@@ -162,7 +162,8 @@ export function getAsset(slug: string): Asset | undefined {
 export function getOfficialStoreApps(): OfficialStoreApp[] {
   const apps: OfficialStoreApp[] = [];
   for (const a of getAssets()) {
-    if (a.type !== "desktop-app" || a.draft) continue;
+    // Store DB 로 옮긴 앱(storeApp)은 DB 의 것이 '공식'으로 보인다 (ADR-0014)
+    if (a.type !== "desktop-app" || a.draft || a.storeApp) continue;
     const win = a.downloads.find((d) => d.os.includes("windows"));
     if (!win) continue;
     apps.push({
@@ -184,7 +185,7 @@ export function getOfficialStoreApps(): OfficialStoreApp[] {
 export function getOfficialShowroomServices(): OfficialShowroomService[] {
   const services: OfficialShowroomService[] = [];
   for (const a of getAssets()) {
-    if (a.type !== "web-app" || a.draft || !a.url) continue;
+    if (a.type !== "web-app" || a.draft || !a.url || a.showroomService) continue;
     services.push({ slug: a.slug, title: a.title, summary: a.summary, tags: a.tags, image: a.icon ?? a.cover, url: a.url, date: a.updated ?? a.date });
   }
   return services;

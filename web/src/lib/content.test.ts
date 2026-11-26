@@ -224,3 +224,49 @@ describe("Microsoft Store 주소 (desktop-app 의 microsoftStore)", () => {
     expect(toSummary({ ...asset, microsoftStore: undefined }).quickAction).toBeUndefined();
   });
 });
+
+describe("Store·Showroom DB 로 옮긴 작품 (storeApp·showroomService, ADR-0014)", () => {
+  const parse = (data: Record<string, unknown>) => AssetFrontmatter.safeParse({ title: "t", summary: "t", status: "live", ...data }).success;
+
+  it("코드는 영문·숫자 4~12자이고, 앱은 storeApp, 웹 서비스는 showroomService 만 받는다", () => {
+    expect(parse({ type: "desktop-app", storeApp: "Ab12Cd34" })).toBe(true);
+    expect(parse({ type: "desktop-app", storeApp: "ab-12" })).toBe(false);
+    expect(parse({ type: "desktop-app", storeApp: "abc" })).toBe(false);
+    expect(parse({ type: "web-app", showroomService: "Xy98Zw76" })).toBe(true);
+    expect(parse({ type: "web-app", storeApp: "Ab12Cd34" })).toBe(false);
+    expect(parse({ type: "desktop-app", showroomService: "Ab12Cd34" })).toBe(false);
+  });
+
+  it("옮긴 작품은 Store·Showroom 목록에 content 의 '공식'으로 다시 합쳐지지 않는다 (DB 의 것이 보인다)", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "js-official-"));
+    fs.mkdirSync(path.join(dir, "assets"));
+    const app = (slug: string, extra: string) =>
+      `---\ntitle: ${slug}\ntype: desktop-app\nsummary: t\nstatus: live\ndate: 2026-01-01\n${extra}downloads:\n  - label: Windows\n    file: /files/${slug}/a.exe\n    version: 1.0.0\n    os: [windows]\n---\n본문\n`;
+    fs.writeFileSync(path.join(dir, "assets", "kept.md"), app("kept", ""));
+    fs.writeFileSync(path.join(dir, "assets", "moved.md"), app("moved", "storeApp: Ab12Cd34\n"));
+    fs.writeFileSync(path.join(dir, "assets", "web.md"), "---\ntitle: web\ntype: web-app\nsummary: t\nstatus: live\nurl: https://a.example\nshowroomService: Xy98Zw76\n---\n");
+    const prev = process.env.CONTENT_DIR;
+    process.env.CONTENT_DIR = dir;
+    try {
+      const { vi } = await import("vitest");
+      vi.resetModules(); // CONTENT_DIR 은 모듈을 읽을 때 정해진다 (위 '개발 서버 캐시' 시험과 같다)
+      const { getOfficialStoreApps, getOfficialShowroomServices } = await import("./content");
+      expect(getOfficialStoreApps().map((a) => a.slug)).toEqual(["kept"]);
+      expect(getOfficialShowroomServices()).toEqual([]);
+    } finally {
+      if (prev === undefined) delete process.env.CONTENT_DIR;
+      else process.env.CONTENT_DIR = prev;
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("Library 는 관리자 작품(작품 파일)만 보인다 (2026-11-26 사용자 확인)", () => {
+  it("Library 화면은 작품 파일(content/assets)만 읽고, 회원 앱·서비스(Store·Showroom API)를 부르지 않는다", () => {
+    for (const file of ["src/app/library/page.tsx", "src/components/library-browser.tsx", "src/components/asset-card.tsx", "src/lib/filter.ts"]) {
+      const text = fs.readFileSync(path.join(process.cwd(), file), "utf8");
+      expect([file, /@\/lib\/(store|showroom)["']/.test(text)]).toEqual([file, false]);
+      expect([file, /\/api\/(store|showroom)\//.test(text)]).toEqual([file, false]);
+    }
+  });
+});

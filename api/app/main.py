@@ -3,7 +3,7 @@
     uvicorn --factory app.main:create_app --host 127.0.0.1 --port 8082
 
 정적 사이트(web/out)는 nginx 가 내주고, /api/ 만 이 앱으로 넘어온다 (ADR-0007).
-회원(app/auth.py), Store(app/store/), Showroom(app/showroom/) 세 묶음이다 (ADR-0012).
+회원(app/auth.py), Store(app/store/), Showroom(app/showroom/) 세 묶음이다 (ADR-0012). 설정 화면용 현황·캐시 지우기는 app/site.py.
 """
 
 from __future__ import annotations
@@ -17,6 +17,7 @@ from fastapi.responses import JSONResponse
 
 from .auth import router
 from .showroom.router import router as showroom_router
+from .site import router as site_router
 from .store.router import router as store_router
 from .config import Settings, load_settings
 from .db import Database
@@ -62,10 +63,13 @@ def create_app(settings: Settings | None = None, mailer: Mailer | None = None) -
             )
         else:
             response = await call_next(request)
-        response.headers["Cache-Control"] = "no-store"
+        # 기본은 저장하지 않는다. 바뀌지 않는 그림(소개 그림, ADR-0013)만 엔드포인트가 직접 정한다
+        if "cache-control" not in response.headers:
+            response.headers["Cache-Control"] = "no-store"
         return response
 
     app.include_router(router)
     app.include_router(store_router)
     app.include_router(showroom_router)
+    app.include_router(site_router)
     return app

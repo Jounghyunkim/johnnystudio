@@ -80,7 +80,7 @@ export function AppEditDialog({
           <label htmlFor={ids.description} className="block text-sm font-semibold">
             설명
           </label>
-          <textarea id={ids.description} name="description" maxLength={5000} rows={6} defaultValue={app.description} className={cx(inputClass, "mt-2 py-3")} />
+          <textarea id={ids.description} name="description" maxLength={10000} rows={6} defaultValue={app.description} className={cx(inputClass, "mt-2 py-3")} />
         </div>
         <div>
           <label htmlFor={ids.category} className="block text-sm font-semibold">

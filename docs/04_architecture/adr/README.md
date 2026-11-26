@@ -19,3 +19,5 @@
 | [0010](0010-admin-on-public-dev-server.md) | 인터넷에 연 개발 서버(PUBLIC_URL)에서도 작품 관리 화면을 켠다 (실행마다 새 토큰, 운영 다운로드 폴더 안 씀) | 채택됨 |
 | [0011](0011-absorb-johnnystore.md) | JohnnyStore 를 JohnnyStudio 로 흡수하고, 파일을 올리는 사람은 운영자뿐이다 | 일부 대체됨 → 0012 (결정 2·6, 결정 4 의 신고·관리자·이용약관) |
 | [0012](0012-member-store.md) | 회원 Store·Showroom: 회원이 올린 Windows 앱과 웹 서비스를 운영자 승인 후 공개한다 | 제안됨 |
+| [0013](0013-listing-kit.md) | Store·Showroom 소개 자료: Microsoft Store 와 같은 한도의 공통 항목, AI 키트, md·zip 은 브라우저에서 읽는다 (서버는 회원 주소를 캡처하지 않는다) | 제안됨 |
+| [0014](0014-official-apps-in-store-db.md) | 운영자의 공식 앱·서비스도 Store·Showroom DB 에서 관리한다 (설치 파일·버전은 DB, Library 소개 글은 작품 파일, 운영자 계정 = 공식) | 제안됨 (0012 결정 8 일부 대체) |

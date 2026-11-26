@@ -1,17 +1,19 @@
 "use client";
 
-import { ImageUp, LoaderCircle, Pencil, Plus, Trash2 } from "lucide-react";
+import { ImageUp, LoaderCircle, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 
 import { loginHref, useSession } from "@/lib/auth";
 import { useIsClient } from "@/lib/bookmarks";
+import { listingEditHref } from "@/lib/listing";
 import { IMAGE_ACCEPT, SERVICE_STATUS_LABELS, type ShowroomMeta, type ShowroomService, serviceHref, showroomApi } from "@/lib/showroom";
 import { ICON_ACCEPT, loadRemote, localDate, useRemote } from "@/lib/store";
 
 import { ErrorBox, Loading, Pill, dialogClass, inputClass, panelClass, statusTone } from "../store/store-ui";
 import { ButtonLink, buttonClass, cx } from "../ui";
 import { Field } from "./showroom-submit";
+import { ServiceDeleteDialog } from "./showroom-edit";
 import { OpenLink, ServiceIcon } from "./showroom-ui";
 
 const reload = () => loadRemote("showroom:mine", showroomApi.mine);
@@ -56,7 +58,7 @@ function EditDialog({ svc, meta, onClose }: { svc: ShowroomService; meta: Showro
           <input id={ids.summary} name="summary" maxLength={160} defaultValue={svc.summary} className={cx(inputClass, "h-11")} />
         </Field>
         <Field id={ids.description} label="설명">
-          <textarea id={ids.description} name="description" maxLength={5000} rows={6} defaultValue={svc.description} className={cx(inputClass, "py-3")} />
+          <textarea id={ids.description} name="description" maxLength={10000} rows={6} defaultValue={svc.description} className={cx(inputClass, "py-3")} />
         </Field>
         <Field id={ids.category} label="분류">
           <select id={ids.category} name="category" defaultValue={svc.category} className={cx(inputClass, "h-11")}>
@@ -82,51 +84,6 @@ function EditDialog({ svc, meta, onClose }: { svc: ShowroomService; meta: Showro
           </button>
         </div>
       </form>
-    </dialog>
-  );
-}
-
-function ConfirmDelete({ svc, onClose }: { svc: ShowroomService; onClose: () => void }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    ref.current?.showModal();
-  }, []);
-
-  async function run() {
-    setBusy(true);
-    setError(null);
-    const r = await showroomApi.remove(svc.code);
-    setBusy(false);
-    if (!r.ok) return setError(r.message);
-    await reload();
-    ref.current?.close();
-  }
-
-  return (
-    <dialog ref={ref} onClose={onClose} aria-labelledby="svc-delete-title" className={dialogClass}>
-      <h2 id="svc-delete-title" className="text-lg font-semibold">
-        서비스 소개를 지울까요?
-      </h2>
-      <p className="mt-2 text-sm leading-relaxed text-fg-muted">
-        <strong className="font-semibold text-fg">{svc.name}</strong>의 소개·아이콘·화면 그림이 바로 지워지고 되돌릴 수 없습니다. 서비스 자체에는 영향이 없습니다.
-      </p>
-      {error && (
-        <p role="alert" className="mt-3 text-sm text-danger">
-          {error}
-        </p>
-      )}
-      <div className="mt-6 flex flex-wrap justify-end gap-3">
-        <button type="button" autoFocus onClick={() => ref.current?.close()} className={buttonClass("secondary")}>
-          취소
-        </button>
-        <button type="button" disabled={busy} onClick={run} className={cx(buttonClass("primary"), "bg-danger text-danger-ink hover:bg-danger/90 disabled:opacity-60")}>
-          {busy && <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />}
-          지우기
-        </button>
-      </div>
     </dialog>
   );
 }
@@ -216,7 +173,7 @@ export function ShowroomMine() {
           <div className="mt-6">
             <ButtonLink href="/showroom/new/">
               <Plus aria-hidden="true" className="size-4" />
-              서비스 소개하기
+              서비스 등록
             </ButtonLink>
           </div>
         </div>
@@ -243,8 +200,11 @@ export function ShowroomMine() {
                   <Pencil aria-hidden="true" className="size-4" />
                   고치기
                 </button>
+                <ButtonLink href={listingEditHref(s.code, "showroom")} variant="ghost" size="sm">
+                  <Sparkles aria-hidden="true" className="size-4" />
+                  소개 꾸미기
+                </ButtonLink>
                 <ImageButton svc={s} kind="icon" meta={meta.data} />
-                <ImageButton svc={s} kind="screenshot" meta={meta.data} />
                 <button type="button" onClick={() => setDeleting(s)} className={buttonClass("danger", "sm")}>
                   <Trash2 aria-hidden="true" className="size-4" />
                   지우기
@@ -255,7 +215,7 @@ export function ShowroomMine() {
         ))
       )}
       {editing && <EditDialog svc={editing} meta={meta.data} onClose={() => setEditing(null)} />}
-      {deleting && <ConfirmDelete svc={deleting} onClose={() => setDeleting(null)} />}
+      {deleting && <ServiceDeleteDialog svc={deleting} onDone={reload} onClose={() => setDeleting(null)} />}
     </div>
   );
 }
