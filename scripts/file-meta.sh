@@ -19,11 +19,15 @@ name="$(basename "$file")"
 size="$(stat -c %s "$file")"
 sha="$(sha256sum "$file" | cut -d' ' -f1)"
 
+# 안드로이드 APK 는 os: [android] (android-app 의 downloads, ADR-0016)
+label="<예: Windows 설치 파일>" os="windows"
+if [[ "${name,,}" == *.apk ]]; then label="Android APK" os="android"; fi
+
 cat <<EOF
-  - label: <예: Windows 설치 파일>
+  - label: $label
     file: /files/$slug/$name
     version: <버전>
-    os: [windows]
+    os: [$os]
     size: $size
     sha256: $sha
     released: $(date +%F)

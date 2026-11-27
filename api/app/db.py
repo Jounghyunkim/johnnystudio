@@ -13,7 +13,7 @@ from collections.abc import Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 
-from sqlalchemy import DateTime, ForeignKey, String, TypeDecorator, create_engine, event, inspect
+from sqlalchemy import DateTime, ForeignKey, String, TypeDecorator, UniqueConstraint, create_engine, event, inspect
 from sqlalchemy.engine import Dialect, Engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
@@ -104,6 +104,19 @@ class LoginFailure(Base):
     email: Mapped[str] = mapped_column(String(320), index=True)
     ip_hash: Mapped[str] = mapped_column(String(64), index=True)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow, index=True)
+
+
+class Bookmark(Base):
+    """회원의 즐겨찾기 (My Studio, ADR-0017). 값은 Library 작품 slug 또는 `store:<앱 코드>` 이고, 넣은 순서(id)대로 보인다.
+    비회원의 즐겨찾기는 브라우저에만 있고 서버는 모른다. 탈퇴하면 함께 지운다 (users 를 지우면 따라 지워진다)."""
+
+    __tablename__ = "bookmarks"
+    __table_args__ = (UniqueConstraint("user_id", "item", name="uq_bookmarks_user_item"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    item: Mapped[str] = mapped_column(String(80))
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
 
 
 def make_engine(url: str) -> Engine:

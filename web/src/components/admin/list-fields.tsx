@@ -133,12 +133,32 @@ export function PhotosField({ slug, value, onChange, errorAt }: { slug: string; 
 
 // ── 다운로드 ──
 
-function DownloadItemFields({ prefix, value, onChange, errorAt }: { prefix: string; value: Item; onChange: (v: Item) => void; errorAt: ErrorAt }) {
+type OsKey = keyof typeof OS_LABELS;
+/** 데스크톱 앱·웹 패키지는 PC 운영체제, 안드로이드 앱은 APK 만 */
+export type DownloadKind = "desktop" | "android";
+const KIND_OS: Record<DownloadKind, readonly OsKey[]> = { desktop: ["windows", "macos", "linux"], android: ["android"] };
+const KIND_LABEL: Record<DownloadKind, string> = { desktop: "Windows 설치 파일", android: "Android APK" };
+
+function DownloadItemFields({
+  prefix,
+  value,
+  onChange,
+  errorAt,
+  kind = "desktop",
+}: {
+  prefix: string;
+  value: Item;
+  onChange: (v: Item) => void;
+  errorAt: ErrorAt;
+  kind?: DownloadKind;
+}) {
   const set = (patch: Item) => onChange({ ...value, ...patch });
   const os = Array.isArray(value.os) ? (value.os as string[]) : [];
+  // 이미 적혀 있는 값은 다른 유형의 것이라도 보여서 뺄 수 있게 한다
+  const choices = (Object.keys(OS_LABELS) as OsKey[]).filter((o) => KIND_OS[kind].includes(o) || os.includes(o));
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <TextField label="이름표" required value={str(value.label)} onChange={(v) => set({ label: v })} placeholder="Windows 설치 파일" error={errorAt(`${prefix}.label`)} />
+      <TextField label="이름표" required value={str(value.label)} onChange={(v) => set({ label: v })} placeholder={KIND_LABEL[kind]} error={errorAt(`${prefix}.label`)} />
       <TextField label="버전" required value={str(value.version)} onChange={(v) => set({ version: v })} placeholder="1.2.0" error={errorAt(`${prefix}.version`)} />
       <TextField
         label="파일"
@@ -153,7 +173,7 @@ function DownloadItemFields({ prefix, value, onChange, errorAt }: { prefix: stri
       <fieldset className="sm:col-span-2">
         <legend className="text-sm font-semibold text-fg">운영체제 (필수)</legend>
         <div className="mt-2 flex flex-wrap gap-5">
-          {(Object.keys(OS_LABELS) as Array<keyof typeof OS_LABELS>).map((o) => (
+          {choices.map((o) => (
             <CheckboxField key={o} label={OS_LABELS[o]} checked={os.includes(o)} onChange={(c) => set({ os: c ? [...os, o] : os.filter((x) => x !== o) })} />
           ))}
         </div>
@@ -170,7 +190,10 @@ function DownloadItemFields({ prefix, value, onChange, errorAt }: { prefix: stri
       <TextField label="SHA-256" mono className="sm:col-span-2" value={str(value.sha256)} onChange={(v) => set({ sha256: v })} error={errorAt(`${prefix}.sha256`)} />
       <TextField label="바뀐 점 (선택)" className="sm:col-span-2" value={str(value.notes)} onChange={(v) => set({ notes: v })} error={errorAt(`${prefix}.notes`)} />
       <div className="sm:col-span-2">
-        <CheckboxField label="코드 서명함" hint="끄면 상세 화면에 SmartScreen 경고 안내가 붙습니다" checked={value.signed === true} onChange={(c) => set({ signed: c })} />
+        <CheckboxField
+          label="코드 서명함"
+          hint={kind === "android" ? "릴리스 키로 서명한 APK 면 켭니다" : "끄면 상세 화면에 SmartScreen 경고 안내가 붙습니다"}
+          checked={value.signed === true} onChange={(c) => set({ signed: c })} />
       </div>
     </div>
   );
@@ -234,11 +257,24 @@ function useFileUpload(slug: string) {
   return { run, busy: progress !== null, status };
 }
 
-export function DownloadsField({ slug, value, onChange, errorAt }: { slug: string; value: Item[]; onChange: (v: Item[]) => void; errorAt: ErrorAt }) {
+export function DownloadsField({
+  slug,
+  value,
+  onChange,
+  errorAt,
+  kind = "desktop",
+}: {
+  slug: string;
+  value: Item[];
+  onChange: (v: Item[]) => void;
+  errorAt: ErrorAt;
+  kind?: DownloadKind;
+}) {
   const upload = useFileUpload(slug);
+  const android = kind === "android";
   return (
     <div className="grid gap-4">
-      {value.length === 0 && <p className="text-sm text-fg-subtle">다운로드 파일이 없습니다. 설치 파일을 올리면 크기·SHA-256 이 자동으로 채워집니다.</p>}
+      {value.length === 0 && <p className="text-sm text-fg-subtle">다운로드 파일이 없습니다. {android ? "APK를" : "설치 파일을"} 올리면 크기·SHA-256 이 자동으로 채워집니다.</p>}
       {value.map((d, i) => (
         <div key={i} className="rounded-xl border border-line p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
@@ -247,19 +283,20 @@ export function DownloadsField({ slug, value, onChange, errorAt }: { slug: strin
             </p>
             <RowTools index={i} count={value.length} label={`다운로드 ${i + 1}`} onMove={(to) => onChange(move(value, i, to))} onRemove={() => onChange(value.filter((_, j) => j !== i))} />
           </div>
-          <DownloadItemFields prefix={`downloads.${i}`} value={d} onChange={(v) => onChange(value.map((x, j) => (j === i ? v : x)))} errorAt={errorAt} />
+          <DownloadItemFields prefix={`downloads.${i}`} value={d} onChange={(v) => onChange(value.map((x, j) => (j === i ? v : x)))} errorAt={errorAt} kind={kind} />
         </div>
       ))}
       <div className="flex flex-wrap gap-2">
         <FilePicker
-          label={upload.busy ? "올리는 중…" : "설치 파일 올리기"}
+          label={upload.busy ? "올리는 중…" : android ? "APK 올리기" : "설치 파일 올리기"}
+          accept={android ? ".apk,application/vnd.android.package-archive" : undefined}
           disabled={upload.busy}
           onFile={async (file) => {
             const item = await upload.run(file);
             if (item) onChange([item, ...value]);
           }}
         />
-        <button type="button" className={smallButton} onClick={() => onChange([...value, { label: "", file: `/files/${slug}/`, version: "", os: [], signed: false }])}>
+        <button type="button" className={smallButton} onClick={() => onChange([...value, { label: "", file: `/files/${slug}/`, version: "", os: android ? ["android"] : [], signed: false }])}>
           <Plus aria-hidden="true" className="size-3.5" />
           직접 입력
         </button>

@@ -1,8 +1,8 @@
 /**
  * Store 클라이언트: 회원이 올린 Windows 앱 (/api/store/, ADR-0012). 클라이언트 컴포넌트에서만 쓴다 (fetch·XMLHttpRequest).
  *
- * - Library(운영자 작품)와 달리 Store 목록·상세는 빌드된 HTML 에 없다. 회원이 올리고 운영자가 승인하는 콘텐츠라서
- *   빌드 없이 바뀌므로 브라우저에서 API 로 읽는다 (ADR-0012 의 예외).
+ * - Store 목록·상세는 빌드된 HTML 에 없다. 회원이 올리고 운영자가 승인하는 콘텐츠라서 빌드 없이 바뀌므로 브라우저에서 API 로 읽는다 (ADR-0012 의 예외).
+ *   Library 도 공식 앱 목록(`?official=true`)을 여기서 읽어 맞춘다 (ADR-0015, lib/library.ts).
  * - 회원이 쓴 글은 React 가 글자로만 그린다 (HTML 로 넣지 않는다).
  * - 파일은 8MB 조각으로 올린다 (Cloudflare 요청 크기 한도, Next 개발 서버 프록시 10MB).
  */
@@ -194,7 +194,7 @@ export function parseAppCode(value: string | null | undefined): string | null {
   return value && CODE.test(value) ? value : null;
 }
 
-export const appHref = (code: string) => `/store/app/?id=${encodeURIComponent(code)}`;
+export { appHref } from "./hrefs";
 /** 아이콘 주소. 바꾼 뒤 새 그림이 보이도록 version(앱을 고친 시각)을 붙인다 */
 export const iconSrc = (code: string, version?: string | null) =>
   `/api/store/apps/${encodeURIComponent(code)}/icon${version ? `?v=${encodeURIComponent(version)}` : ""}`;

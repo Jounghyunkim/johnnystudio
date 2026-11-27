@@ -16,6 +16,7 @@ export interface TemplateInput {
 const TYPE_DEFAULTS: Record<AssetType, Record<string, unknown>> = {
   "web-app": {},
   "desktop-app": { downloads: [] },
+  "android-app": { downloads: [] },
   "web-package": {},
   video: {},
   gallery: { photos: [] },
@@ -27,6 +28,7 @@ const TYPE_DEFAULTS: Record<AssetType, Record<string, unknown>> = {
 const BODY: Record<AssetType, string> = {
   "web-app": "## 무엇을 하나\n\nTODO(content): 이 서비스로 할 수 있는 일을 적어 주세요.\n\n## 구성\n\nTODO(content): 기술 구성과 운영 방식",
   "desktop-app": "## 무엇을 하나\n\nTODO(content): 이 도구로 할 수 있는 일을 적어 주세요.\n\n## 변경 내역\n\n- **1.0.0**: 첫 공개",
+  "android-app": "## 무엇을 하나\n\nTODO(content): 이 앱으로 할 수 있는 일을 적어 주세요.\n\n## 변경 내역\n\n- **1.0.0**: 첫 공개",
   "web-package": "## 무엇을 하나\n\nTODO(content): 패키지로 체험할 수 있는 것을 적어 주세요.",
   video: "## 영상 소개\n\nTODO(content): 어떤 영상인지, 언제 왜 만들었는지 적어 주세요.",
   gallery: "## 사진 소개\n\nTODO(content): 언제 어디서 찍었는지 적어 주세요.",

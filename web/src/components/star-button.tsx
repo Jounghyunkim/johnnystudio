@@ -6,7 +6,7 @@ import { useBookmarks } from "@/lib/bookmarks";
 
 import { cx } from "./ui";
 
-/** 즐겨찾기 토글. 브라우저에만 저장된다 (My Studio) */
+/** 즐겨찾기 토글 (My Studio). 로그인했으면 계정에, 아니면 이 브라우저에 저장된다 (lib/bookmarks.ts) */
 export function StarButton({ slug, title, withLabel = false }: { slug: string; title: string; withLabel?: boolean }) {
   const { has, toggle } = useBookmarks();
   const on = has(slug);

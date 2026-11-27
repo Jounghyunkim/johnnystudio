@@ -1,7 +1,7 @@
 # 기능: Store (회원이 올린 Windows 앱)
 
 > **상태**: 구현 완료 (개발 서버에서 동작, 운영 서버 설정 전). 결정: [ADR-0012](../../04_architecture/adr/0012-member-store.md) (제안됨, 사용자 확정 전)
-> **Last Updated**: 2026-11-26
+> **Last Updated**: 2026-11-27
 > **바탕**: [JohnnyStore 통합 검토](johnnystore-integration.md) §2-3·§6 S5, 보관본 `johnnystore 6dc01fe` (분석기·이용약관 문안·분류·신고 사유)
 
 ## 왜 (문제와 목적)
@@ -11,7 +11,7 @@
 - PHILOSOPHY 와의 연결
   - **바로 써 보게**: 로그인 없이 목록·상세·내려받기
   - **Trust by Design**: 올리기 전 검토, 파일마다 SHA-256·아키텍처·서명 블록·ClamAV 결과(엔진·기준일)·VirusTotal 검색 링크
-- 원본은 따로다: Library(운영자 작품, `content/` 파일)와 회원 앱(DB + 파일 폴더). Store 목록은 둘을 함께 보여 준다. Library 의 공개된 Windows 앱은 **'공식'** 표시를 달고, 누르면 Library 상세로 간다 (2026-11-24 사용자 요청).
+- 원본은 따로다: Library(운영자 작품, `content/` 파일)와 회원 앱(DB + 파일 폴더). Store 목록은 둘을 함께 보여 준다. Library 의 공개된 Windows 앱은 **'공식'** 표시를 달고, 누르면 Library 상세로 간다 (2026-11-24 사용자 요청. 2026-11-26 부터 공식 앱은 DB 에 있고, 2026-11-27 부터 Library 가 이 Store 화면으로 온다, ADR-0014·0015).
 
 ## 무엇을 (범위)
 
@@ -51,9 +51,11 @@
 
 - 페이지는 정적 셸이고, 회원 앱은 브라우저에서 `/api/store/` 로 읽는다 (ADR-0012 결정 8). JavaScript 가 꺼져 있으면 공식 앱만 보인다.
 - **공식 앱은 DB 에서 관리한다** (2026-11-26, [ADR-0014](../../04_architecture/adr/0014-official-apps-in-store-db.md)): 운영자 계정이 올린 앱은 API 가 `official: true` 로 내고, 카드·상세에 '공식' 표시와 "JohnnyStudio가 직접 만든 앱입니다" 안내가 붙는다.
-  Library 의 데스크톱 툴 11개를 `scripts/import-official.sh` 로 옮겼다 (작품 파일에 `storeApp: <코드>`, Library 상세는 'Store에서 내려받기'). 새 버전·고치기·지우기는 회원 앱과 같은 화면에서 한다.
+  Library 의 데스크톱 앱 11개를 `scripts/import-official.sh` 로 옮겼다 (작품 파일에 `storeApp: <코드>`). 새 버전·고치기·지우기는 회원 앱과 같은 화면에서 한다.
+- **Library 의 데스크톱 앱을 누르면 이 Store 앱 화면이 설명 페이지다** (2026-11-27, [ADR-0015](../../04_architecture/adr/0015-library-as-official-view.md)). `/library/<slug>/` 는 이 화면으로 넘겨 주기만 한다.
+  Library 목록은 `GET /api/store/apps?official=true` (운영자 계정이 올린 공개 앱만)로 맞춘다. 즐겨찾기는 Library 작품과 이어진 앱이면 slug (Store 목록·상세 모두, `getLibrarySlugs()`)
   My Claude Inspector 0.1.2 는 Store 에 소개 자료 zip 이 잘못 올라가 있어서 `--fix-files` 로 진짜 설치 파일로 바꿨다.
-- 작품 파일에서 합치는 공식 앱 (예전 방식, 아직 옮기지 않은 것만): `content.ts` 의 `getOfficialStoreApps()` 가 초안이 아니고 `storeApp` 이 없는 데스크톱 툴 중 Windows 파일이 있는 것을 고른다 (최신 Windows 파일의 버전·크기·공개일, 아이콘 없으면 대표 이미지).
+- 작품 파일에서 합치는 공식 앱 (예전 방식, 아직 옮기지 않은 것만): `content.ts` 의 `getOfficialStoreApps()` 가 초안이 아니고 `storeApp` 이 없는 데스크톱 앱 중 Windows 파일이 있는 것을 고른다 (최신 Windows 파일의 버전·크기·공개일, 아이콘 없으면 대표 이미지).
 - **공식 항목 지우기** (2026-11-26 사용자 요청: 작품 자체를 지운다): 개발 서버에서 Store 운영자(또는 이 탭에 작품 관리 토큰이 있는 사람)에게 공식 카드마다 휴지통 버튼이 보인다.
   누르면 확인 대화상자(토큰이 없으면 토큰 칸) → 작품 관리 서버(`/__admin/`, ADR-0009)로 초안으로 돌린 뒤 `.local/trash` 로 옮긴다 (관리 화면의 삭제와 같은 규칙). Library 에서도 사라진다.
   Life Log·서비스 소개가 가리키는 작품은 지우지 않고 그 이유를 보인다 (지금 Arkurator). 다운로드 파일은 그대로 둔다. 출시 빌드에는 관리 서버가 없어 버튼이 없다 (`components/store/official-delete.tsx`)

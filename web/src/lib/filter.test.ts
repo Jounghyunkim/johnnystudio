@@ -5,6 +5,8 @@ import type { AssetSummary } from "./types";
 
 const a = (over: Partial<AssetSummary>): AssetSummary => ({
   slug: "x",
+  href: "/library/x/",
+  bookmark: "x",
   title: "X",
   type: "web-app",
   summary: "",

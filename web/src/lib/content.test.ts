@@ -225,6 +225,45 @@ describe("Microsoft Store 주소 (desktop-app 의 microsoftStore)", () => {
   });
 });
 
+describe("안드로이드 앱 (android-app, 2026-11-27 사용자 요청)", () => {
+  const PLAY = "https://play.google.com/store/apps/details?id=com.johnnystudio.app";
+  const android = (fields: Record<string, unknown>) =>
+    AssetFrontmatter.safeParse({ title: "t", type: "android-app", summary: "t", status: "live", ...fields }).success;
+  const asset = {
+    slug: "t", html: "", title: "t", summary: "t", status: "live" as const, date: "2026", tags: [], featured: false, draft: false, links: [],
+    type: "android-app" as const, downloads: [],
+  };
+  const apk = { label: "Android APK", file: "/files/t/t-1.0.apk", version: "1.0", os: ["android" as const], size: 1, signed: true, sha256: "a".repeat(64) };
+
+  it("Google Play 주소는 play.google.com 의 앱 상세(id=패키지 이름)만 받는다", () => {
+    expect(android({ googlePlay: PLAY })).toBe(true);
+    expect(android({ googlePlay: `${PLAY}&hl=ko` })).toBe(true);
+    expect(android({ googlePlay: PLAY.replace("https:", "http:") })).toBe(false);
+    expect(android({ googlePlay: "https://play.google.com.evil.example/store/apps/details?id=com.a.b" })).toBe(false);
+    expect(android({ googlePlay: "https://play.google.com/store/search?q=johnny" })).toBe(false);
+    expect(android({ googlePlay: "https://play.google.com/store/apps/details?id=noperiod" })).toBe(false);
+    expect(AssetFrontmatter.safeParse({ title: "t", type: "desktop-app", summary: "t", status: "live", googlePlay: PLAY }).success).toBe(false);
+  });
+
+  it("APK 는 os: [android] 로 받는다", () => {
+    expect(android({ downloads: [apk] })).toBe(true);
+  });
+
+  it("공개하려면 Google Play 주소나 APK 가 있어야 하고, APK 는 크기·체크섬이 있어야 한다", () => {
+    expect(missingFields(asset)).toEqual(["googlePlay 또는 downloads"]);
+    expect(missingFields({ ...asset, googlePlay: PLAY })).toEqual([]);
+    expect(missingFields({ ...asset, downloads: [apk] })).toEqual([]);
+    expect(missingFields({ ...asset, downloads: [{ ...apk, size: undefined, sha256: "0".repeat(64) }] })).toEqual(["downloads.0.size", "downloads.0.sha256"]);
+  });
+
+  it("카드에 'Google Play' 바로가기가 생기고, 상세는 Library 에 있다", () => {
+    const s = toSummary({ ...asset, googlePlay: PLAY });
+    expect(s.quickAction).toEqual({ label: "Google Play", href: PLAY });
+    expect(s.href).toBe("/library/t/");
+    expect(toSummary(asset).quickAction).toBeUndefined();
+  });
+});
+
 describe("Store·Showroom DB 로 옮긴 작품 (storeApp·showroomService, ADR-0014)", () => {
   const parse = (data: Record<string, unknown>) => AssetFrontmatter.safeParse({ title: "t", summary: "t", status: "live", ...data }).success;
 
@@ -261,12 +300,33 @@ describe("Store·Showroom DB 로 옮긴 작품 (storeApp·showroomService, ADR-0
   });
 });
 
-describe("Library 는 관리자 작품(작품 파일)만 보인다 (2026-11-26 사용자 확인)", () => {
-  it("Library 화면은 작품 파일(content/assets)만 읽고, 회원 앱·서비스(Store·Showroom API)를 부르지 않는다", () => {
-    for (const file of ["src/app/library/page.tsx", "src/components/library-browser.tsx", "src/components/asset-card.tsx", "src/lib/filter.ts"]) {
-      const text = fs.readFileSync(path.join(process.cwd(), file), "utf8");
-      expect([file, /@\/lib\/(store|showroom)["']/.test(text)]).toEqual([file, false]);
-      expect([file, /\/api\/(store|showroom)\//.test(text)]).toEqual([file, false]);
+describe("Library = JohnnyStudio 가 Store·Showroom 에 올린 것 (ADR-0015, 2026-11-27 사용자 요청)", () => {
+  const read = (file: string) => fs.readFileSync(path.join(process.cwd(), file), "utf8");
+
+  it("Library 화면은 Store·Showroom 의 공식 목록(official=true)만 부른다 (회원 앱·서비스는 Store·Showroom 에만)", () => {
+    const browser = read("src/components/library-browser.tsx");
+    expect(browser).toMatch(/storeApi\.list\(OFFICIAL_SEARCH\)/);
+    expect(browser).toMatch(/showroomApi\.list\(OFFICIAL_SEARCH\)/);
+    expect(browser.match(/Api\.list\(/g)).toHaveLength(2);
+    expect(read("src/lib/library.ts")).toMatch(/export const OFFICIAL_SEARCH = "\?official=true";/);
+    for (const file of ["src/app/library/page.tsx", "src/components/asset-card.tsx", "src/lib/filter.ts"]) {
+      expect([file, /@\/lib\/(store|showroom)["']/.test(read(file))]).toEqual([file, false]);
     }
+  });
+
+  it("Store·Showroom 으로 옮긴 작품은 누르면 그 화면으로 간다 (Library 상세를 따로 두지 않는다)", () => {
+    for (const a of assets.filter((x) => !x.draft)) {
+      const s = toSummary(a);
+      if (a.type === "desktop-app" && a.storeApp) expect([a.slug, s.href]).toEqual([a.slug, `/store/app/?id=${a.storeApp}`]);
+      else if (a.type === "web-app" && a.showroomService) expect([a.slug, s.href]).toEqual([a.slug, `/showroom/service/?id=${a.showroomService}`]);
+      else expect([a.slug, s.href]).toEqual([a.slug, `/library/${a.slug}/`]);
+      expect(s.bookmark).toBe(a.slug); // 즐겨찾기는 어디서 눌러도 slug (Store·Showroom 화면은 getLibrarySlugs 로 받는다)
+    }
+  });
+
+  it("Library 상세는 옮긴 작품을 Store·Showroom 화면으로 넘겨 준다", () => {
+    const page = read("src/app/library/[slug]/page.tsx");
+    expect(page).toMatch(/if \(summary\.storeApp \|\| summary\.showroomService\) return <MovedNotice /);
+    expect(page).toMatch(/<meta httpEquiv="refresh" content=\{`0;url=\$\{href\}`\} \/>/);
   });
 });

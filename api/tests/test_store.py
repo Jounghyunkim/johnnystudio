@@ -555,6 +555,20 @@ def test_search_and_category_filter(people: Accounts) -> None:
     assert guest.get("/api/store/apps?q=%25").json()["apps"] != []  # % 는 와일드카드로 쓰지 않는다 (빈 검색과 같다)
 
 
+def test_official_filter_lists_only_admin_apps(people: Accounts) -> None:
+    """Library 는 Store 의 공식 앱(운영자 계정이 올린 것)만 거른다 (ADR-0015)"""
+    become_publisher(people.use(ADMIN), "JohnnyStudio")
+    approve_latest(people, submit(people.use(ADMIN), name="Johnny Tool"))
+    dev = people.use("dev@example.com")
+    become_publisher(dev)
+    approve_latest(people, submit(people.use("dev@example.com"), data=make_pe(0x8664, b"m" * 99), name="Member Tool"))
+    guest = people.use(None)
+    assert sorted(a["name"] for a in guest.get("/api/store/apps").json()["apps"]) == ["Johnny Tool", "Member Tool"]
+    official = guest.get("/api/store/apps?official=true").json()["apps"]
+    assert [(a["name"], a["official"]) for a in official] == [("Johnny Tool", True)]
+    assert guest.get("/api/store/apps?official=true&q=member").json()["apps"] == []
+
+
 # ── 탈퇴 ──
 
 

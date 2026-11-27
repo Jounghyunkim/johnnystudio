@@ -13,14 +13,18 @@ import { useLocationSearch } from "@/lib/use-location-search";
 
 import { CopyButton } from "../copy-button";
 import { KeywordChips, ListingFacts, ListingMain } from "../listing/listing-view";
+import { StarButton } from "../star-button";
 import { ReportDialog } from "../store/store-app-view";
 import { ErrorBox, Loading, Pill, panelClass, statusTone } from "../store/store-ui";
 import { ButtonLink, buttonClass, cx } from "../ui";
 import { ServiceDeleteDialog } from "./showroom-edit";
 import { OpenLink, ServiceIcon } from "./showroom-ui";
 
-/** 서비스 상세 (/showroom/service/?id=코드) */
-export function ShowroomServiceView() {
+/**
+ * 서비스 상세 (/showroom/service/?id=코드). Library 의 웹 서비스를 누르면 오는 설명 화면이기도 하다 (ADR-0015).
+ * librarySlugs: Library 작품과 이어진 서비스의 코드 → slug. 그런 서비스에만 즐겨찾기가 있다 (Library 카드와 같은 값)
+ */
+export function ShowroomServiceView({ librarySlugs }: { librarySlugs: Readonly<Record<string, string>> }) {
   const [search] = useLocationSearch();
   const isClient = useIsClient();
   const code = parseAppCode(new URLSearchParams(search).get("id"));
@@ -60,6 +64,7 @@ export function ShowroomServiceView() {
   const asAdmin = Boolean(s.viewer?.admin && !s.viewer.owner);
   const link = `${window.location.origin}/showroom/service/?id=${s.code}`;
   const page = pageOf(s.page);
+  const bookmark = (!review || s.status === "published") && librarySlugs[s.code];
 
   return (
     <div className="space-y-8">
@@ -81,13 +86,16 @@ export function ShowroomServiceView() {
               <KeywordChips keywords={page.keywords} />
             </div>
           )}
-          {/* 편집: 소개한 사람과 운영자 (소개 꾸미기 화면, API 가 다시 확인한다) */}
-          {review && (
+          {/* 즐겨찾기: Library 작품과 이어진 공개 서비스만. 편집: 소개한 사람과 운영자 (소개 꾸미기 화면, API 가 다시 확인한다) */}
+          {(bookmark || review) && (
             <div className="mt-4 flex flex-wrap gap-2">
-              <ButtonLink href={listingEditHref(s.code, "showroom")} variant="secondary">
-                <Pencil aria-hidden="true" className="size-4" />
-                편집
-              </ButtonLink>
+              {bookmark && <StarButton slug={bookmark} title={s.name} withLabel />}
+              {review && (
+                <ButtonLink href={listingEditHref(s.code, "showroom")} variant="secondary">
+                  <Pencil aria-hidden="true" className="size-4" />
+                  편집
+                </ButtonLink>
+              )}
             </div>
           )}
         </div>
@@ -148,11 +156,11 @@ export function ShowroomServiceView() {
                 JohnnyStudio가 직접 만든 서비스입니다
               </p>
               <p className="mt-2 text-sm leading-relaxed text-fg-muted">
-                만든 이야기와 다른 작품은{" "}
+                JohnnyStudio의 다른 앱과 웹 서비스는{" "}
                 <Link href="/library/" className="underline underline-offset-4">
                   Library
                 </Link>
-                에 있습니다.
+                에 모여 있습니다.
               </p>
             </div>
           ) : (

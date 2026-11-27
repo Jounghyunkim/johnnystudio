@@ -59,8 +59,11 @@ contact:
   # TODO(content): 공개할 연락용 이메일 주소 (ideation §9-4)
   note: 연락처를 준비하고 있습니다.
 
-# 외부 채널 (GitHub, YouTube, 블로그 등). 예: - { label: GitHub, href: https://github.com/<계정> }
+# 외부 채널 (GitHub, YouTube 등). 예: - { label: GitHub, href: https://github.com/<계정> }
 links: []
+
+# 블로그 (상단 Story ▾ 의 Blog, 바닥글. 새 탭으로 연다. 2026-11-27 사용자 요청)
+blog: https://atozcode.tistory.com/
 
 # 홈(랜딩) 페이지 문구 (web/src/app/page.tsx). 답변은 지금 실제로 동작하는 것만 쓴다
 landing:

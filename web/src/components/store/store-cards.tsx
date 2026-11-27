@@ -7,6 +7,7 @@ import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 
 import { storeBookmarkId } from "@/lib/bookmarks";
+import { assetHref } from "@/lib/hrefs";
 import { formatBytes } from "@/lib/format";
 import { type StoreCard, type StoreEntry, appHref } from "@/lib/store";
 import type { OfficialStoreApp } from "@/lib/types";
@@ -28,7 +29,7 @@ function CornerStar({ slug, title }: { slug: string; title: string }) {
   );
 }
 
-/** Library 의 공식 앱. 누르면 Library 상세로 간다. onDelete 가 있으면(운영자, 개발 서버) 작품 지우기 버튼 */
+/** Store 로 옮기지 않은 Library 의 공식 앱. 누르면 Library 상세로 간다. onDelete 가 있으면(운영자, 개발 서버) 작품 지우기 버튼 */
 function OfficialCard({ app, categoryLabel, onDelete }: { app: OfficialStoreApp; categoryLabel: string; onDelete?: (t: OfficialTarget) => void }) {
   return (
     <article className={cardClass}>
@@ -39,7 +40,7 @@ function OfficialCard({ app, categoryLabel, onDelete }: { app: OfficialStoreApp;
       )}
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <h3 className="flex min-w-0 items-center gap-2 pr-7 text-base font-semibold text-fg">
-          <Link href={`/library/${app.slug}/`} className="card-link truncate outline-none after:absolute after:inset-0 after:content-['']">
+          <Link href={assetHref({ slug: app.slug })} className="card-link truncate outline-none after:absolute after:inset-0 after:content-['']">
             {app.title}
           </Link>
           <Pill tone="ok">공식</Pill>
@@ -77,16 +78,27 @@ function OfficialCard({ app, categoryLabel, onDelete }: { app: OfficialStoreApp;
 }
 
 /** onDeleteOfficial: Store 목록에서 운영자에게만 넘긴다 (My Studio 에는 없다) */
-export function EntryCard({ entry, onDeleteOfficial }: { entry: StoreEntry; onDeleteOfficial?: (t: OfficialTarget) => void }) {
+export function EntryCard({
+  entry,
+  librarySlugs,
+  onDeleteOfficial,
+}: {
+  entry: StoreEntry;
+  librarySlugs?: Readonly<Record<string, string>>;
+  onDeleteOfficial?: (t: OfficialTarget) => void;
+}) {
   return entry.kind === "official" ? (
     <OfficialCard app={entry.app} categoryLabel={entry.categoryLabel} onDelete={onDeleteOfficial} />
   ) : (
-    <MemberCard app={entry.app} />
+    <MemberCard app={entry.app} bookmark={librarySlugs?.[entry.app.code]} />
   );
 }
 
-/** DB 의 앱 카드 (Store 목록, My Studio). 운영자 계정이 올린 앱은 '공식' (ADR-0014) */
-export function MemberCard({ app }: { app: StoreCard }) {
+/**
+ * DB 의 앱 카드 (Store 목록, My Studio). 운영자 계정이 올린 앱은 '공식' (ADR-0014).
+ * bookmark: Library 작품과 이어진 공식 앱이면 그 slug (Library 카드와 같은 즐겨찾기, ADR-0015). 없으면 `store:<코드>`
+ */
+export function MemberCard({ app, bookmark }: { app: StoreCard; bookmark?: string }) {
   return (
     <article className={cardClass}>
       <AppIcon code={app.code} hasIcon={app.has_icon} name={app.name} className="size-14 shrink-0" />
@@ -105,7 +117,7 @@ export function MemberCard({ app }: { app: StoreCard }) {
           v{app.version} · {formatBytes(app.size)}
         </p>
       </div>
-      <CornerStar slug={storeBookmarkId(app.code)} title={app.name} />
+      <CornerStar slug={bookmark ?? storeBookmarkId(app.code)} title={app.name} />
     </article>
   );
 }

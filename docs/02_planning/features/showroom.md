@@ -1,7 +1,7 @@
 # 기능: Showroom (회원이 만든 웹 서비스 소개)
 
 > **상태**: 구현 완료 (개발 서버에서 동작, 운영 서버 설정 전). 결정: [ADR-0012](../../04_architecture/adr/0012-member-store.md) 결정 12·13 (제안됨)
-> **Last Updated**: 2026-11-26
+> **Last Updated**: 2026-11-27
 > **짝**: [Store](store.md) (내려받는 Windows 앱). 원칙·올리는 회원·약관·검토 화면을 함께 쓴다
 
 ## 왜 (문제와 목적)
@@ -17,6 +17,8 @@
   - 목록(검색·분류 9개·정렬), 상세(서비스 열기, 화면 그림, 설명, 공유 주소, 신고), 내 서비스(고치기·그림·지우기), 운영자 검토(Store 검토 화면 안)
   - 운영자는 남의 서비스도 고치고(이름·주소·글·아이콘·소개 자료) 지운다 (2026-11-26, Store 와 같다)
   - Library 의 공개된 웹 서비스를 '공식'으로 함께 보여 준다. 2026-11-26 부터 Arkurator 는 DB 의 서비스(운영자 계정이 소개한 것, `official`)로 관리한다 ([ADR-0014](../../04_architecture/adr/0014-official-apps-in-store-db.md), 작품 파일에 `showroomService`). 코드가 없는 웹 서비스만 작품 파일에서 합친다
+  - Library 의 웹 서비스를 누르면 이 Showroom 서비스 화면이 설명 페이지다 (2026-11-27, [ADR-0015](../../04_architecture/adr/0015-library-as-official-view.md)). Library 목록은 `GET /api/showroom/services?official=true` 로 맞춘다.
+    Library 작품과 이어진 서비스에만 상세 머리글에 즐겨찾기가 있다 (slug)
   - 공식 서비스 지우기: Store 와 같다 (작품 자체를 지운다, 개발 서버·운영자, [store.md](store.md) 의 '공식 항목 지우기'). Arkurator 는 Life Log·서비스 소개가 가리키고 있어 그 연결을 빼기 전에는 지워지지 않는다
 - **포함하지 않음**
   - 사이트 안에서 남의 서비스를 띄우기(iframe). 바깥 링크로만 연다
@@ -36,7 +38,7 @@
 | `/showroom/mine/` | 내 서비스: 상태·사유, 열기, 고치기(`<dialog>`), 아이콘·화면 그림 넣기/바꾸기, 지우기 | 회원 |
 | `/store/manage/` | 검토 화면 아래 "Showroom" 절: 검토 대기(주소 열어 보기·승인·반려), 신고(숨기기·조치함·기각), 최근 공개(숨기기), 숨긴 서비스(검토 대기로 되돌리기). 검토 대기·최근 공개·숨긴 서비스마다 **편집**(소개 꾸미기 화면)·**지우기** | 운영자 |
 
-메뉴: Library · Life Log · Work with me · About **|** Store · Showroom (1024px 보다 좁으면 메뉴 버튼 안). 홈 히어로에도 Store·Showroom 버튼.
+메뉴: Story ▾(Library · Life Log · Blog · 영상 · 사진 · 글 · 하드웨어) · Work with me · About **|** Store · Showroom (1024px 보다 좁으면 메뉴 버튼 안, 2026-11-27 ADR-0018). 홈 히어로에도 Store·Showroom 버튼.
 
 ### 상태
 

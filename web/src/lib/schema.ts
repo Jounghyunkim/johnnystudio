@@ -37,6 +37,17 @@ const MicrosoftStoreUrl = HttpUrl.refine((v) => {
   return u.protocol === "https:" && u.hostname === "apps.microsoft.com" && /^\/detail\/[0-9A-Za-z]{12}\/?$/.test(u.pathname);
 }, "Microsoft Store 앱 주소(https://apps.microsoft.com/detail/<제품 ID>)를 쓴다");
 
+/** Google Play 앱 주소: https://play.google.com/store/apps/details?id=<패키지 이름>[&hl=…] */
+const GooglePlayUrl = HttpUrl.refine((v) => {
+  const u = new URL(v);
+  return (
+    u.protocol === "https:" &&
+    u.hostname === "play.google.com" &&
+    u.pathname === "/store/apps/details" &&
+    /^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+$/.test(u.searchParams.get("id") ?? "")
+  );
+}, "Google Play 앱 주소(https://play.google.com/store/apps/details?id=<패키지 이름>)를 쓴다");
+
 /** Store 앱·Showroom 서비스 코드 (DB 의 code, 영문·숫자 4~12자). ADR-0014: 공식 앱·서비스를 DB 로 옮긴 작품에 붙는다 */
 const StoreCode = z.string().regex(/^[0-9A-Za-z]{4,12}$/, "Store·Showroom 코드는 영문·숫자 4~12자다");
 
@@ -55,7 +66,8 @@ const Link = z.strictObject({
 });
 export type Link = z.infer<typeof Link>;
 
-export const OS_LIST = ["windows", "macos", "linux"] as const;
+/** android 는 안드로이드 앱의 APK 에만 쓴다 */
+export const OS_LIST = ["windows", "macos", "linux", "android"] as const;
 
 const Download = z.strictObject({
   label: z.string().min(1),
@@ -114,6 +126,16 @@ export const AssetFrontmatter = z.discriminatedUnion("type", [
      * Library 상세는 downloads 대신 'Store에서 내려받기'를 보이고, downloads 는 DB 를 새로 채울 때(scripts/import-official.sh)의 처음 버전으로만 쓴다
      */
     storeApp: StoreCode.optional(),
+  }),
+  z.strictObject({
+    ...base,
+    type: z.literal("android-app"),
+    /** APK 파일 (os: [android]). Google Play 에만 있으면 비워 둔다 */
+    downloads: z.array(Download).default([]),
+    /** 예: Android 8.0 이상 */
+    requirements: z.string().optional(),
+    /** Google Play 에 올렸으면 그 주소. 상세와 카드에 'Google Play' 버튼이 생긴다 */
+    googlePlay: GooglePlayUrl.optional(),
   }),
   z.strictObject({
     ...base,
@@ -193,6 +215,8 @@ export const Profile = z.strictObject({
     note: z.string().optional(),
   }),
   links: z.array(Link).default([]),
+  /** 바깥 블로그 주소. 상단 Story ▾ 의 Blog 와 바닥글에 새 탭으로 열린다 (ADR-0018). 없으면 메뉴에서 뺀다 */
+  blog: HttpUrl.optional(),
   /** 홈(랜딩) 페이지 문구. 사이트 안 주소는 / 로 시작한다 */
   landing: z.strictObject({
     eyebrow: z.string().min(1),

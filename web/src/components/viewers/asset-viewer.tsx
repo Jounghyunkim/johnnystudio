@@ -1,22 +1,22 @@
 import type { Asset } from "@/lib/schema";
 
-import { DownloadPanel, StoreAppPanel } from "./download-panel";
+import { DownloadPanel } from "./download-panel";
 import { LaunchPanel, OutlinkPanel, SandboxPanel } from "./link-panels";
 import { PhotoGallery } from "./photo-gallery";
 import { YouTubeLite } from "./youtube-lite";
 
-/** 유형별 뷰어: "하나의 스키마, 유형별 뷰어" (ideation §3-1) */
+/**
+ * 유형별 뷰어: "하나의 스키마, 유형별 뷰어" (ideation §3-1).
+ * Store·Showroom 으로 옮긴 작품(storeApp·showroomService)은 Library 상세가 그 화면으로 넘어가므로 여기에 오지 않는다 (ADR-0015)
+ */
 export function AssetViewer({ asset }: { asset: Asset }) {
   switch (asset.type) {
     case "web-app":
-      return <LaunchPanel url={asset.url} showroomCode={asset.showroomService} />;
+      return <LaunchPanel url={asset.url} />;
     case "desktop-app":
-      // Store DB 로 옮긴 앱은 설치 파일을 Store 에서 받는다 (ADR-0014)
-      return asset.storeApp ? (
-        <StoreAppPanel code={asset.storeApp} requirements={asset.requirements} microsoftStore={asset.microsoftStore} />
-      ) : (
-        <DownloadPanel downloads={asset.downloads} requirements={asset.requirements} microsoftStore={asset.microsoftStore} />
-      );
+      return <DownloadPanel downloads={asset.downloads} requirements={asset.requirements} microsoftStore={asset.microsoftStore} />;
+    case "android-app":
+      return <DownloadPanel downloads={asset.downloads} requirements={asset.requirements} googlePlay={asset.googlePlay} />;
     case "web-package":
       return (
         <div className="space-y-6">
@@ -44,6 +44,7 @@ export function AssetViewer({ asset }: { asset: Asset }) {
 export const VIEWER_HEADING: Record<Asset["type"], string> = {
   "web-app": "실행",
   "desktop-app": "다운로드",
+  "android-app": "설치",
   "web-package": "체험과 다운로드",
   video: "영상",
   gallery: "사진",

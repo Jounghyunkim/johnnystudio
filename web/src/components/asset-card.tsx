@@ -11,11 +11,12 @@ import { StarButton } from "./star-button";
 import { cx } from "./ui";
 
 /**
- * 에셋 카드. 카드 전체가 상세 페이지 링크이고, 오른쪽 아래 버튼(바로 실행·즐겨찾기)은 그 위에 따로 눌린다.
+ * 에셋 카드. 카드 전체가 설명 화면 링크이고, 오른쪽 아래 버튼(바로 실행·즐겨찾기)은 그 위에 따로 눌린다.
+ * 설명 화면은 Store·Showroom 으로 옮긴 작품이면 Store 앱·Showroom 서비스 화면, 아니면 Library 상세다 (asset.href, ADR-0015).
  */
 export function AssetCard({ asset, headingLevel = 3 }: { asset: AssetSummary; headingLevel?: 2 | 3 }) {
   const Heading = headingLevel === 2 ? "h2" : "h3";
-  const href = `/library/${asset.slug}/`;
+  const href = asset.href;
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-card border border-line bg-surface transition-colors hover:border-line-strong hover:bg-raised has-[.card-link:focus-visible]:outline-2 has-[.card-link:focus-visible]:outline-offset-2 has-[.card-link:focus-visible]:outline-accent">
       <AssetCover type={asset.type} cover={asset.cover} coverAlt={asset.coverAlt} icon={asset.icon} className="aspect-[16/10] border-b border-line" />
@@ -49,7 +50,7 @@ export function AssetCard({ asset, headingLevel = 3 }: { asset: AssetSummary; he
                 <span className="sr-only">: {asset.title} (새 탭에서 열림)</span>
               </a>
             )}
-            <StarButton slug={asset.slug} title={asset.title} />
+            {asset.bookmark && <StarButton slug={asset.bookmark} title={asset.title} />}
           </div>
         </div>
       </div>

@@ -74,7 +74,7 @@ export function toSearch(query: LibraryQuery): string {
 }
 
 /**
- * Library 를 유형(웹 서비스·데스크톱 툴 …)별 칸으로 나눈다 (2026-11-26 사용자 요청: 카테고리마다 나누고 사이에 가로 점선).
+ * Library 를 유형(웹 서비스·데스크톱 앱 …)별 칸으로 나눈다 (2026-11-26 사용자 요청: 카테고리마다 나누고 사이에 가로 점선).
  * 칸 순서는 ASSET_TYPES 순서, 칸 안의 순서는 filterAssets 가 정한 정렬(최신순·이름순) 그대로. 빈 칸은 뺀다
  */
 export function groupByType(assets: readonly AssetSummary[]): { type: AssetSummary["type"]; assets: AssetSummary[] }[] {

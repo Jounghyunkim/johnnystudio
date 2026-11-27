@@ -2,7 +2,7 @@
 
 > **상태**: 검토 v2. 사용자 원안([archive/ideation-v1-2026-11-05.md](archive/ideation-v1-2026-11-05.md))을 검토하고 보완했다.
 > 확정된 내용은 [01_vision/PHILOSOPHY.md](01_vision/PHILOSOPHY.md) 와 ADR 로 옮긴다. §9 열린 질문은 사용자 결정이 필요하다.
-> **Last Updated**: 2026-11-24
+> **Last Updated**: 2026-11-27
 
 ---
 
@@ -94,7 +94,8 @@
 | 유형 | 예 | 카드 행동 | 상세 화면 | 파일 위치 |
 |---|---|---|---|---|
 | `web-app` 웹 서비스 | Arkurator | 실행 ↗ | 소개·스크린샷·실행 | 외부 URL 또는 하위 도메인 |
-| `desktop-app` 데스크톱 툴 | 하드웨어 모니터링, SSH 터미널 | 다운로드 | 버전·OS·크기·SHA-256·검증 방법·변경 내역 | `/files/` (nginx) |
+| `desktop-app` 데스크톱 앱 | 하드웨어 모니터링, SSH 터미널 | 다운로드 | 버전·OS·크기·SHA-256·검증 방법·변경 내역 | `/files/` (nginx) |
+| `android-app` 안드로이드 앱 (2026-11-27 추가, ADR-0016) | 휴대폰 앱 | Google Play ↗ | Google Play 링크 + APK(버전·크기·SHA-256) | Google Play 또는 `/files/` |
 | `web-package` 단독 웹사이트 | zip 패키지 | 체험 ▶ | 격리된 iframe 체험 + zip 다운로드 | 별도 출처 (샌드박스 도메인) |
 | `video` 영상 | YouTube | 재생 | 썸네일 → 클릭하면 재생 (youtube-nocookie) | YouTube |
 | `gallery` 사진 | 사진 앨범 | 보기 | 사진 그리드 + 확대 보기 | `/files/` 또는 저장소 |

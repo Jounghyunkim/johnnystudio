@@ -4,6 +4,7 @@ import { Search, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useId, useMemo, useState } from "react";
 
+import { assetHref } from "@/lib/hrefs";
 import { type ServiceCard, type ShowroomEntry, type ShowroomMeta, serviceHref, showroomApi, showroomEntries } from "@/lib/showroom";
 import { type StoreQuery, loadRemote, parseStoreQuery, toStoreSearch, useRemote } from "@/lib/store";
 import type { OfficialShowroomService } from "@/lib/types";
@@ -25,7 +26,8 @@ function Card({ entry, onDeleteOfficial }: { entry: ShowroomEntry; onDeleteOffic
   // DB 의 서비스 중 운영자 계정이 소개한 것도 '공식'이다 (ADR-0014). 회원 링크(ugc)로 다루지 않는다
   const officialBadge = official || Boolean(entry.service.official);
   const name = official ? entry.service.title : entry.service.name;
-  const href = official ? `/library/${entry.service.slug}/` : serviceHref(entry.service.code);
+  // 작품 파일에서 합친 공식 서비스(Showroom 으로 옮기지 않은 것)는 Library 상세, DB 의 서비스는 Showroom 서비스 화면
+  const href = official ? assetHref({ slug: entry.service.slug }) : serviceHref(entry.service.code);
   const url = entry.service.url;
   const host = official ? new URL(url).host : entry.service.host;
   return (

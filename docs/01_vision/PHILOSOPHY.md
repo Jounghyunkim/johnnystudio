@@ -2,7 +2,7 @@
 
 > **상태**: 초안 v1. [ideation.md](../ideation.md) v2 를 바탕으로 썼다. **사용자 확인 전**이고, `[확인 필요]` 가 붙은 곳은 특히 확인이 필요하다.
 > 사이트에 보이는 문구의 원본은 [content/profile.yaml](../../content/profile.yaml) 이다. 이 문서를 바꾸면 그 파일도 맞춘다.
-> **Last Updated**: 2026-11-24
+> **Last Updated**: 2026-11-27
 
 이 문서는 포털의 모든 문구·디자인·기능 결정의 **기준**이다.
 
@@ -37,7 +37,7 @@
 
 ## 5. 무엇을 하는가
 
-- **작품 유형**: 웹 서비스, 데스크톱 툴, 웹 패키지, 영상, 사진, 글, 하드웨어 (ideation §3-1)
+- **작품 유형**: 웹 서비스, 데스크톱 앱, 안드로이드 앱, 웹 패키지, 영상, 사진, 글, 하드웨어 (ideation §3-1, 안드로이드 앱은 [ADR-0016](../04_architecture/adr/0016-android-app-type.md))
 - **현재**: [Arkurator](https://arkurator.net), 파일 기반 지식 관리 + RAG AI 에이전트
 - **Windows 앱 9개** (2026-11-22, JohnnyStore 에서 옮김): Johnny Mecro, Johnny-Dir, SmartFolder Organizer, Screen-REC, SpaceSense AI, TakeScreenShot, SentinelLite-AV, WLT, CMG Monitor
 - **등록 대기 (초안)**: Skill Hub, 로봇 프로젝트. 내용을 채워야 한다 `[확인 필요]`

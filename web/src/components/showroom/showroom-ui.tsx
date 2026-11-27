@@ -1,18 +1,20 @@
 /**
  * Showroom 공통 조각 (클라이언트 컴포넌트끼리 쓴다). 색·상자 모양은 Store 의 store-ui 를 함께 쓴다.
  */
-import { ArrowUpRight, Globe } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 
 import { serviceIconSrc, UGC_REL } from "@/lib/showroom";
+import { TYPE_STYLE } from "@/lib/type-style";
 
 import { cx } from "../ui";
 
 export function ServiceIcon({ code, hasIcon, name, version, src, className }: { code?: string; hasIcon?: boolean; name: string; version?: string | null; src?: string; className?: string }) {
   const url = src ?? (code && hasIcon ? serviceIconSrc(code, version) : undefined);
+  const Fallback = TYPE_STYLE["web-app"].icon;
   if (url) return <img src={url} alt={`${name} 아이콘`} width={256} height={256} className={cx("rounded-2xl bg-raised object-contain", className)} />;
   return (
     <span className={cx("flex items-center justify-center rounded-2xl bg-raised text-fg-subtle", className)}>
-      <Globe aria-hidden="true" className="size-1/2" />
+      <Fallback aria-hidden="true" className="size-1/2" />
     </span>
   );
 }

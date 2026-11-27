@@ -179,8 +179,9 @@ def build_page(item: dict[str, Any], settings: Settings, gallery: list[dict[str,
         links=links,  # type: ignore[arg-type]  (pydantic 이 dict 를 LinkIn 으로 바꾼다)
         gallery=[{"id": g["id"], "caption": g["caption"]} for g in gallery],  # type: ignore[misc]
         developer=PUBLISHER_NAME,
-        # Library 상세 (사이트 주소가 https 일 때만. 개발 주소 127.0.0.1 은 소개 자료의 주소 규칙에 맞지 않는다)
-        website=f"{settings.site_url}/library/{item['slug']}/" if is_https(settings.site_url) else "",
+        # JohnnyStudio Library (작품 모음). 작품마다의 Library 상세는 이 Store·Showroom 화면으로 넘어가므로 가리키지 않는다 (ADR-0015).
+        # 사이트 주소가 https 일 때만 (개발 주소 127.0.0.1 은 소개 자료의 주소 규칙에 맞지 않는다)
+        website=f"{settings.site_url}/library/" if is_https(settings.site_url) else "",
         ms_store_url=ms_store_url(str(item.get("microsoftStore") or "")),
     )
     return clean_page(body, {"gallery": gallery})

@@ -1,6 +1,6 @@
 # JohnnyStudio 포털 로드맵
 
-> **Last Updated**: 2026-11-26
+> **Last Updated**: 2026-11-28
 > 제품 단계(Phase 1~4)는 [ideation.md](ideation.md) §6 을 따른다.
 
 ## 현재 위치
@@ -12,11 +12,14 @@
 **JohnnyStore 를 흡수하기로 했다** (2026-11-22, [통합 문서](02_planning/features/johnnystore-integration.md), [ADR-0011](04_architecture/adr/0011-absorb-johnnystore.md)). 파일을 올리는 사람은 운영자뿐이다. 스토어의 Windows 앱 9개를 작품으로 옮겨 공개했다 (공개 작품 10개). 스토어 서비스와 저장소(`../johnnystore`)는 보관본을 남기고 지웠다. 다음은 설치 파일 분석·ClamAV 검사(S2) (아래 "JohnnyStore 통합").
 **회원 Store 와 Showroom(회원 웹 서비스 소개)을 만들었다** (2026-11-24, 메뉴 About 오른쪽 구분선 뒤, [ADR-0012](04_architecture/adr/0012-member-store.md) 제안됨, [기능 명세](02_planning/features/store.md)): 메뉴 Store(`/store/`), 회원이 Windows 앱을 올리면 ClamAV 검사와 운영자 승인을 거쳐 공개된다. ADR-0011 의 '운영자만 올린다'를 바꿨다. 운영자는 목록의 '검토' 버튼으로 검토 화면에 가고, 회원 앱을 고치거나 지운다. 운영 서버 설정(§3-7)이 남았다 (아래 "Store").
 **Store·Showroom 게시물의 소개 자료를 만들었다** (2026-11-25, [ADR-0013](04_architecture/adr/0013-listing-kit.md) 제안됨, [기능 명세](02_planning/features/listing.md)): 기능·그림 모음·사용 방법·질문·만든 이·지원 정보를 Microsoft Store 등록 항목과 같은 한도로 두고, AI 프롬프트 복사·md/zip 불러오기·소개 꾸미기·Microsoft Store 제출용 항목·안내(`/store/guide/`). 운영 nginx 다시 설치가 남았다 (아래 "소개 자료").
+**운영자 관리·설정 화면·공식 앱 DB 이전** (2026-11-26, [작업 로그](../dev_history/2026-11-26_admin-settings-official-apps.md)): 운영자가 Store·Showroom 의 모든 것을 고치고 지운다. 설정 화면(`/settings/`)에 사용자 현황·차트·캐시 지우기·표시 이름 바꾸기.
+운영자의 공식 앱 11개와 웹 서비스(Arkurator·JohnnyStudio)를 Store·Showroom DB 에서 관리한다 ([ADR-0014](04_architecture/adr/0014-official-apps-in-store-db.md) 제안됨, `scripts/import-official.sh`). Library 는 관리자 작품 13개, 유형별 칸·4칸. 커밋은 브랜치 `feat/store-showroom-admin-settings` 에 있고 main 에 합치기 전이다.
+**Library = Store·Showroom 의 공식 앱·서비스** (2026-11-27, [ADR-0015](04_architecture/adr/0015-library-as-official-view.md) 제안됨): 카드를 누르면 Store 앱·Showroom 서비스 화면으로 가고, `/library/<slug>/` 는 그리로 넘겨 주기만 한다. 목록은 브라우저에서 `?official=true` 목록에 맞춘다. 즐겨찾기는 어디서 눌러도 같은 값(slug).
 **같은 기기에 My Claude Inspector 를 띄웠다** (2026-11-24, `127.0.0.1:3300`, Library 작품으로도 공개). 인터넷 공개 주소(DNS·nginx·certbot)는 사용자가 한다 (아래 "같은 서버의 다른 서비스").
 남은 일은 다음 네 가지다.
 
 1. ideation §9 열린 질문에 답한다 (§9-6 큰 파일 배포 채널은 답함: 홈 서버만)
-2. **실제 콘텐츠**를 채운다 (작품은 10개 공개. 서비스, 연락처, 개인정보처리방침의 운영자·연락처가 남았다)
+2. **실제 콘텐츠**를 채운다 (작품은 13개 공개. 서비스, 연락처, 개인정보처리방침의 운영자·연락처가 남았다)
 3. **도메인 + Cloudflare Tunnel** 로 공개한다
 4. 로그인·Store·Showroom 을 쓰려면 **메일 발송 방법**을 정하고 회원 API·Store 를 서버에 설치한다 ([deploy/README.md](../deploy/README.md) §3, §3-7)
 
@@ -60,6 +63,12 @@
 
 - [x] 대표 작품 5~10개 등록 (2026-11-22): JohnnyStore 의 Windows 앱 9개를 옮겨 공개 작품이 10개가 됐다 (Arkurator 포함). 초안 '하드웨어 모니터링'·'SSH 터미널'은 CMG Monitor·WLT 로 대신했다
 - [x] 초안 2개(Skill Hub, 로봇 프로젝트)는 사용자 요청으로 지웠다 (`.local/trash`, 2026-11-26)
+- [x] Library 4칸(1280px 부터)·유형별 칸과 가로 점선, 관리자 작품만 보이게 (시험), Arkurator 아이콘, JohnnyStudio 작품 등록 (2026-11-26)
+- [x] Library 를 Store·Showroom 의 공식 목록으로: 카드 → Store 앱·Showroom 서비스 화면, 옛 상세 주소는 넘겨 주기, 공식 목록(`?official=true`)에 맞추기, 즐겨찾기 하나로 ([ADR-0015](04_architecture/adr/0015-library-as-official-view.md)) (2026-11-27)
+- [x] 작품 유형: '데스크톱 툴' → '데스크톱 앱', '안드로이드 앱'(Google Play 주소·APK) 추가 ([ADR-0016](04_architecture/adr/0016-android-app-type.md)) (2026-11-27)
+- [x] 메뉴 'Story ▾'(Library · Life Log · Blog · 영상 · 사진 · 글 · 하드웨어), 유형별 페이지 `/story/<유형>/`, Library 는 앱·서비스만 ([ADR-0018](04_architecture/adr/0018-story-menu.md)) (2026-11-27)
+- [x] Story 아래 페이지에 현재 위치(`Story › 영상`)와 Story 탭 (ADR-0018 결정 5) (2026-11-28)
+- [ ] Store 의 'takescreenshot' 이름을 작품 파일과 같은 'TakeScreenShot' 으로 (Library 에서 불러온 뒤 이름이 바뀌어 보인다)
 - [ ] 대표 작품(`featured`) 고르기 (관리 화면 `/admin/` 으로)
 - [ ] 앱 9개의 설치 파일(180MB, 지금 `.local/files/`)을 서버 설정(deploy/README §2-1) 뒤 `/opt/johnnystudio/files/` 로 옮기기: `rsync -a .local/files/ /opt/johnnystudio/files/`
 - [ ] 작품 이미지 (webp), 다운로드 파일 업로드
@@ -184,9 +193,10 @@
 
 ### 그 밖의 Phase 2
 
-- [x] 설정 화면 `/settings/` (바닥글 오른쪽 아래 버튼): 사용자 현황(운영자 전체 현황은 개수만), 앱 설정(테마·이메일 기억, 운영 설정 읽기 전용), 캐시 지우기(`Clear-Site-Data`)·저장 값 지우기 ([기능 명세](02_planning/features/settings.md)) (2026-11-26)
+- [x] 설정 화면 `/settings/` (바닥글 오른쪽 아래 버튼): 사용자 현황(운영자 전체 현황은 개수만 + 차트: 가입 추이·마지막 로그인·상태·내려받기 상위), 표시 이름 바꾸기, 앱 설정(테마·이메일 기억, 운영 설정 읽기 전용), 캐시 지우기(`Clear-Site-Data`)·저장 값 지우기 ([기능 명세](02_planning/features/settings.md)) (2026-11-26)
+- [ ] 브랜치 `feat/store-showroom-admin-settings` (`beae0dd`) 를 main 에 합치기
 - [ ] (원하면) 운영 설정을 화면에서 바꾸기 (설정 테이블 + ADR 먼저)
-- [ ] 브라우저 즐겨찾기 → 서버 동기화 (로그인하면 localStorage 목록을 가져옴)
+- [x] 회원 즐겨찾기를 계정(DB)에: 다른 브라우저·기기에서도 같은 My Studio, 로그인하면 브라우저 목록을 옮김 ([ADR-0017](04_architecture/adr/0017-member-bookmarks.md)) (2026-11-27)
 - [ ] (필요하면) Google OAuth
 - [ ] 문의 폼
 

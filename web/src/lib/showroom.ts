@@ -1,6 +1,7 @@
 /**
  * Showroom 클라이언트: 회원이 만든 웹 서비스 (/api/showroom/, ADR-0012). 클라이언트 컴포넌트에서만 쓴다.
- * Store 와 같은 방식이다: 회원 서비스는 브라우저에서 API 로 읽고, Library 의 웹 서비스('공식')는 빌드 때 HTML 에 넣는다.
+ * Store 와 같은 방식이다: 회원 서비스는 브라우저에서 API 로 읽는다. Showroom 으로 옮기지 않은 Library 의 웹 서비스('공식')만 빌드 때 HTML 에 넣는다.
+ * Library 는 공식 서비스 목록(`?official=true`)을 여기서 읽어 맞춘다 (ADR-0015, lib/library.ts).
  * 올리는 회원 정보(표시 이름·약관·차단)는 Store 의 /api/store/me 를 함께 쓴다.
  */
 import { type ApiResult, toApiError } from "./auth";
@@ -74,7 +75,7 @@ export const SERVICE_STATUS_LABELS: Record<ServiceStatus, string> = { pending: "
 export const IMAGE_ACCEPT = "image/png,image/jpeg,image/webp";
 
 const enc = encodeURIComponent;
-export const serviceHref = (code: string) => `/showroom/service/?id=${enc(code)}`;
+export { serviceHref } from "./hrefs";
 export const serviceIconSrc = (code: string, version?: string | null) => `/api/showroom/services/${enc(code)}/icon${version ? `?v=${enc(version)}` : ""}`;
 export const serviceShotSrc = (code: string, version?: string | null) => `/api/showroom/services/${enc(code)}/screenshot${version ? `?v=${enc(version)}` : ""}`;
 /** 회원이 준 바깥 주소로 가는 링크의 rel. 검색엔진에 추천하지 않는다 (ugc·nofollow) */

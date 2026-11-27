@@ -20,4 +20,8 @@
 | [0011](0011-absorb-johnnystore.md) | JohnnyStore 를 JohnnyStudio 로 흡수하고, 파일을 올리는 사람은 운영자뿐이다 | 일부 대체됨 → 0012 (결정 2·6, 결정 4 의 신고·관리자·이용약관) |
 | [0012](0012-member-store.md) | 회원 Store·Showroom: 회원이 올린 Windows 앱과 웹 서비스를 운영자 승인 후 공개한다 | 제안됨 |
 | [0013](0013-listing-kit.md) | Store·Showroom 소개 자료: Microsoft Store 와 같은 한도의 공통 항목, AI 키트, md·zip 은 브라우저에서 읽는다 (서버는 회원 주소를 캡처하지 않는다) | 제안됨 |
-| [0014](0014-official-apps-in-store-db.md) | 운영자의 공식 앱·서비스도 Store·Showroom DB 에서 관리한다 (설치 파일·버전은 DB, Library 소개 글은 작품 파일, 운영자 계정 = 공식) | 제안됨 (0012 결정 8 일부 대체) |
+| [0014](0014-official-apps-in-store-db.md) | 운영자의 공식 앱·서비스도 Store·Showroom DB 에서 관리한다 (설치 파일·버전은 DB, Library 소개 글은 작품 파일, 운영자 계정 = 공식) | 제안됨 (0012 결정 8 일부 대체), 결정 2 의 Library 상세 → 0015 |
+| [0015](0015-library-as-official-view.md) | Library 는 Store·Showroom 의 공식 앱·서비스를 모아 보는 곳이다 (누르면 Store·Showroom 화면, 옛 상세 주소는 넘겨 주기만, 브라우저에서 공식 목록에 맞춤) | 제안됨 |
+| [0016](0016-android-app-type.md) | 작품 유형에 '안드로이드 앱'(Google Play·APK)을 더하고, '데스크톱 툴'을 '데스크톱 앱'으로 부른다 | 제안됨 |
+| [0017](0017-member-bookmarks.md) | 회원의 즐겨찾기는 계정(DB)에 두고, 비회원은 브라우저에 둔다 (로그인하면 브라우저 목록을 계정에 옮긴다) | 제안됨 |
+| [0018](0018-story-menu.md) | 상단 메뉴에 'Story ▾'(Library·Life Log·Blog·영상·사진·글·하드웨어)를 두고, 영상·사진·글·하드웨어는 Story 의 유형별 페이지에 모은다. Story 아래 페이지에 현재 위치·탭 (결정 5, 2026-11-28) | 제안됨 (0012 결정 13 의 구분선 앞을 바꾼다) |

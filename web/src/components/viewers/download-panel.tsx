@@ -3,10 +3,11 @@ import { Download, ShieldAlert, ShieldCheck } from "lucide-react";
 import { formatBytes, formatDate } from "@/lib/format";
 import { OS_LABELS } from "@/lib/labels";
 import type { Download as DownloadInfo } from "@/lib/schema";
+import { TYPE_STYLE } from "@/lib/type-style";
 
 import { CopyButton } from "../copy-button";
 import { MsStoreIcon } from "../ms-store-icon";
-import { ButtonLink, ExternalButton, buttonClass, cx } from "../ui";
+import { ExternalButton, buttonClass, cx } from "../ui";
 
 function fileName(path: string): string {
   return decodeURIComponent(path.split("?")[0]?.split("/").pop() ?? path);
@@ -30,47 +31,50 @@ function MsStoreSection({ href }: { href: string }) {
   );
 }
 
-/**
- * Store DB 로 옮긴 앱 (작품 파일의 storeApp, ADR-0014). 설치 파일·버전·검사 결과는 Store 앱 화면이 원본이라 여기서는 그리로 잇는다.
- * 작품 파일의 downloads 는 보이지 않는다 (DB 를 새로 채울 때 쓰는 처음 버전)
- */
-export function StoreAppPanel({ code, requirements, microsoftStore }: { code: string; requirements?: string; microsoftStore?: string }) {
+/** Google Play 로 가는 길 (안드로이드 앱). 상표 그림은 쓰지 않고 유형 아이콘만 둔다 */
+function GooglePlaySection({ href }: { href: string }) {
+  const { icon: Icon, ink } = TYPE_STYLE["android-app"];
   return (
-    <div className="space-y-4">
-      {requirements && (
-        <p className="text-sm text-fg-muted">
-          <span className="font-semibold text-fg">필요 환경</span> · {requirements}
-        </p>
-      )}
-      <section aria-label="JohnnyStudio Store" className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-line bg-surface p-5 sm:p-6">
-        <div className="min-w-0">
-          <p className="font-semibold text-fg">JohnnyStudio Store</p>
-          <p className="mt-1 text-sm text-fg-subtle">최신 버전 설치 파일과 SHA-256·바이러스 검사 결과는 Store 앱 화면에 있습니다.</p>
+    <section aria-label="Google Play" className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-line bg-surface p-5 sm:p-6">
+      <div className="flex items-center gap-3">
+        <span className={cx("flex size-10 items-center justify-center rounded-lg bg-raised", ink)}>
+          <Icon aria-hidden="true" className="size-5" />
+        </span>
+        <div>
+          <p className="font-semibold text-fg">Google Play</p>
+          <p className="mt-1 text-sm text-fg-subtle">Google Play에서 설치하면 업데이트도 자동으로 받습니다.</p>
         </div>
-        <ButtonLink href={`/store/app/?id=${code}`}>
-          <Download aria-hidden="true" className="size-4" />
-          Store에서 내려받기
-        </ButtonLink>
-      </section>
-      {microsoftStore && <MsStoreSection href={microsoftStore} />}
-    </div>
+      </div>
+      <ExternalButton href={href} variant="secondary">
+        Google Play에서 받기
+      </ExternalButton>
+    </section>
   );
 }
 
 /**
  * 다운로드 패널: 버전·OS·크기·SHA-256 과 검증 방법을 보여 준다. (ideation 1-5 Trust by Design, R3)
+ * 데스크톱 앱(설치 파일 + Microsoft Store)과 안드로이드 앱(APK + Google Play)이 함께 쓴다.
  */
 export function DownloadPanel({
   downloads,
   requirements,
   microsoftStore,
+  googlePlay,
 }: {
   downloads: readonly DownloadInfo[];
   requirements?: string;
   /** Microsoft Store 주소. 있으면 설치 파일 위에 Store 에서 받는 길을 함께 보여 준다 */
   microsoftStore?: string;
+  /** Google Play 주소 (안드로이드 앱). 있으면 APK 위에 보여 준다 */
+  googlePlay?: string;
 }) {
-  const store = microsoftStore && <MsStoreSection href={microsoftStore} />;
+  const store = (microsoftStore || googlePlay) && (
+    <>
+      {microsoftStore && <MsStoreSection href={microsoftStore} />}
+      {googlePlay && <GooglePlaySection href={googlePlay} />}
+    </>
+  );
   if (downloads.length === 0) {
     if (store) return store;
     return (

@@ -72,6 +72,21 @@ def test_submit_review_publish(people: Accounts) -> None:
     assert detail["description"] == "첫 줄\n\n둘째 문단" and "status" not in detail and "owner" not in detail
 
 
+def test_official_filter_lists_only_admin_services(people: Accounts) -> None:
+    """Library 는 Showroom 의 공식 서비스(운영자 계정이 소개한 것)만 거른다 (ADR-0015)"""
+    admin = people.use(ADMIN)
+    become_publisher(admin, "JohnnyStudio")
+    mine = submit(admin, name="JohnnyStudio", url="https://johnnystudio.example/")
+    approve(people, mine["code"])
+    dev = people.use("dev@example.com")
+    become_publisher(dev)
+    approve(people, submit(dev)["code"])
+    guest = people.use(None)
+    assert len(guest.get("/api/showroom/services").json()["services"]) == 2
+    official = guest.get("/api/showroom/services?official=true").json()["services"]
+    assert [(s["code"], s["official"]) for s in official] == [(mine["code"], True)]
+
+
 @pytest.mark.parametrize(
     ("url", "ok"),
     [

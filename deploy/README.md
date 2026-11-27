@@ -1,6 +1,6 @@
 # 배포 가이드: 홈 서버 M8 (nginx + Cloudflare Tunnel)
 
-> **Last Updated**: 2026-11-26
+> **Last Updated**: 2026-11-27
 > **상태**: 서버 설정 전. 도메인이 정해지면 §2 → §3 → §4 순서로 진행한다. 로그인을 쓰지 않을 동안은 §3 을 미뤄도 된다.
 > Store(회원 앱, [ADR-0012](../docs/04_architecture/adr/0012-member-store.md))는 §3 다음에 §3-7 을 한다.
 > 결정 배경: [ADR-0002](../docs/04_architecture/adr/0002-deploy-home-server-nginx.md) (릴리스 + current),
@@ -207,7 +207,7 @@ curl -s -H "Host: $DOMAIN" http://127.0.0.1:8081/api/store/meta    # "scanner":t
 ### 3-8. 공식 앱·서비스를 운영 DB 로 옮기기 (1회, ADR-0014)
 
 운영자 작품(Store 의 Windows 앱, Showroom 의 웹 서비스)도 DB 에서 관리한다. 운영 DB 를 만든 뒤(§3-1~3-7) 한 번 돌린다. 여러 번 돌려도 된다.
-작품 파일의 `storeApp`·`showroomService` 코드로 같은 코드를 만들어서, Library 의 'Store에서 내려받기' 링크가 그대로 맞는다.
+작품 파일의 `storeApp`·`showroomService` 코드로 같은 코드를 만들어서, Library 카드의 Store·Showroom 링크(ADR-0015)가 그대로 맞는다.
 
 ```bash
 # 0) 운영자 이메일로 사이트에 한 번 로그인(가입)해 둔다 (주인이 될 계정)
@@ -219,7 +219,7 @@ JOHNNYSTUDIO_ENV_FILE=/opt/johnnystudio/api.env JOHNNYSTUDIO_FILES_DIR=/opt/john
 
 - API 서비스 계정이 `/opt/johnnystudio/store` 에 쓸 수 있는 사용자로 돌린다 (§3-7 의 1번)
 - 운영 DB 에는 작품 파일의 **처음 버전**이 들어간다. 개발 DB 에서 올린 새 버전은 운영의 Store 에서 다시 올린다
-- 확인: 로그아웃한 브라우저에서 `/store/` 의 앱마다 '공식' 표시, Library 상세의 'Store에서 내려받기'가 그 앱으로 간다
+- 확인: 로그아웃한 브라우저에서 `/store/` 의 앱마다 '공식' 표시, `/library/` 의 카드가 13개이고 누르면 그 Store 앱·Showroom 서비스 화면으로 간다
 
 ## 4. Cloudflare Tunnel 로 공개
 

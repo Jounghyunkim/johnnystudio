@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ReviewLink } from "@/components/store/review-link";
 import { StoreBrowser } from "@/components/store/store-browser";
 import { ButtonLink, Container, PageHeader } from "@/components/ui";
-import { getOfficialStoreApps } from "@/lib/content";
+import { getLibrarySlugs, getOfficialStoreApps } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: "Store",
@@ -13,7 +13,8 @@ export const metadata: Metadata = {
 };
 
 /**
- * Store (ADR-0012): Library 의 Windows 앱(공식, content/ 원본, 빌드된 HTML 에 들어간다) + 회원이 올린 앱(브라우저에서 API 로 읽는다).
+ * Store (ADR-0012): DB 의 앱(운영자 계정이 올린 공식 앱 + 회원 앱, 브라우저에서 API 로 읽는다) + Store 로 옮기지 않은 Library 의 Windows 앱(공식, 빌드된 HTML).
+ * Library 의 데스크톱 앱을 누르면 오는 Store 앱 화면과 즐겨찾기를 맞추려고 코드 → slug 표를 넘긴다 (ADR-0015).
  */
 export default function StorePage() {
   return (
@@ -32,11 +33,11 @@ export default function StorePage() {
         }
       >
         <p className="mt-4 text-sm text-fg-subtle">
-          &lsquo;공식&rsquo; 표시는 JohnnyStudio가 만든 앱이고, 자세한 소개는{" "}
+          &lsquo;공식&rsquo; 표시는 JohnnyStudio가 만든 앱입니다. JohnnyStudio의 앱과 웹 서비스만 모아 보려면{" "}
           <Link href="/library/" className="underline underline-offset-4 hover:text-fg">
             Library
           </Link>
-          에 있습니다. 앱을 올리기 전에{" "}
+          로 가세요. 앱을 올리기 전에{" "}
           <Link href="/store/terms/" className="underline underline-offset-4 hover:text-fg">
             Store 이용약관
           </Link>
@@ -44,7 +45,7 @@ export default function StorePage() {
         </p>
       </PageHeader>
       <Container className="py-12">
-        <StoreBrowser official={getOfficialStoreApps()} />
+        <StoreBrowser official={getOfficialStoreApps()} librarySlugs={getLibrarySlugs().store} />
         <noscript>
           <p className="mt-6 text-sm text-fg-muted">회원이 올린 앱은 JavaScript를 켜야 보입니다.</p>
         </noscript>

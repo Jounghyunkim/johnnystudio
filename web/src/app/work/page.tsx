@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Container, PageHeader, SectionHeading, buttonClass } from "@/components/ui";
-import { getAssets, getProfile } from "@/lib/content";
+import { getAssets, getProfile, toSummary } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: "Work with me",
@@ -20,6 +20,7 @@ const CLIENT_ROOM = [
 export default function WorkPage() {
   const profile = getProfile();
   const titles = new Map(getAssets().map((a) => [a.slug, a.title]));
+  const hrefs = new Map(getAssets().map((a) => [a.slug, toSummary(a).href]));
   const email = profile.contact.email;
 
   return (
@@ -46,7 +47,7 @@ export default function WorkPage() {
                       .map((slug, i) => (
                         <span key={slug}>
                           {i > 0 && ", "}
-                          <Link href={`/library/${slug}/`} className="text-accent hover:underline">
+                          <Link href={hrefs.get(slug) ?? `/library/${slug}/`} className="text-accent hover:underline">
                             {titles.get(slug)}
                           </Link>
                         </span>

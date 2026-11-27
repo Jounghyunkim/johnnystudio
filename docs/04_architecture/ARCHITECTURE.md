@@ -1,6 +1,6 @@
 # 아키텍처
 
-> **Last Updated**: 2026-11-24
+> **Last Updated**: 2026-11-28
 > 결정 배경: [ADR-0004](adr/0004-nextjs-static-export.md) (Next.js 정적 내보내기), [ADR-0005](adr/0005-file-based-content.md) (파일 콘텐츠),
 > [ADR-0002](adr/0002-deploy-home-server-nginx.md) · [ADR-0006](adr/0006-cloudflare-tunnel.md) (배포·공개), [ADR-0007](adr/0007-magic-link-auth-api.md) (회원 API·해시 CSP),
 > [ADR-0008](adr/0008-password-login.md) (비밀번호 로그인), [ADR-0009](adr/0009-local-portfolio-manager.md) · [ADR-0010](adr/0010-admin-on-public-dev-server.md) (작품 관리),
@@ -68,9 +68,10 @@ JohnnyStudio/
 
   | 컴포넌트 | 하는 일 |
   |---|---|
-  | `nav-links` | 현재 메뉴 표시, 모바일 메뉴 닫기 |
+  | `nav-links` | 현재 메뉴 표시, Story ▾ 펼침(`<details>`, 바깥 누르기·Esc 로 닫기), 모바일 메뉴 닫기 |
+  | `story-tabs` | Story 아래 페이지의 탭 줄: 좁은 화면에서 지금 탭을 가운데로 옮긴다 (탭·지금 탭 표시는 빌드된 HTML 에 있다. 머리글은 서버 컴포넌트 `story-header`) |
   | `library-browser` | 검색·유형 필터·정렬 (주소의 `?q=&type=&sort=`) |
-  | `star-button` · `studio-link` · `studio-view` | 즐겨찾기 (localStorage) |
+  | `star-button` · `studio-link` · `studio-view` | 즐겨찾기 (`lib/bookmarks.ts`: 회원은 `/api/account/bookmarks`, 비회원은 localStorage, ADR-0017) |
   | `youtube-lite` | 누를 때 iframe 로드 |
   | `photo-gallery` | `<dialog>` 확대 보기, 화살표 키 |
   | `copy-button` | 체크섬 복사 |
@@ -209,9 +210,9 @@ Next 개발 서버 rewrites (개발 단계에서만) ──▶ 관리 서버 127
 
 ```
 방문자 → Cloudflare → cloudflared → nginx ─┬─ /           → 정적 파일 (해시 CSP)
-                                          ├─ /api/       → FastAPI (인증 단일 권위 ✅, 즐겨찾기 동기화, Client Room)
+                                          ├─ /api/       → FastAPI (인증 단일 권위 ✅, 즐겨찾기 ✅, Client Room)
                                           └─ /files/     → 정적 파일
-                                FastAPI ──┬─ PostgreSQL (회원 ✅, 즐겨찾기, 룸·이슈·댓글)
+                                FastAPI ──┬─ PostgreSQL (회원 ✅, 즐겨찾기 ✅, 룸·이슈·댓글)
                                           ├─ MinIO       (Phase 3: 의뢰인 결과물, 만료 링크)
                                           └─ Arkurator RAG 백엔드 (Phase 4: JohnnyBot)
 ```

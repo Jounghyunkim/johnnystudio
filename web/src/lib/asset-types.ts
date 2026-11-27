@@ -6,6 +6,7 @@
 export const ASSET_TYPES = [
   "web-app",
   "desktop-app",
+  "android-app",
   "web-package",
   "video",
   "gallery",

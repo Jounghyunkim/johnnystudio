@@ -124,7 +124,7 @@ def test_imports_official_app_and_service_as_published_official(people: Accounts
     assert page["keywords"] == ["시스템", "데스크톱"] and page["requirements"] == ["Windows 10/11 (x64)"]
     assert page["ms_store_url"] == "https://apps.microsoft.com/detail/9PCP2R7RSDQ8?hl=ko-kr"  # 언어만 남긴다
     assert page["links"] == [{"label": "GitHub", "url": "https://github.com/example/cmg"}]  # 사이트 안 주소는 뺀다
-    assert page["website"] == "https://johnnystudio.example/library/cmg-monitor/" and page["developer"] == "JohnnyStudio"
+    assert page["website"] == "https://johnnystudio.example/library/" and page["developer"] == "JohnnyStudio"
     assert [g["caption"] for g in page["gallery"]] == ["메인 화면"]
     # 설치 파일을 내려받으면 원본과 같다 (복사, 원본은 그대로)
     dl = guest.get(detail["releases"][0]["download_url"])

@@ -3,14 +3,15 @@
  * 밝은 테마는 light: 짝을 쓴다: 글자는 같은 계열 700 (흰 바탕에서 4.5:1 이상), 배경·테두리는 한 단계 진하게.
  */
 import {
+  AppWindow,
   Clapperboard,
   Cpu,
   FileText,
-  Globe,
   Images,
   type LucideIcon,
   MonitorDown,
   Package,
+  Smartphone,
 } from "lucide-react";
 
 import type { AssetStatus, AssetType } from "./schema";
@@ -26,8 +27,9 @@ interface TypeStyle {
 }
 
 export const TYPE_STYLE: Record<AssetType, TypeStyle> = {
+  // 웹 서비스는 브라우저 화면 모양 (2026-11-27 사용자 요청, 전에는 지구). Showroom 버튼·서비스 아이콘·실행 패널도 이것을 쓴다
   "web-app": {
-    icon: Globe,
+    icon: AppWindow,
     badge: "text-sky-300 bg-sky-400/10 ring-sky-400/25 light:text-sky-700 light:bg-sky-500/10 light:ring-sky-600/25",
     placeholder: "from-sky-400/20 via-sky-400/5 to-transparent light:from-sky-500/15 light:via-sky-500/5",
     ink: "text-sky-300 light:text-sky-700",
@@ -37,6 +39,13 @@ export const TYPE_STYLE: Record<AssetType, TypeStyle> = {
     badge: "text-violet-300 bg-violet-400/10 ring-violet-400/25 light:text-violet-700 light:bg-violet-500/10 light:ring-violet-600/25",
     placeholder: "from-violet-400/20 via-violet-400/5 to-transparent light:from-violet-500/15 light:via-violet-500/5",
     ink: "text-violet-300 light:text-violet-700",
+  },
+  // lime 은 사이트 강조색(accent)과 같아서 피했다. 비어 있던 보라~분홍 사이를 쓴다
+  "android-app": {
+    icon: Smartphone,
+    badge: "text-fuchsia-300 bg-fuchsia-400/10 ring-fuchsia-400/25 light:text-fuchsia-700 light:bg-fuchsia-500/10 light:ring-fuchsia-600/25",
+    placeholder: "from-fuchsia-400/20 via-fuchsia-400/5 to-transparent light:from-fuchsia-500/15 light:via-fuchsia-500/5",
+    ink: "text-fuchsia-300 light:text-fuchsia-700",
   },
   "web-package": {
     icon: Package,

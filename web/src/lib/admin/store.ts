@@ -261,7 +261,8 @@ export function createAdminStore(paths: AdminPaths) {
       // 아이콘은 작고 투명 배경이 흔해서 png 도 괜찮다
       if (!p.endsWith(".webp") && p !== asset.icon) warnings.push(`${p}: webp 가 아니다 (CONTENT_GUIDE §3)`);
     }
-    const downloads = asset.type === "desktop-app" ? asset.downloads : asset.type === "web-package" && asset.download ? [asset.download] : [];
+    const downloads =
+      asset.type === "desktop-app" || asset.type === "android-app" ? asset.downloads : asset.type === "web-package" && asset.download ? [asset.download] : [];
     for (const d of downloads) {
       if (!d.file.startsWith("/files/")) continue;
       if (!fs.existsSync(path.join(paths.filesDir, d.file.slice("/files/".length)))) {

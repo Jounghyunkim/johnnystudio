@@ -12,7 +12,7 @@ import Link from "next/link";
 import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
 
 import { loginHref, useSession } from "@/lib/auth";
-import { useBookmarks, useIsClient } from "@/lib/bookmarks";
+import { useBookmarks, useBrowserBookmarkCount, useIsClient } from "@/lib/bookmarks";
 import { formatBytes } from "@/lib/format";
 import { forgetRememberedEmail, useRememberedEmail } from "@/lib/remember-email";
 import { SERVICE_STATUS_LABELS } from "@/lib/showroom";
@@ -300,7 +300,7 @@ function AdminStatsBody({ s }: { s: SiteStats }) {
 export function UsersPanel() {
   const isClient = useIsClient();
   const { session, signedIn, me, admin } = useViewer();
-  const { slugs } = useBookmarks();
+  const { slugs, place, status } = useBookmarks();
 
   useEffect(() => {
     if (signedIn) void loadRemote("me", storeApi.me);
@@ -317,7 +317,9 @@ export function UsersPanel() {
     return (
       <div className={panelClass}>
         <p className="font-semibold text-fg">로그인하지 않았습니다</p>
-        <p className="mt-2 text-sm text-fg-muted">로그인하면 내 계정 현황을 봅니다. 이 브라우저의 즐겨찾기는 {slugs.length}개입니다.</p>
+        <p className="mt-2 text-sm text-fg-muted">
+          로그인하면 내 계정 현황을 봅니다. 이 브라우저의 즐겨찾기는 {slugs.length}개이고, 로그인하면 계정으로 옮겨 다른 브라우저에서도 볼 수 있습니다.
+        </p>
         <div className="mt-4">
           <ButtonLink href={loginHref("/settings/")} size="sm">
             <LogIn aria-hidden="true" className="size-4" />
@@ -344,7 +346,7 @@ export function UsersPanel() {
               ["로그인 방법", user.has_password ? "이메일 + 비밀번호, 메일 링크" : "메일 링크 (비밀번호를 정하지 않았습니다)"],
               ["Store·Showroom 표시 이름", <DisplayName key="name" me={me} />],
               ["권한", me?.status === "ready" ? (admin ? "운영자" : "회원") : "…"],
-              ["즐겨찾기 (이 브라우저)", `${slugs.length}개`],
+              ["즐겨찾기 (계정에 저장)", place === "account" && status === "ready" ? `${slugs.length}개` : status === "error" ? "불러오지 못했습니다" : "…"],
             ]}
           />
         </div>
@@ -488,11 +490,12 @@ function CacheBox() {
 const THEME_NAMES: Record<string, string> = { dark: "어둡게", light: "밝게", system: "시스템 설정 따르기" };
 
 function useEntryText() {
-  const { slugs } = useBookmarks();
+  const browserBookmarks = useBrowserBookmarkCount();
   const remembered = useRememberedEmail();
   const { pref } = useTheme();
   return (e: StoredEntry): { title: string; detail: ReactNode } => {
-    if (e.kind === "bookmarks") return { title: "즐겨찾기 (My Studio)", detail: `${slugs.length}개. 지우면 되돌릴 수 없습니다.` };
+    // 로그인하면 계정으로 옮기고 지우므로, 여기 남은 것은 로그인하지 않고 넣은 즐겨찾기다
+    if (e.kind === "bookmarks") return { title: "즐겨찾기 (로그인 전, My Studio)", detail: `${browserBookmarks}개. 지우면 되돌릴 수 없습니다.` };
     if (e.kind === "remembered-email") return { title: "기억한 로그인 이메일", detail: remembered || "(형식이 맞지 않는 값)" };
     if (e.kind === "theme") return { title: "화면 테마 선택", detail: `${THEME_NAMES[pref] ?? pref}. 지우면 기본값(어둡게)으로 돌아갑니다.` };
     return { title: "그 밖의 값", detail: <span className="font-mono">{`${e.key} · ${formatBytes(e.bytes)}`}</span> };

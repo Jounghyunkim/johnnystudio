@@ -301,13 +301,18 @@ def list_apps(
     q: Annotated[str, Query(max_length=100)] = "",
     category: Annotated[str, Query(max_length=40)] = "",
     sort: Literal["new", "name"] = "new",
+    official: bool = False,
 ) -> dict[str, Any]:
+    """공개된 앱. official=true 면 운영자 계정이 올린 '공식' 앱만 (Library 가 쓴다, ADR-0015)"""
+    official_owners = service.official_ids(db, settings)
     stmt = (
         select(StoreApp, StorePublisher)
         .join(StorePublisher, StorePublisher.user_id == StoreApp.owner_id)
         .outerjoin(StoreAppPage, StoreAppPage.app_id == StoreApp.id)
         .where(StoreApp.status == "published", StorePublisher.blocked_at.is_(None))
     )
+    if official:
+        stmt = stmt.where(StoreApp.owner_id.in_(sorted(official_owners)))
     if category in CATEGORIES:
         stmt = stmt.where(StoreApp.category == category)
     words = service.clean_line(q).lower()
@@ -321,8 +326,7 @@ def list_apps(
     else:
         stmt = stmt.order_by(func.coalesce(StoreApp.published_at, StoreApp.created_at).desc(), StoreApp.id.desc())
     rows = db.execute(stmt.limit(500)).all()
-    official = service.official_ids(db, settings)
-    apps = [service.card_out(app, pub, official=app.owner_id in official) for app, pub in rows if service.is_public(app, pub)]
+    apps = [service.card_out(app, pub, official=app.owner_id in official_owners) for app, pub in rows if service.is_public(app, pub)]
     return {"apps": apps}
 
 

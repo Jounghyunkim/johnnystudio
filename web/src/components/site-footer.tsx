@@ -23,12 +23,20 @@ export function SiteFooter() {
         </div>
         <nav aria-label="바닥글 메뉴">
           <p className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">둘러보기</p>
-          <ul className="mt-3 space-y-2 text-sm">
-            {[...flatNav(), { href: "/studio/", label: "My Studio" }].map((item) => (
+          {/* 항목이 많아(Story 의 하위 메뉴 포함) 두 줄로 나눈다 */}
+          <ul className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+            {[...flatNav(profile.blog), { href: "/studio/", label: "My Studio" }].map((item) => (
               <li key={item.href}>
-                <Link href={item.href} className="text-fg-muted hover:text-fg">
-                  {item.label}
-                </Link>
+                {item.external ? (
+                  <a href={item.href} target="_blank" rel="noopener noreferrer" className="text-fg-muted hover:text-fg">
+                    {item.label}
+                    <span className="sr-only"> (새 탭에서 열림)</span>
+                  </a>
+                ) : (
+                  <Link href={item.href} className="text-fg-muted hover:text-fg">
+                    {item.label}
+                  </Link>
+                )}
               </li>
             ))}
           </ul>

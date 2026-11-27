@@ -1,6 +1,8 @@
 import { Menu } from "lucide-react";
 import Link from "next/link";
 
+import { getProfile } from "@/lib/content";
+
 import { AccountLink, MenuAccount } from "./account-link";
 import { LogoMark } from "./logo-mark";
 import { NavLinks } from "./nav-links";
@@ -8,6 +10,8 @@ import { StudioLink } from "./studio-link";
 import { MenuThemeToggle, ThemeToggle } from "./theme-toggle";
 
 export function SiteHeader() {
+  // Story ▾ 의 Blog (바깥 블로그). 빌드할 때 profile.yaml 에서 읽는다
+  const blog = getProfile().blog;
   return (
     <header className="sticky top-0 z-40 border-b border-line/80 bg-canvas/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 w-full max-w-page items-center gap-3 px-4 sm:gap-4 sm:px-6">
@@ -16,9 +20,9 @@ export function SiteHeader() {
           <span>JohnnyStudio</span>
         </Link>
 
-        {/* 메뉴가 6개라 1024px(lg) 부터 펼쳐 보인다. 그보다 좁으면 메뉴 버튼 안에 있다 */}
+        {/* 1024px(lg) 부터 펼쳐 보인다 (Story ▾ 는 눌러서 펼친다). 그보다 좁으면 메뉴 버튼 안에 있다 */}
         <nav aria-label="주 메뉴" className="ml-4 hidden shrink-0 lg:block">
-          <NavLinks />
+          <NavLinks blog={blog} />
         </nav>
 
         {/* min-w-0: 폭이 모자라면 이 묶음이 줄어든다. 줄어드는 것은 로그인한 이메일뿐이다 (나머지는 shrink-0) */}
@@ -35,10 +39,10 @@ export function SiteHeader() {
             </summary>
             <nav
               aria-label="주 메뉴"
-              className="absolute right-0 top-12 w-64 rounded-xl border border-line bg-surface p-2 shadow-2xl shadow-black/50 light:shadow-black/10"
+              className="absolute right-0 top-12 max-h-[calc(100dvh-5rem)] w-64 overflow-y-auto rounded-xl border border-line bg-surface p-2 shadow-2xl shadow-black/50 light:shadow-black/10"
             >
               <MenuAccount />
-              <NavLinks vertical />
+              <NavLinks vertical blog={blog} />
               <MenuThemeToggle />
             </nav>
           </details>

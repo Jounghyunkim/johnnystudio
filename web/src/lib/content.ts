@@ -16,6 +16,7 @@ import type { z } from "zod";
 import {
   type Asset,
   AssetFrontmatter,
+  type Download,
   LifeLog,
   type LogEntry,
   type Page,
@@ -23,7 +24,8 @@ import {
   Profile,
   SLUG_PATTERN,
 } from "./schema";
-import type { AssetSummary, OfficialShowroomService, OfficialStoreApp, TimelineItem } from "./types";
+import { assetHref } from "./hrefs";
+import type { AssetSummary, LibrarySlugs, OfficialShowroomService, OfficialStoreApp, TimelineItem } from "./types";
 
 export const CONTENT_DIR = process.env.CONTENT_DIR ?? path.join(process.cwd(), "..", "content");
 export const PUBLIC_DIR = path.join(process.cwd(), "public");
@@ -191,8 +193,14 @@ export function getOfficialShowroomServices(): OfficialShowroomService[] {
   return services;
 }
 
-export function detailHref(slug: string): string {
-  return `/library/${slug}/`;
+/** Store·Showroom 코드 → 작품 파일 slug (ADR-0015, types.ts 의 LibrarySlugs) */
+export function getLibrarySlugs(): LibrarySlugs {
+  const slugs: LibrarySlugs = { store: {}, showroom: {} };
+  for (const a of getAssets()) {
+    if (a.type === "desktop-app" && a.storeApp) slugs.store[a.storeApp] = a.slug;
+    if (a.type === "web-app" && a.showroomService) slugs.showroom[a.showroomService] = a.slug;
+  }
+  return slugs;
 }
 
 /** 카드에서 바로 여는 외부 링크 */
@@ -206,14 +214,27 @@ function quickAction(a: Asset): AssetSummary["quickAction"] {
       return a.url ? { label: "읽기", href: a.url } : undefined;
     case "desktop-app":
       return a.microsoftStore ? { label: "MS Store", href: a.microsoftStore, icon: "microsoft-store" } : undefined;
+    case "android-app":
+      return a.googlePlay ? { label: "Google Play", href: a.googlePlay } : undefined;
     default:
       return undefined;
   }
 }
 
+/** Store·Showroom 코드 (해당 유형에만 있는 칸) */
+function codesOf(a: Asset): { storeApp?: string; showroomService?: string } {
+  if (a.type === "desktop-app" && a.storeApp) return { storeApp: a.storeApp };
+  if (a.type === "web-app" && a.showroomService) return { showroomService: a.showroomService };
+  return {};
+}
+
 export function toSummary(a: Asset): AssetSummary {
+  const codes = codesOf(a);
   return {
     slug: a.slug,
+    href: assetHref({ slug: a.slug, ...codes }),
+    bookmark: a.slug,
+    ...codes,
     title: a.title,
     type: a.type,
     summary: a.summary,
@@ -255,7 +276,7 @@ export function getTimeline(): TimelineItem[] {
       title: e.title,
       kind: e.kind,
       description: e.description,
-      href: e.href ?? (asset ? detailHref(asset.slug) : undefined),
+      href: e.href ?? (asset ? assetHref(asset) : undefined),
       assetType: asset?.type,
       draft: e.draft,
     };
@@ -267,7 +288,7 @@ export function getTimeline(): TimelineItem[] {
       title: a.title,
       kind: "asset",
       description: a.summary,
-      href: detailHref(a.slug),
+      href: assetHref(a),
       assetType: a.type,
       draft: a.draft,
     });
@@ -298,6 +319,14 @@ export function getPage(slug: string): Page {
 
 const PLACEHOLDER_SHA = /^(0{64}|f{64})$/;
 
+/** 내려받는 파일마다 크기와 (예시 값이 아닌) SHA-256 이 있어야 한다 */
+function missingFileFacts(downloads: readonly Download[]): string[] {
+  return downloads.flatMap((d, i) => [
+    ...(d.size === undefined ? [`downloads.${i}.size`] : []),
+    ...(!d.sha256 || PLACEHOLDER_SHA.test(d.sha256) ? [`downloads.${i}.sha256`] : []),
+  ]);
+}
+
 /**
  * 출시해도 될 만큼 채워졌는가. 초안이 아닌 에셋은 이 목록이 비어 있어야 한다.
  */
@@ -312,10 +341,11 @@ export function missingFields(a: Asset): string[] {
       break;
     case "desktop-app":
       if (a.downloads.length === 0) missing.push("downloads (1개 이상)");
-      a.downloads.forEach((d, i) => {
-        if (d.size === undefined) missing.push(`downloads.${i}.size`);
-        if (!d.sha256 || PLACEHOLDER_SHA.test(d.sha256)) missing.push(`downloads.${i}.sha256`);
-      });
+      missing.push(...missingFileFacts(a.downloads));
+      break;
+    case "android-app":
+      if (a.downloads.length === 0 && !a.googlePlay) missing.push("googlePlay 또는 downloads");
+      missing.push(...missingFileFacts(a.downloads));
       break;
     case "web-package":
       if (!a.playUrl && !a.download) missing.push("playUrl 또는 download");

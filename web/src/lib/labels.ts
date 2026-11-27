@@ -5,7 +5,8 @@ import type { AssetStatus, AssetType, LogKind } from "./schema";
 
 export const TYPE_LABELS: Record<AssetType, string> = {
   "web-app": "웹 서비스",
-  "desktop-app": "데스크톱 툴",
+  "desktop-app": "데스크톱 앱",
+  "android-app": "안드로이드 앱",
   "web-package": "웹 패키지",
   video: "영상",
   gallery: "사진",
@@ -17,6 +18,7 @@ export const TYPE_LABELS: Record<AssetType, string> = {
 export const TYPE_ACTIONS: Record<AssetType, string> = {
   "web-app": "브라우저에서 바로 실행합니다",
   "desktop-app": "설치 파일을 체크섬과 함께 내려받습니다",
+  "android-app": "Google Play에서 설치하거나 APK를 체크섬과 함께 내려받습니다",
   "web-package": "내려받아 열어 봅니다 (바로 체험은 준비 중)",
   video: "누를 때만 불러오는 영상으로 봅니다",
   gallery: "사진을 크게 넘겨 봅니다",
@@ -43,4 +45,5 @@ export const OS_LABELS = {
   windows: "Windows",
   macos: "macOS",
   linux: "Linux",
+  android: "Android",
 } as const;

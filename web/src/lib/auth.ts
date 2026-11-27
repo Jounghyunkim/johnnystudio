@@ -54,7 +54,8 @@ export function toApiError(status: number, body: unknown): ApiError {
   return { ok: false, status, code: "unknown", message: FALLBACK.unknown! };
 }
 
-async function call<T>(method: "GET" | "POST" | "DELETE", path: string, body?: unknown): Promise<ApiResult<T>> {
+/** 같은 출처의 /api/ 를 부른다 (쿠키 포함). 즐겨찾기(lib/bookmarks.ts)도 쓴다 */
+export async function apiCall<T>(method: "GET" | "POST" | "DELETE", path: string, body?: unknown): Promise<ApiResult<T>> {
   let res: Response;
   try {
     res = await fetch(path, {
@@ -113,7 +114,7 @@ function emit(next: SessionState): void {
 }
 
 export async function refreshSession(): Promise<void> {
-  const r = await call<{ user: AuthUser | null }>("GET", "/api/auth/me");
+  const r = await apiCall<{ user: AuthUser | null }>("GET", "/api/auth/me");
   if (!r.ok) emit(UNAVAILABLE);
   else emit(r.data.user ? { status: "signed-in", user: r.data.user } : SIGNED_OUT);
 }
@@ -126,6 +127,10 @@ function subscribe(onChange: () => void): () => void {
   }
   return () => listeners.delete(onChange);
 }
+
+/** 훅 밖(lib/bookmarks.ts)에서 세션 상태를 따라간다. 처음 구독하면 한 번 물어본다 */
+export const subscribeSession = subscribe;
+export const getSessionState = (): SessionState => state;
 
 export function useSession(): SessionState {
   return useSyncExternalStore(
@@ -142,24 +147,24 @@ export function requestLink(
   next: string | null,
   purpose: LinkPurpose = "login",
 ): Promise<ApiResult<{ ok: true; expires_in_minutes: number }>> {
-  return call("POST", "/api/auth/request", { email, next: safeNext(next), purpose });
+  return apiCall("POST", "/api/auth/request", { email, next: safeNext(next), purpose });
 }
 
 export async function loginWithPassword(email: string, password: string): Promise<ApiResult<{ user: AuthUser }>> {
-  const r = await call<{ user: AuthUser }>("POST", "/api/auth/login", { email, password });
+  const r = await apiCall<{ user: AuthUser }>("POST", "/api/auth/login", { email, password });
   if (r.ok) emit({ status: "signed-in", user: r.data.user });
   return r;
 }
 
 /** 비밀번호 정하기·바꾸기. 비밀번호가 이미 있으면 보통 현재 비밀번호가 필요하다 (메일 링크로 방금 들어온 경우는 빼고) */
 export async function setPassword(password: string, currentPassword?: string): Promise<ApiResult<undefined>> {
-  const r = await call<undefined>("POST", "/api/account/password", { password, current_password: currentPassword || null });
+  const r = await apiCall<undefined>("POST", "/api/account/password", { password, current_password: currentPassword || null });
   if (r.ok && state.status === "signed-in") emit({ status: "signed-in", user: { ...state.user, has_password: true } });
   return r;
 }
 
 export async function verifyLink(token: string): Promise<ApiResult<VerifyResult>> {
-  const r = await call<VerifyResult>("POST", "/api/auth/verify", { token });
+  const r = await apiCall<VerifyResult>("POST", "/api/auth/verify", { token });
   if (r.ok) emit({ status: "signed-in", user: r.data.user });
   return r;
 }
@@ -170,13 +175,13 @@ async function endSession(r: ApiResult<undefined>): Promise<ApiResult<undefined>
 }
 
 export async function logout(): Promise<ApiResult<undefined>> {
-  return endSession(await call("POST", "/api/auth/logout"));
+  return endSession(await apiCall("POST", "/api/auth/logout"));
 }
 
 export async function logoutEverywhere(): Promise<ApiResult<undefined>> {
-  return endSession(await call("POST", "/api/auth/logout-all"));
+  return endSession(await apiCall("POST", "/api/auth/logout-all"));
 }
 
 export async function deleteAccount(): Promise<ApiResult<undefined>> {
-  return endSession(await call("DELETE", "/api/account"));
+  return endSession(await apiCall("DELETE", "/api/account"));
 }

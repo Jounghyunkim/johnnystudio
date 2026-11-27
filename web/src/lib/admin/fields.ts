@@ -25,6 +25,7 @@ export const BASE_FIELDS = [
 export const TYPE_FIELDS: Record<AssetType, readonly string[]> = {
   "web-app": ["url", "showroomService"],
   "desktop-app": ["downloads", "requirements", "microsoftStore", "storeApp"],
+  "android-app": ["downloads", "requirements", "googlePlay"],
   "web-package": ["playUrl", "download"],
   video: ["youtubeId"],
   gallery: ["photos"],
@@ -52,6 +53,7 @@ export const FIELD_ORDER = [
   "draft",
   "requirements",
   "microsoftStore",
+  "googlePlay",
   "storeApp",
   "showroomService",
   "links",
@@ -139,8 +141,19 @@ export function guessDownload(fileName: string): { label: string; version: strin
       ? ["macos"]
       : /\.(appimage|deb|rpm|flatpak|snap)$/.test(lower) || lower.endsWith(".tar.gz")
         ? ["linux"]
-        : [];
-  const label = os[0] === "windows" ? "Windows 설치 파일" : os[0] === "macos" ? "macOS 설치 파일" : os[0] === "linux" ? "Linux 패키지" : "";
+        : lower.endsWith(".apk")
+          ? ["android"]
+          : [];
+  const label =
+    os[0] === "windows"
+      ? "Windows 설치 파일"
+      : os[0] === "macos"
+        ? "macOS 설치 파일"
+        : os[0] === "linux"
+          ? "Linux 패키지"
+          : os[0] === "android"
+            ? "Android APK"
+            : "";
   const version = /(\d+\.\d+(?:\.\d+)?(?:[-.][0-9A-Za-z]+)?)/.exec(fileName.replace(/\.(tar\.gz|[A-Za-z0-9]+)$/, ""))?.[1] ?? "";
   return { label, version, os };
 }
@@ -152,6 +165,7 @@ const MISSING_LABELS: Record<string, string> = {
   youtubeId: "YouTube 영상 ID (youtubeId)",
   "playUrl 또는 download": "체험 주소(playUrl) 또는 내려받기 파일(download)",
   "downloads (1개 이상)": "다운로드 파일 1개 이상 (downloads)",
+  "googlePlay 또는 downloads": "Google Play 주소(googlePlay) 또는 APK 파일(downloads)",
   "photos (1장 이상)": "사진 1장 이상 (photos)",
   "photos 또는 youtubeId": "사진(photos) 또는 YouTube 영상(youtubeId)",
   "TODO( 표시가 남아 있다": "머리말에 TODO( 표시가 남아 있다 (한 줄 소개 등)",

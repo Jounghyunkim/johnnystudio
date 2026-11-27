@@ -2,7 +2,7 @@
 
 > 작품·기록·소개 문구를 추가하거나 고치는 방법. 결정 배경은 [ADR-0005](../04_architecture/adr/0005-file-based-content.md).
 > 형식의 정답은 코드에 있다: [web/src/lib/schema.ts](../../web/src/lib/schema.ts)
-> **Last Updated**: 2026-11-26
+> **Last Updated**: 2026-11-27
 
 ## 0. 관리 화면으로 등록하기 (권장)
 
@@ -17,7 +17,7 @@
    - 설치 파일을 올리면 크기·SHA-256 이 채워진다. 서버 복사 명령이 나오면 그대로 실행한다 (운영 다운로드 폴더가 있으면 바로 거기에 저장한다)
    - 저장하면 스키마로 검사하고, 틀린 칸은 옆에 이유가 나온다. 틀리면 파일을 쓰지 않는다
 3. 오른쪽 **검사 결과**에서 "공개 전에 채울 것"이 비면 **공개하기** (= `draft` 지우기)
-4. **미리보기**로 `/library/<slug>/` 를 확인한다 (개발 미리보기는 저장하면 바로 바뀐다)
+4. **미리보기**로 `/library/<slug>/` 를 확인한다 (개발 미리보기는 저장하면 바로 바뀐다. Store·Showroom 으로 옮긴 작품은 그 화면으로 넘어간다)
 5. 지금처럼 `./scripts/check.sh` → 커밋 → `./deploy/deploy.sh`
 
 - 관리 화면은 **개발 서버에만** 있다. 출시 빌드·운영 사이트에는 없다
@@ -43,6 +43,7 @@ npm --prefix web run admin -- unpublish my-tool
 | 작품 추가·수정 | `content/assets/<slug>.md` (파일 하나 = 작품 하나, 파일명 = 주소) |
 | Life Log 마일스톤 | `content/lifelog.yaml` |
 | 홈·About·Work with me 문구, 서비스, 연락처 | `content/profile.yaml` |
+| 상단 Story ▾ 의 Blog (바깥 블로그 주소, 새 탭) | `content/profile.yaml` 의 `blog` (ADR-0018) |
 | 홈(랜딩)의 단계·자주 묻는 질문·마지막 안내 | `content/profile.yaml` 의 `landing` (답은 지금 실제로 동작하는 것만 쓴다. 링크는 `/` 로 시작하는 사이트 안 주소) |
 | 개인정보처리방침 같은 문서 페이지 | `content/pages/<slug>.md` (머리말: `title`·`description`·`updated`, 본문 Markdown). 지금 `privacy`·`store-terms` (Store 이용약관의 `updated` 를 바꾸면 `api/app/store/service.py` 의 `TERMS_VERSION` 도 같게) |
 | 작품 이미지 | `web/public/media/<slug>/` (git 에 넣는다) |
@@ -67,7 +68,7 @@ npm --prefix web run admin -- unpublish my-tool
 | 필드 | 필수 | 설명 |
 |---|---|---|
 | `title` | ✓ | 이름 |
-| `type` | ✓ | `web-app` `desktop-app` `web-package` `video` `gallery` `article` `hardware` |
+| `type` | ✓ | `web-app` `desktop-app` `android-app` `web-package` `video` `gallery` `article` `hardware` |
 | `summary` | ✓ | 한 줄 소개 (140자 이내). 카드와 검색에 쓰인다 |
 | `status` | ✓ | `live`(운영 중) `beta` `dev`(개발 중) `archived`(보관) |
 | `date` | 출시 시 | 시작 또는 공개한 날: `2025`, `2025-12`, `2025-12-19` |
@@ -83,15 +84,16 @@ npm --prefix web run admin -- unpublish my-tool
 
 | 유형 | 필드 | 출시하려면 |
 |---|---|---|
-| `web-app` | `url`, `showroomService` (Showroom DB 로 옮긴 서비스의 코드, [ADR-0014](../04_architecture/adr/0014-official-apps-in-store-db.md). `scripts/import-official.sh` 가 적는다. 있으면 Showroom 목록은 DB 의 것을 보이고 Library 상세에 'Showroom 소개') | `url` |
-| `desktop-app` | `downloads` (목록), `requirements`, `microsoftStore` (Microsoft Store 앱 주소 `https://apps.microsoft.com/detail/<제품 ID>`, 선택. 다운로드 패널에 'Microsoft Store에서 받기', Library·Store 카드에 'MS Store' 바로가기), `storeApp` (Store DB 로 옮긴 앱의 코드, ADR-0014. `scripts/import-official.sh` 가 적는다. 있으면 Library 상세는 `downloads` 대신 'Store에서 내려받기'를 보이고, 새 버전은 Store 에서 올린다. `downloads` 는 DB 를 새로 채울 때의 처음 버전으로만 쓴다) | 다운로드 1개 이상, 각각 `size`·`sha256` |
+| `web-app` | `url`, `showroomService` (Showroom DB 로 옮긴 서비스의 코드, [ADR-0014](../04_architecture/adr/0014-official-apps-in-store-db.md). `scripts/import-official.sh` 가 적는다. 있으면 Showroom 목록은 DB 의 것을 보이고, Library 카드는 Showroom 서비스 화면으로 가며 `/library/<slug>/` 는 그리로 넘겨 주기만 한다 (ADR-0015). 설명은 Showroom 에서 고친다) | `url` |
+| `desktop-app` | `downloads` (목록), `requirements`, `microsoftStore` (Microsoft Store 앱 주소 `https://apps.microsoft.com/detail/<제품 ID>`, 선택. 다운로드 패널에 'Microsoft Store에서 받기', Library·Store 카드에 'MS Store' 바로가기), `storeApp` (Store DB 로 옮긴 앱의 코드, ADR-0014. `scripts/import-official.sh` 가 적는다. 있으면 Library 카드는 Store 앱 화면으로 가고 `/library/<slug>/` 는 그리로 넘겨 주기만 한다 (ADR-0015). 설명·새 버전은 Store 에서 고친다. 본문·`downloads` 는 화면에 보이지 않고, `downloads` 는 DB 를 새로 채울 때의 처음 버전으로만 쓴다) | 다운로드 1개 이상, 각각 `size`·`sha256` |
+| `android-app` | `googlePlay` (Google Play 앱 주소 `https://play.google.com/store/apps/details?id=<패키지 이름>`. 설치 패널에 'Google Play에서 받기', Library 카드에 'Google Play' 바로가기), `downloads` (APK 목록, `os: [android]`), `requirements` (예: Android 8.0 이상). Store 는 Windows 앱만 받으므로 설명 페이지는 Library 상세다 ([ADR-0016](../04_architecture/adr/0016-android-app-type.md)) | `googlePlay` 또는 APK 1개 이상, APK 마다 `size`·`sha256` |
 | `web-package` | `playUrl`(샌드박스 주소), `download` | 둘 중 하나 |
 | `video` | `youtubeId` (watch?v= 뒤의 11자) | `youtubeId` |
 | `gallery` | `photos` (목록: `src`, `alt`, `caption`) | 사진 1장 이상 |
 | `article` | `url`, `source`(블로그 이름) | `url` |
 | `hardware` | `photos`, `youtubeId` | 사진 또는 영상 |
 
-### 예: 데스크톱 툴
+### 예: 데스크톱 앱
 
 ```yaml
 ---
@@ -130,6 +132,30 @@ install -D -m 644 ~/build/hw-monitor-1.2.0-setup.exe /opt/johnnystudio/files/har
 ```
 
 `signed: false` 이면 상세 화면에 SmartScreen 경고 안내가 붙는다. 체크섬은 화면에서 복사할 수 있고, 검증 명령도 함께 보인다.
+
+### 예: 안드로이드 앱
+
+```yaml
+---
+title: 내 안드로이드 앱
+type: android-app
+summary: 한 줄 소개
+status: live
+date: 2026-12
+tags: [안드로이드]
+icon: /media/my-android-app/icon.png
+requirements: Android 8.0 이상
+googlePlay: https://play.google.com/store/apps/details?id=com.example.myapp   # Google Play 에 있으면
+downloads:                     # APK 를 직접 내려받게 할 때만 (없으면 빼도 된다)
+  - label: Android APK
+    file: /files/my-android-app/my-android-app-1.0.0.apk
+    version: 1.0.0
+    os: [android]
+    size: 8388608
+    sha256: <scripts/file-meta.sh 결과>
+    signed: true               # 릴리스 키로 서명한 APK
+---
+```
 
 ## 3. 이미지
 

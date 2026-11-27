@@ -540,6 +540,21 @@ function TypeSection({
           <DownloadsField slug={slug} value={list(data.downloads)} onChange={(v) => set("downloads", v)} errorAt={errorAt} />
         </Section>
       );
+    case "android-app":
+      return (
+        <Section id="sec-type" title={title} description="Google Play 주소나 APK 중 하나는 있어야 공개할 수 있습니다. APK 를 올리면 크기·SHA-256 을 계산해 채웁니다.">
+          <TextField label="실행 환경" value={str(data.requirements)} onChange={(v) => set("requirements", v)} placeholder="Android 8.0 이상" error={errorAt("requirements")} />
+          <TextField
+            label="Google Play 주소 (선택)"
+            mono
+            value={str(data.googlePlay)}
+            onChange={(v) => set("googlePlay", v)}
+            placeholder="https://play.google.com/store/apps/details?id=com.example.app"
+            error={errorAt("googlePlay")}
+          />
+          <DownloadsField slug={slug} kind="android" value={list(data.downloads)} onChange={(v) => set("downloads", v)} errorAt={errorAt} />
+        </Section>
+      );
     case "web-package":
       return (
         <Section id="sec-type" title={title} description="체험 주소(별도 출처의 샌드박스)나 zip 중 하나는 있어야 공개할 수 있습니다.">

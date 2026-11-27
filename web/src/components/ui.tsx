@@ -1,6 +1,7 @@
 /**
  * 공통 레이아웃·버튼 조각. 서버·클라이언트 어디서나 쓴다.
  */
+import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 
@@ -57,29 +58,76 @@ export function ExternalButton({
   );
 }
 
-/** actions: 머리글 맨 아래(가로줄 위)의 버튼 줄. 있으면 아래 여백을 조금 줄인다 (버튼이 가로줄에서 너무 떠 보이지 않게) */
+/**
+ * 현재 위치 (Story › 영상 처럼). 마지막 칸이 이 페이지다. href 가 없는 칸(Story)은 글자만
+ */
+export function Breadcrumb({ items, className }: { items: readonly { label: string; href?: string }[]; className?: string }) {
+  return (
+    <nav aria-label="현재 위치" className={cx("text-sm text-fg-subtle", className)}>
+      <ol className="flex flex-wrap items-center gap-1.5">
+        {items.map((item, i) => {
+          const last = i === items.length - 1;
+          return (
+            <li key={`${i}-${item.label}`} className="flex items-center gap-1.5">
+              {i > 0 && <ChevronRight aria-hidden="true" className="size-3.5" />}
+              {last ? (
+                <span aria-current="page" className="text-fg-muted">
+                  {item.label}
+                </span>
+              ) : item.href ? (
+                <Link href={item.href} className="hover:text-fg">
+                  {item.label}
+                </Link>
+              ) : (
+                item.label
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}
+
+/**
+ * 페이지 머리글.
+ * - actions: 머리글 맨 아래(가로줄 위)의 버튼 줄. 있으면 아래 여백을 조금 줄인다 (버튼이 가로줄에서 너무 떠 보이지 않게)
+ * - location: 제목 위의 현재 위치 (Breadcrumb). 있으면 위 여백을 줄인다
+ * - tabs: 머리글 아래 가로줄에 붙는 탭 메뉴 (Story 탭, components/story-header)
+ */
 export function PageHeader({
   eyebrow,
   title,
   description,
   actions,
+  location,
+  tabs,
   children,
 }: {
   eyebrow?: string;
   title: string;
   description?: string;
   actions?: ReactNode;
+  location?: ReactNode;
+  tabs?: ReactNode;
   children?: ReactNode;
 }) {
   return (
     <header className="hero-glow border-b border-line">
-      <Container className={cx("pt-14 sm:pt-20", actions ? "pb-10 sm:pb-14" : "pb-14 sm:pb-20")}>
+      <Container
+        className={cx(
+          location ? "pt-8 sm:pt-12" : "pt-14 sm:pt-20",
+          tabs ? "pb-8 sm:pb-10" : actions ? "pb-10 sm:pb-14" : "pb-14 sm:pb-20",
+        )}
+      >
+        {location && <div className="mb-8 sm:mb-10">{location}</div>}
         {eyebrow && <p className="mb-3 text-sm font-semibold tracking-wide text-accent">{eyebrow}</p>}
         <h1 className="text-3xl font-bold tracking-tight text-fg sm:text-5xl">{title}</h1>
         {description && <p className="mt-4 max-w-2xl text-base leading-relaxed text-fg-muted sm:text-lg">{description}</p>}
         {children}
         {actions && <div className="mt-6 flex flex-wrap gap-2">{actions}</div>}
       </Container>
+      {tabs && <Container>{tabs}</Container>}
     </header>
   );
 }

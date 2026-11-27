@@ -173,13 +173,18 @@ def list_services(
     q: Annotated[str, Query(max_length=100)] = "",
     category: Annotated[str, Query(max_length=40)] = "",
     sort: Literal["new", "name"] = "new",
+    official: bool = False,
 ) -> dict[str, Any]:
+    """공개된 서비스. official=true 면 운영자 계정이 소개한 '공식' 서비스만 (Library 가 쓴다, ADR-0015)"""
+    official_owners = store.official_ids(db, settings)
     stmt = (
         select(ShowroomService, StorePublisher)
         .join(StorePublisher, StorePublisher.user_id == ShowroomService.owner_id)
         .outerjoin(ShowroomServicePage, ShowroomServicePage.service_id == ShowroomService.id)
         .where(ShowroomService.status == "published", StorePublisher.blocked_at.is_(None))
     )
+    if official:
+        stmt = stmt.where(ShowroomService.owner_id.in_(sorted(official_owners)))
     if category in SERVICE_CATEGORIES:
         stmt = stmt.where(ShowroomService.category == category)
     words = store.clean_line(q).lower()
@@ -194,8 +199,7 @@ def list_services(
         stmt = stmt.order_by(func.lower(ShowroomService.name), ShowroomService.id)
     else:
         stmt = stmt.order_by(func.coalesce(ShowroomService.published_at, ShowroomService.created_at).desc(), ShowroomService.id.desc())
-    official = store.official_ids(db, settings)
-    return {"services": [service.card_out(svc, pub, official=svc.owner_id in official) for svc, pub in db.execute(stmt.limit(500)).all()]}
+    return {"services": [service.card_out(svc, pub, official=svc.owner_id in official_owners) for svc, pub in db.execute(stmt.limit(500)).all()]}
 
 
 @router.get("/services/{code}")

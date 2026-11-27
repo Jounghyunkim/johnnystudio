@@ -3,7 +3,7 @@
 > 이 저장소에서 일하는 **모든 AI 코딩 도구**(Claude Code, Codex, Gemini, Cursor 등)의 공통 규칙이다.
 > Claude Code 는 `CLAUDE.md` 가 이 파일을 불러온다. 규칙을 바꿀 때는 **이 파일만** 고친다. ([ADR-0003](docs/04_architecture/adr/0003-ai-collaboration-docs.md))
 >
-> **Last Updated**: 2026-11-26
+> **Last Updated**: 2026-11-27
 
 ## 1. 프로젝트 요약
 
@@ -14,6 +14,7 @@ JohnnyStudio 의 **포털(허브) 웹사이트**다. 정현 님이 만든 모든
   작품 등록·관리는 개발 서버 전용 관리 화면(`/admin/`)과 CLI 로 한다 (2026-11-09).
   회원이 Windows 앱을 올리고 운영자가 승인하면 공개되는 **Store**(`/store/`)와, 회원 웹 서비스를 소개하는 **Showroom**(`/showroom/`)을 만들었다. 메뉴는 About 오른쪽 구분선 뒤에 있다 (2026-11-24, [ADR-0012](docs/04_architecture/adr/0012-member-store.md) 제안됨).
   Store·Showroom 게시물의 **소개 자료**(기능·그림 모음·사용 방법·질문·만든 이·지원 정보, Microsoft Store 와 같은 한도)와 AI 프롬프트 복사·md/zip 불러오기를 만들었다 (2026-11-25, [ADR-0013](docs/04_architecture/adr/0013-listing-kit.md) 제안됨).
+  **Library 는 Store·Showroom 에서 운영자 계정이 올린 '공식' 앱·서비스를 모아 보는 곳**이다. 카드를 누르면 Store 앱·Showroom 서비스 화면으로 가고, 따로 설명 페이지를 두지 않는다 (2026-11-27, [ADR-0015](docs/04_architecture/adr/0015-library-as-official-view.md) 제안됨).
   남은 일은 실제 콘텐츠 채우기와 도메인·Tunnel 공개다. 진행 상황은 [docs/ROADMAP.md](docs/ROADMAP.md).
 - **기획의 기준**: [docs/ideation.md](docs/ideation.md) v2 (네 구역·원칙·리스크·단계 계획)와 [docs/01_vision/PHILOSOPHY.md](docs/01_vision/PHILOSOPHY.md) 초안 v1.
   둘 다 사용자 확인 전이다. 기획안이 ADR 과 다르면 ADR 이 우선한다. 바꾸려면 새 ADR 을 쓴다.
@@ -30,7 +31,7 @@ JohnnyStudio 의 **포털(허브) 웹사이트**다. 정현 님이 만든 모든
 | 경로 | 용도 |
 |---|---|
 | `web/` | **Next.js 앱.** `src/app` 페이지, `src/components` 화면 조각(`viewers/` 유형별 뷰어, `auth/` 로그인·계정, `admin/` 작품 관리, `store/` 회원 Store, `showroom/` 회원 웹 서비스, `listing/` 소개 자료 보기·편집·AI 키트, `settings/` 설정 화면), `src/lib` 스키마·콘텐츠 읽기·로직(`admin/` 작품 관리 서버·파일 쓰기), `scripts/inject-csp.mjs`, `scripts/admin/` 관리 CLI, `public/` 이미지 |
-| `api/` | **회원·Store·Showroom API (FastAPI, Python 3.14, uv).** `app/` 엔드포인트·DB·메일·설정, `app/store/` Store(업로드·분석·ClamAV·검토), `app/showroom/` Showroom(회원 웹 서비스 소개), `app/listing.py` 소개 자료(항목·한도·그림 모음), `app/site.py` 설정 화면(운영자 현황·캐시 지우기), `app/import_official.py` 공식 앱·서비스를 DB 로 옮기기(ADR-0014), `tests/` pytest. 구조: [ADR-0007](docs/04_architecture/adr/0007-magic-link-auth-api.md), [ADR-0012](docs/04_architecture/adr/0012-member-store.md) |
+| `api/` | **회원·Store·Showroom API (FastAPI, Python 3.14, uv).** `app/` 엔드포인트·DB·메일·설정, `app/store/` Store(업로드·분석·ClamAV·검토), `app/showroom/` Showroom(회원 웹 서비스 소개), `app/listing.py` 소개 자료(항목·한도·그림 모음), `app/site.py` 설정 화면(운영자 현황·캐시 지우기), `app/import_official.py` 공식 앱·서비스를 DB 로 옮기기(ADR-0014), `app/bookmarks.py` 회원 즐겨찾기(ADR-0017), `tests/` pytest. 구조: [ADR-0007](docs/04_architecture/adr/0007-magic-link-auth-api.md), [ADR-0012](docs/04_architecture/adr/0012-member-store.md) |
 | `content/` | **콘텐츠 원본.** `assets/<slug>.md`(작품), `lifelog.yaml`, `profile.yaml`, `pages/<slug>.md`(개인정보처리방침 등). 형식: `web/src/lib/schema.ts` |
 | `docs/` | 기획·설계 문서. "지금 어떻게 되어 있나"를 쓴다 (항상 최신으로 고쳐 쓴다) |
 | `docs/04_architecture/adr/` | 결정 기록(ADR). "왜 이렇게 정했나"를 쓴다 |
@@ -73,7 +74,8 @@ npm --prefix web run admin -- list|check [slug]|new <slug> --type … --title �
 ### 렌더링
 
 - **서버 컴포넌트가 기본**이다. `"use client"` 는 상호작용(검색·필터, 즐겨찾기, 영상, 사진 확대, 복사, 메뉴)에만 쓴다.
-- **콘텐츠는 빌드된 HTML 에 들어 있어야 한다.** 클라이언트에서 콘텐츠를 불러오지 않는다. 예외는 **Store·Showroom 의 회원 앱·서비스**뿐이다 (빌드 없이 바뀌므로 `/api/store/`·`/api/showroom/` 에서 읽는다, ADR-0012). 정적 내보내기에서 `useSearchParams` 를 쓰지 않는다
+- **콘텐츠는 빌드된 HTML 에 들어 있어야 한다.** 클라이언트에서 콘텐츠를 불러오지 않는다. 예외는 **Store·Showroom 의 회원 앱·서비스**와 **Library 의 공식 목록**뿐이다 (빌드 없이 바뀌므로 `/api/store/`·`/api/showroom/` 에서 읽는다, ADR-0012). Library 는 빌드된 카드(작품 파일)를 브라우저에서 공식 목록(`?official=true`)에 맞춘다 (`lib/library.ts`, ADR-0015).
+  작품 링크는 `AssetSummary.href`(`lib/hrefs.ts` 의 `assetHref`)를 쓰고 `/library/<slug>/` 를 직접 만들지 않는다. 정적 내보내기에서 `useSearchParams` 를 쓰지 않는다
   (`lib/use-location-search.ts` 를 쓴다).
 - `"use client"` 파일에서 **값**(배열·객체)을 내보내 서버 컴포넌트에서 쓰지 않는다. 공유할 값은 `src/lib/` 에 둔다.
 - `src/lib/content.ts` 는 서버 전용(fs)이다. 클라이언트 컴포넌트에는 `AssetSummary` 같은 가벼운 타입만 넘긴다.

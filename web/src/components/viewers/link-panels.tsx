@@ -1,9 +1,10 @@
-import { ArrowUpRight, FileText, Globe, Package } from "lucide-react";
+import { ArrowUpRight, FileText, Package } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { hostOf } from "@/lib/format";
+import { TYPE_STYLE } from "@/lib/type-style";
 
-import { ButtonLink, ExternalButton } from "../ui";
+import { ExternalButton } from "../ui";
 
 function Panel({ icon, title, detail, children }: { icon: ReactNode; title: string; detail?: string; children?: ReactNode }) {
   return (
@@ -24,23 +25,16 @@ function Pending({ children }: { children: ReactNode }) {
   return <div className="rounded-card border border-dashed border-line-strong p-6 text-sm text-fg-muted">{children}</div>;
 }
 
-/** 웹 서비스: 새 탭에서 실행 */
-/** showroomCode: Showroom DB 로 옮긴 서비스의 코드 (작품 파일의 showroomService, ADR-0014). 있으면 Showroom 소개로도 잇는다 */
-export function LaunchPanel({ url, showroomCode }: { url?: string; showroomCode?: string }) {
+/** 웹 서비스: 새 탭에서 실행 (Showroom 으로 옮긴 서비스는 Library 상세가 Showroom 화면으로 넘어가므로 여기에 오지 않는다) */
+export function LaunchPanel({ url }: { url?: string }) {
   if (!url) return <Pending>서비스 주소를 준비하고 있습니다.</Pending>;
+  const Icon = TYPE_STYLE["web-app"].icon;
   return (
-    <Panel icon={<Globe aria-hidden="true" className="size-5" />} title="웹에서 바로 실행" detail={hostOf(url)}>
-      <div className="flex flex-wrap gap-2">
-        {showroomCode && (
-          <ButtonLink href={`/showroom/service/?id=${showroomCode}`} variant="ghost">
-            Showroom 소개
-          </ButtonLink>
-        )}
-        <ExternalButton href={url}>
-          실행하기
-          <ArrowUpRight aria-hidden="true" className="size-4" />
-        </ExternalButton>
-      </div>
+    <Panel icon={<Icon aria-hidden="true" className="size-5" />} title="웹에서 바로 실행" detail={hostOf(url)}>
+      <ExternalButton href={url}>
+        실행하기
+        <ArrowUpRight aria-hidden="true" className="size-4" />
+      </ExternalButton>
     </Panel>
   );
 }

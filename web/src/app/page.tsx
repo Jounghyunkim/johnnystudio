@@ -1,4 +1,4 @@
-import { ArrowRight, BookMarked, Globe, Store } from "lucide-react";
+import { ArrowRight, BookMarked, Store } from "lucide-react";
 import Link from "next/link";
 
 import { AssetGrid } from "@/components/asset-card";
@@ -8,6 +8,10 @@ import { Timeline } from "@/components/timeline";
 import { ButtonLink, Container, SectionHeading } from "@/components/ui";
 import { getAssets, getProfile, getTimeline, toSummary } from "@/lib/content";
 import { yearOf } from "@/lib/format";
+import { TYPE_STYLE } from "@/lib/type-style";
+
+/** Showroom = 웹 서비스: 유형 아이콘(브라우저 화면)과 같다 */
+const ShowroomIcon = TYPE_STYLE["web-app"].icon;
 
 /**
  * 홈 = 랜딩 페이지. 처음 온 방문자가 1분 안에 알아야 할 것 (PHILOSOPHY §8):
@@ -64,7 +68,7 @@ export default function HomePage() {
                 Store
               </ButtonLink>
               <ButtonLink href="/showroom/" variant="secondary">
-                <Globe aria-hidden="true" className="size-4" />
+                <ShowroomIcon aria-hidden="true" className="size-4" />
                 Showroom
               </ButtonLink>
               <ButtonLink href="/work/" variant="secondary">

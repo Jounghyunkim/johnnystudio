@@ -232,7 +232,8 @@ export function ReportDialog({
 }
 
 /** 앱 상세 (/store/app/?id=코드) */
-export function StoreAppView() {
+/** librarySlugs: Library 작품과 이어진 앱의 코드 → slug. 즐겨찾기를 Library 카드와 같은 값으로 (ADR-0015) */
+export function StoreAppView({ librarySlugs }: { librarySlugs: Readonly<Record<string, string>> }) {
   const [search] = useLocationSearch();
   const isClient = useIsClient();
   const code = parseAppCode(new URLSearchParams(search).get("id"));
@@ -316,7 +317,7 @@ export function StoreAppView() {
           {/* 즐겨찾기는 공개된 앱만 (My Studio 는 공개 목록에서 찾는다). 편집은 올린 사람·운영자 (소개 꾸미기 화면, API 가 다시 확인한다).
               review 가 아니면 즐겨찾기가, review 면 편집이 보이므로 이 줄은 늘 비지 않는다 */}
           <div className="mt-4 flex flex-wrap gap-2">
-            {(!review || a.public) && <StarButton slug={storeBookmarkId(a.code)} title={a.name} withLabel />}
+            {(!review || a.public) && <StarButton slug={librarySlugs[a.code] ?? storeBookmarkId(a.code)} title={a.name} withLabel />}
             {review && (
               <ButtonLink href={listingEditHref(a.code)} variant="secondary">
                 <Pencil aria-hidden="true" className="size-4" />
@@ -377,11 +378,11 @@ export function StoreAppView() {
                 JohnnyStudio가 직접 만든 앱입니다
               </p>
               <p className="mt-2 text-sm leading-relaxed text-fg-muted">
-                설치 파일의 SHA-256 으로 내려받은 파일이 같은지 확인할 수 있습니다. 만든 이야기와 다른 작품은{" "}
+                설치 파일의 SHA-256 으로 내려받은 파일이 같은지 확인할 수 있습니다. JohnnyStudio의 다른 앱과 웹 서비스는{" "}
                 <Link href="/library/" className="underline underline-offset-4">
                   Library
                 </Link>
-                에 있습니다.
+                에 모여 있습니다.
               </p>
             </div>
           ) : (

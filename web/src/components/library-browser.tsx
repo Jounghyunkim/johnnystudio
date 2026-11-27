@@ -1,11 +1,14 @@
 "use client";
 
 import { Search, X } from "lucide-react";
-import { useId, useMemo } from "react";
+import { useEffect, useId, useMemo } from "react";
 
 import { countByType, filterAssets, groupByType, type LibraryQuery, parseQuery, type TypeFilter, toSearch } from "@/lib/filter";
 import { TYPE_LABELS } from "@/lib/labels";
 import { ASSET_TYPES } from "@/lib/asset-types";
+import { OFFICIAL_SEARCH, mergeOfficial } from "@/lib/library";
+import { type ServiceCard, showroomApi } from "@/lib/showroom";
+import { type StoreCard, loadRemote, storeApi, useRemote } from "@/lib/store";
 import type { AssetSummary } from "@/lib/types";
 import { TYPE_STYLE } from "@/lib/type-style";
 import { useLocationSearch } from "@/lib/use-location-search";
@@ -13,13 +16,29 @@ import { useLocationSearch } from "@/lib/use-location-search";
 import { AssetGrid } from "./asset-card";
 import { cx } from "./ui";
 
+const STORE_KEY = "library:store";
+const SHOWROOM_KEY = "library:showroom";
+
 /**
- * Library 검색·필터. 빌드된 HTML 에는 모든 카드가 들어 있고(검색엔진·JS 꺼진 환경), 브라우저에서 거른다.
+ * Library 검색·필터. 빌드된 HTML 에는 작품 파일의 카드가 모두 들어 있고(검색엔진·JS 꺼진 환경), 브라우저에서 거른다.
+ * 브라우저에서는 Store·Showroom 의 공식 목록을 받아 맞춘다: Library = JohnnyStudio 가 Store·Showroom 에 올린 것 (lib/library.ts, ADR-0015).
  * 검색 상태는 주소(?q=&type=&sort=)에 남아서 공유하거나 새로고침해도 유지된다.
  */
-export function LibraryBrowser({ assets }: { assets: AssetSummary[] }) {
+export function LibraryBrowser({ assets: built }: { assets: AssetSummary[] }) {
   const [search, setSearch] = useLocationSearch();
   const query = useMemo(() => parseQuery(search), [search]);
+  const storeList = useRemote<{ apps: StoreCard[] }>(STORE_KEY);
+  const showroomList = useRemote<{ services: ServiceCard[] }>(SHOWROOM_KEY);
+
+  useEffect(() => {
+    void loadRemote(STORE_KEY, () => storeApi.list(OFFICIAL_SEARCH));
+    void loadRemote(SHOWROOM_KEY, () => showroomApi.list(OFFICIAL_SEARCH));
+  }, []);
+
+  // 받지 못한 쪽(불러오는 중·오류)은 작품 파일의 카드를 그대로 쓴다
+  const apps = storeList?.status === "ready" ? storeList.data.apps : null;
+  const services = showroomList?.status === "ready" ? showroomList.data.services : null;
+  const assets = useMemo(() => mergeOfficial(built, apps, services), [built, apps, services]);
   const results = useMemo(() => filterAssets(assets, query), [assets, query]);
   const groups = useMemo(() => groupByType(results), [results]);
   const counts = useMemo(() => countByType(assets, query.q), [assets, query.q]);

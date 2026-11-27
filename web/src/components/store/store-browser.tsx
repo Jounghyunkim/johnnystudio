@@ -26,7 +26,8 @@ import { ErrorBox, Loading } from "./store-ui";
  * Store 목록: Library 의 공식 앱(빌드 때 넘겨받아 HTML 에 들어 있다) + 공개된 회원 앱(API).
  * 검색 상태는 주소(?q=&category=&sort=)에 남는다
  */
-export function StoreBrowser({ official }: { official: readonly OfficialStoreApp[] }) {
+/** librarySlugs: Library 작품과 이어진 앱의 코드 → slug. 즐겨찾기를 Library 카드와 같은 값으로 (ADR-0015) */
+export function StoreBrowser({ official, librarySlugs }: { official: readonly OfficialStoreApp[]; librarySlugs: Readonly<Record<string, string>> }) {
   const [search, setSearch] = useLocationSearch();
   const query = useMemo(() => parseStoreQuery(search), [search]);
   // 공식 앱(Library 작품) 지우기: 운영자, 개발 서버에서만 (official-delete.tsx)
@@ -133,7 +134,7 @@ export function StoreBrowser({ official }: { official: readonly OfficialStoreApp
               <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {entries.map((e) => (
                   <li key={e.kind === "official" ? `o:${e.app.slug}` : `m:${e.app.code}`}>
-                    <EntryCard entry={e} onDeleteOfficial={canDeleteOfficial ? setDeleting : undefined} />
+                    <EntryCard entry={e} librarySlugs={librarySlugs} onDeleteOfficial={canDeleteOfficial ? setDeleting : undefined} />
                   </li>
                 ))}
               </ul>

@@ -8,6 +8,7 @@ import Link from "next/link";
 import { ASSET_TYPES, type AssetType } from "@/lib/asset-types";
 import { formatDate } from "@/lib/format";
 import { TYPE_ACTIONS, TYPE_LABELS } from "@/lib/labels";
+import { typeHref } from "@/lib/story";
 import type { Profile } from "@/lib/schema";
 import { TYPE_STYLE } from "@/lib/type-style";
 import type { AssetSummary } from "@/lib/types";
@@ -20,7 +21,7 @@ import { ButtonLink, cx, ExternalButton } from "./ui";
 
 type Landing = Profile["landing"];
 
-/** 히어로 오른쪽: 다루는 작품 유형과 지금 공개된 개수. 작품이 있는 유형만 Library 필터로 이어진다 */
+/** 히어로 오른쪽: 다루는 작품 유형과 지금 공개된 개수. 작품이 있는 유형만 이어진다 (앱·서비스는 Library 의 유형 칸, 영상·사진·글·하드웨어는 Story 페이지) */
 export function TypeBoard({ assets }: { assets: AssetSummary[] }) {
   const counts = new Map<AssetType, number>();
   for (const a of assets) counts.set(a.type, (counts.get(a.type) ?? 0) + 1);
@@ -58,7 +59,7 @@ export function TypeBoard({ assets }: { assets: AssetSummary[] }) {
           return (
             <li key={type}>
               {n > 0 ? (
-                <Link href={`/library/?type=${type}`} className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-raised">
+                <Link href={typeHref(type)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-raised">
                   {body}
                 </Link>
               ) : (
@@ -77,7 +78,7 @@ export function TypeBoard({ assets }: { assets: AssetSummary[] }) {
  * 대표 이미지 · 설명 · 태그(누르면 Library 에서 그 태그로 검색) · 자세히 보기 · 바로 실행 · 즐겨찾기
  */
 export function FeaturedSpotlight({ asset }: { asset: AssetSummary }) {
-  const href = `/library/${asset.slug}/`;
+  const href = asset.href;
   return (
     <article className="group grid overflow-hidden rounded-card border border-line bg-surface md:grid-cols-[1.1fr_1fr]">
       <AssetCover
@@ -127,7 +128,7 @@ export function FeaturedSpotlight({ asset }: { asset: AssetSummary }) {
               <ArrowUpRight aria-hidden="true" className="size-4" />
             </ExternalButton>
           )}
-          <StarButton slug={asset.slug} title={asset.title} withLabel />
+          {asset.bookmark && <StarButton slug={asset.bookmark} title={asset.title} withLabel />}
         </div>
       </div>
     </article>

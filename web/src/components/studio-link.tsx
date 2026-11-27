@@ -5,7 +5,7 @@ import Link from "next/link";
 
 import { useBookmarks, useIsClient } from "@/lib/bookmarks";
 
-/** 헤더의 My Studio 링크. 즐겨찾기 개수는 브라우저에서만 안다 */
+/** 헤더의 My Studio 링크. 즐겨찾기 개수는 브라우저에서 안다 (계정 목록이나 이 브라우저의 목록, 빌드된 HTML 에는 없다) */
 export function StudioLink() {
   const { slugs } = useBookmarks();
   const isClient = useIsClient();

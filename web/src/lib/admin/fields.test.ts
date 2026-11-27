@@ -85,6 +85,7 @@ describe("입력 도우미", () => {
     expect(guessDownload("hw-monitor-1.2.0-setup.exe")).toEqual({ label: "Windows 설치 파일", version: "1.2.0-setup", os: ["windows"] });
     expect(guessDownload("Tool_2.1.dmg")).toEqual({ label: "macOS 설치 파일", version: "2.1", os: ["macos"] });
     expect(guessDownload("tool-0.9.1.tar.gz")).toMatchObject({ version: "0.9.1", os: ["linux"] });
+    expect(guessDownload("JohnnyApp-1.4.2.apk")).toEqual({ label: "Android APK", version: "1.4.2", os: ["android"] });
     expect(guessDownload("readme.pdf")).toEqual({ label: "", version: "", os: [] });
   });
 

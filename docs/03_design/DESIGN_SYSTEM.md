@@ -2,7 +2,7 @@
 
 > **상태**: v1. ideation §3-7 "Minimalist Dark" 를 구현했다. 어두운 테마가 기본이고 밝은 테마를 고를 수 있다 (2026-11-06). 로고는 Johnny 로봇 아이콘이다. 브랜드 강조색은 아직 임시값이다 `[확인 필요]`.
 > 원본: [web/src/app/globals.css](../../web/src/app/globals.css) (`@theme`), [web/src/lib/type-style.ts](../../web/src/lib/type-style.ts)
-> **Last Updated**: 2026-11-26
+> **Last Updated**: 2026-11-28
 
 ## 원칙
 
@@ -30,7 +30,7 @@
 | `danger` | `#f87171` | 오류 문구, 되돌릴 수 없는 동작(회원 탈퇴)에만 | 7.2:1 |
 | `danger-ink` | `#1a0505` | `danger` 배경 위 글자 | 7.1:1 |
 
-**유형 색** (Tailwind 기본 팔레트 300/400, 밝은 테마는 700): 웹 서비스 sky · 데스크톱 툴 violet · 웹 패키지 amber · 영상 rose · 사진 emerald · 글 zinc · 하드웨어 orange
+**유형 색** (Tailwind 기본 팔레트 300/400, 밝은 테마는 700): 웹 서비스 sky · 데스크톱 앱 violet · 안드로이드 앱 fuchsia (lime 은 강조색과 같아서 피했다) · 웹 패키지 amber · 영상 rose · 사진 emerald · 글 zinc · 하드웨어 orange
 
 ### 밝은 테마
 
@@ -79,6 +79,7 @@
 | 컴포넌트 | 파일 | 비고 |
 |---|---|---|
 | 헤더·바닥글·메뉴 | `site-header` `site-footer` `nav-links` `studio-link` `account-link` | 모바일 메뉴는 `<details>`. 로그인 상태는 브라우저에서 묻는다. 로그인하면 이메일을 보여 준다: 오른쪽 묶음만 `min-w-0` 으로 줄어들고 이메일이 `truncate` 된다(최대 16rem), 휴대폰은 @ 앞부분 + 메뉴 맨 위에 전체 주소. 가운데 메뉴는 줄바꿈하지 않는다(`shrink-0`), md 폭에서는 "My Studio" 글자를 숨긴다 |
+| Story 머리글·탭 | `story-header.tsx` `story-tabs.tsx` `ui.tsx` 의 `Breadcrumb` | Story 아래 6개 페이지. `PageHeader` 의 `location`(제목 위 현재 위치)·`tabs`(아래 가로줄). 탭은 `h-12`·`text-sm`, 지금 탭은 `border-accent` 2px 밑줄이 가로줄 위에 겹친다(`-mb-px`), 나머지는 마우스를 올리면 `border-line-strong`. 좁은 화면은 탭 줄만 가로 스크롤(스크롤 막대 숨김), 포커스 테두리는 안쪽(`-outline-offset-2`). 넓은 화면은 첫 탭 글자가 제목 왼쪽 끝에 맞는다 (2026-11-28) |
 | 버튼·컨테이너·제목 | `ui.tsx` | `primary` `secondary` `ghost` `danger`(지우기를 여는 버튼, 글자만 빨강). 종류마다 글자색은 하나다. `ghost` 뒤에 `text-danger` 를 덧붙이면 CSS 순서 때문에 회색으로 남는다 (2026-11-24 에 고쳤다) |
 | 배지 | `badges.tsx` | 유형, 상태(점), 초안(점선) |
 | 작품 카드·그리드 | `asset-card.tsx` `asset-cover.tsx` | 카드 전체가 링크, 빠른 실행·★ 는 따로 눌린다 |

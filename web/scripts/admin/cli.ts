@@ -12,7 +12,7 @@
  *   npm --prefix web run admin -- official-link <links.json>   옮긴 코드(storeApp·showroomService)를 작품 파일에 적는다
  *   (두 명령은 scripts/import-official.sh 가 차례로 부른다)
  *
- * 유형: web-app desktop-app web-package video gallery article hardware
+ * 유형: web-app desktop-app android-app web-package video gallery article hardware
  * 환경 변수: CONTENT_DIR, JOHNNYSTUDIO_FILES_DIR(다운로드 보관 폴더), serve 는 JOHNNYSTUDIO_ADMIN_TOKEN_FILE·JOHNNYSTUDIO_ADMIN_PORT
  */
 import fs from "node:fs";
