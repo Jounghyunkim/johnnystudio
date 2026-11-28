@@ -75,7 +75,7 @@ JohnnyStudio/
   | `youtube-lite` | 누를 때 iframe 로드 |
   | `photo-gallery` | `<dialog>` 확대 보기, 화살표 키 |
   | `copy-button` | 체크섬 복사 |
-  | `account-link` · `auth/*` | 로그인 상태 표시, 비밀번호 로그인, 메일 링크 요청·확인, 비밀번호 설정, 계정·탈퇴 (`/api/` 호출) |
+  | `account-link` · `auth/*` | 로그인 상태 표시(헤더 계정 버튼의 표시 이름: 로그인한 회원만 `/api/store/me` 를 한 번 읽는다, `lib/store.ts` 의 `useStoreMe`. 로그인한 사람이 바뀌면 이전 값을 지운다), 비밀번호 로그인, 메일 링크 요청·확인, 비밀번호 설정, 계정·탈퇴 (`/api/` 호출) |
   | `auth/login-form` + `lib/remember-email` | 아이디(이메일) 기억하기 (localStorage, 로그인 성공 때만 저장·삭제, 탈퇴하면 삭제) |
   | `theme-toggle` + `lib/theme` | 테마 바꾸기 (헤더 버튼·휴대폰 메뉴·바닥글). 처음 값은 `<head>` 인라인 스크립트(`lib/theme-script.ts`)가 그리기 전에 붙인다 |
 

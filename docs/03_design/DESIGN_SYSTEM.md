@@ -78,7 +78,8 @@
 
 | 컴포넌트 | 파일 | 비고 |
 |---|---|---|
-| 헤더·바닥글·메뉴 | `site-header` `site-footer` `nav-links` `studio-link` `account-link` | 모바일 메뉴는 `<details>`. 로그인 상태는 브라우저에서 묻는다. 로그인하면 이메일을 보여 준다: 오른쪽 묶음만 `min-w-0` 으로 줄어들고 이메일이 `truncate` 된다(최대 16rem), 휴대폰은 @ 앞부분 + 메뉴 맨 위에 전체 주소. 가운데 메뉴는 줄바꿈하지 않는다(`shrink-0`), md 폭에서는 "My Studio" 글자를 숨긴다 |
+| 헤더·바닥글·메뉴 | `site-header` `site-footer` `nav-links` `studio-link` `account-link` `theme-toggle` | 모바일 메뉴는 `<details>`. 로그인 상태는 브라우저에서 묻는다. 가운데 메뉴는 줄바꿈하지 않는다(`shrink-0`). **오른쪽 위 버튼은 색을 모두 accent(연두색)로**(`ui.tsx`: `HEADER_ICON` 아이콘만 36px 동그라미, `HEADER_PILL` 아이콘 + 글자 알약, `border-line`, 마우스를 올리면 `bg-raised`): 테마 · ★ My Studio(즐겨찾기가 있으면 ★ 를 칠하고 바로 옆에 개수) · 계정(로그인 전 LogIn 아이콘만, 로그인 뒤 CircleUserRound + 표시 이름) · ⚙ 설정 · 휴대폰 메뉴 ☰. 오른쪽 묶음만 `min-w-0` 으로 줄어들고 표시 이름이 `truncate` 된다(최대 10rem), 휴대폰 폭에서는 계정도 아이콘만. 이름은 `aria-label` 과 `title` 로, 로그인한 이메일은 휴대폰 메뉴 맨 위(표시 이름 아래)에 글자로. 360px 보다 좁으면 로고 글자를 숨긴다 (2026-11-28 사용자 요청) |
+| 표시 이름 | `display-name.tsx` | 보기·바꾸기(처음 정할 때는 이용약관·만 14세 확인). 계정 화면 '계정 정보'와 설정 화면 '내 계정'이 함께 쓴다. 이름표는 '표시 이름' 하나 (2026-11-28) |
 | Story 머리글·탭 | `story-header.tsx` `story-tabs.tsx` `ui.tsx` 의 `Breadcrumb` | Story 아래 6개 페이지. `PageHeader` 의 `location`(제목 위 현재 위치)·`tabs`(아래 가로줄). 탭은 `h-12`·`text-sm`, 지금 탭은 `border-accent` 2px 밑줄이 가로줄 위에 겹친다(`-mb-px`), 나머지는 마우스를 올리면 `border-line-strong`. 좁은 화면은 탭 줄만 가로 스크롤(스크롤 막대 숨김), 포커스 테두리는 안쪽(`-outline-offset-2`). 넓은 화면은 첫 탭 글자가 제목 왼쪽 끝에 맞는다 (2026-11-28) |
 | 버튼·컨테이너·제목 | `ui.tsx` | `primary` `secondary` `ghost` `danger`(지우기를 여는 버튼, 글자만 빨강). 종류마다 글자색은 하나다. `ghost` 뒤에 `text-danger` 를 덧붙이면 CSS 순서 때문에 회색으로 남는다 (2026-11-24 에 고쳤다) |
 | 배지 | `badges.tsx` | 유형, 상태(점), 초안(점선) |

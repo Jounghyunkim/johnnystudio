@@ -6,7 +6,9 @@ import { useRef, useState } from "react";
 
 import { type ApiResult, deleteAccount, loginHref, logout, logoutEverywhere, useSession } from "@/lib/auth";
 import { forgetRememberedEmail } from "@/lib/remember-email";
+import { type StoreMe, useRemote } from "@/lib/store";
 
+import { DisplayName } from "../display-name";
 import { ButtonLink, buttonClass, cx } from "../ui";
 import { PasswordForm } from "./password-form";
 
@@ -26,9 +28,11 @@ function localDate(iso: string, withTime = false): string {
 
 type Busy = null | "logout" | "logout-all" | "delete";
 
-/** 계정 정보, 로그아웃, 회원 탈퇴 */
+/** 계정 정보(표시 이름 보기·바꾸기 포함), 로그아웃, 회원 탈퇴 */
 export function AccountView() {
   const session = useSession();
+  // 표시 이름: 헤더의 계정 버튼이 불러 둔 값 (lib/store.ts 의 useStoreMe)
+  const me = useRemote<StoreMe>(session.status === "signed-in" ? "me" : null);
   const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -87,15 +91,24 @@ export function AccountView() {
         <dl className="mt-4 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[8rem_1fr]">
           <dt className="text-fg-subtle">이메일</dt>
           <dd className="break-all text-fg">{user.email}</dd>
+          <dt className="text-fg-subtle">표시 이름</dt>
+          <dd className="min-w-0 text-fg">
+            <DisplayName me={me} />
+          </dd>
           <dt className="text-fg-subtle">가입일</dt>
           <dd className="text-fg">{localDate(user.created_at)}</dd>
           <dt className="text-fg-subtle">마지막 로그인</dt>
           <dd className="text-fg">{localDate(user.last_login_at, true)}</dd>
         </dl>
         <p className="mt-5 text-sm text-fg-subtle">
-          로그인은 30일 동안 유지됩니다. 받는 정보는 이메일 주소와 비밀번호(되돌릴 수 없게 변환해 저장)뿐입니다. Store에 앱을 올리면 표시 이름이 더해집니다 (
+          로그인은 30일 동안 유지됩니다. 받는 정보는 이메일 주소와 비밀번호(되돌릴 수 없게 변환해 저장)이고, 표시 이름을 정하면 더해집니다.
+          표시 이름은 Store·Showroom에서 &lsquo;올린 사람&rsquo;·&lsquo;소개한 사람&rsquo;으로 공개되고, 이메일 주소는 다른 사람에게 보이지 않습니다 (
           <Link href="/store/mine/" className="underline underline-offset-4 hover:text-fg">
-            내 Store 앱
+            내 앱
+          </Link>
+          {" · "}
+          <Link href="/showroom/mine/" className="underline underline-offset-4 hover:text-fg">
+            내 서비스
           </Link>
           ).
         </p>

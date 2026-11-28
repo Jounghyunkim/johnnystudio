@@ -5,7 +5,12 @@ import Link from "next/link";
 
 import { useBookmarks, useIsClient } from "@/lib/bookmarks";
 
-/** 헤더의 My Studio 링크. 즐겨찾기 개수는 브라우저에서 안다 (계정 목록이나 이 브라우저의 목록, 빌드된 HTML 에는 없다) */
+import { cx, HEADER_ICON, HEADER_PILL } from "./ui";
+
+/**
+ * 헤더의 My Studio 링크: ★ 아이콘, 즐겨찾기가 있으면 ★ 를 칠하고 바로 옆에 개수 (이름 'My Studio' 는 aria-label 과 title 로).
+ * 개수는 브라우저에서 안다 (계정 목록이나 이 브라우저의 목록, 빌드된 HTML 에는 없다)
+ */
 export function StudioLink() {
   const { slugs } = useBookmarks();
   const isClient = useIsClient();
@@ -13,17 +18,12 @@ export function StudioLink() {
   return (
     <Link
       href="/studio/"
-      className="inline-flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-line px-2.5 text-sm font-medium text-fg-muted transition-colors hover:border-line-strong hover:text-fg sm:px-3.5"
+      title={count ? `My Studio · 즐겨찾기 ${count}개` : "My Studio"}
+      aria-label={count ? `My Studio (즐겨찾기 ${count}개)` : "My Studio"}
+      className={cx("inline-flex", count > 0 ? cx(HEADER_PILL, "shrink-0") : HEADER_ICON)}
     >
-      <Star aria-hidden="true" className={count ? "size-4 fill-accent text-accent" : "size-4"} />
-      {/* 글자는 휴대폰 폭과, 가운데 메뉴가 막 나타나 자리가 좁은 md 폭에서 숨긴다 (화면 읽기 프로그램에는 늘 읽힌다) */}
-      <span className="sr-only sm:not-sr-only md:sr-only lg:not-sr-only">My Studio</span>
-      {count > 0 && (
-        <span className="rounded-full bg-raised px-1.5 text-xs tabular-nums text-fg">
-          {count}
-          <span className="sr-only">개 즐겨찾기</span>
-        </span>
-      )}
+      <Star aria-hidden="true" className={cx("size-4 shrink-0", count > 0 && "fill-accent")} />
+      {count > 0 && <span className="tabular-nums">{count}</span>}
     </Link>
   );
 }

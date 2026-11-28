@@ -6,7 +6,7 @@ import type { MouseEvent } from "react";
 import { useTheme } from "@/lib/theme";
 import type { ThemePref } from "@/lib/theme-script";
 
-import { cx } from "./ui";
+import { cx, HEADER_ICON } from "./ui";
 
 /** 헤더(넓은 화면): 밝게 ↔ 어둡게 한 번에 바꾸는 아이콘 버튼 */
 export function ThemeToggle({ className }: { className?: string }) {
@@ -19,10 +19,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       onClick={() => setPref(next)}
       aria-label={label}
       title={label}
-      className={cx(
-        "size-9 shrink-0 items-center justify-center rounded-full border border-line text-fg-muted transition-colors hover:border-line-strong hover:text-fg",
-        className,
-      )}
+      className={cx(HEADER_ICON, className)}
     >
       {theme === "dark" ? <Sun aria-hidden="true" className="size-4" /> : <Moon aria-hidden="true" className="size-4" />}
     </button>

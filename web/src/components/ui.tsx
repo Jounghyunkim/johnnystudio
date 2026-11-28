@@ -13,6 +13,16 @@ export function Container({ className, children }: { className?: string; childre
   return <div className={cx("mx-auto w-full max-w-page px-4 sm:px-6", className)}>{children}</div>;
 }
 
+/**
+ * 헤더 오른쪽의 버튼 (테마 · My Studio · 계정 · 설정 · 휴대폰 메뉴). 색은 모두 accent(연두색)로 맞춘다 (2026-11-28 사용자 요청).
+ * HEADER_ICON 은 아이콘만(36px 동그라미), HEADER_PILL 은 아이콘 옆에 글자(즐겨찾기 개수, 표시 이름)가 붙는 알약 모양이다.
+ * display 는 넣지 않는다: 쓰는 쪽에서 inline-flex(또는 "hidden lg:inline-flex")를 붙인다 (hidden 과 inline-flex 가 함께 있으면 CSS 순서로 갈린다)
+ */
+const HEADER_BUTTON =
+  "relative items-center justify-center rounded-full border border-line text-accent transition-colors hover:border-line-strong hover:bg-raised";
+export const HEADER_ICON = `${HEADER_BUTTON} size-9 shrink-0`;
+export const HEADER_PILL = `${HEADER_BUTTON} h-9 gap-1.5 whitespace-nowrap px-3 text-sm font-semibold`;
+
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 
 // 글자색은 한 종류에 하나만 둔다. 뒤에 text-… 를 덧붙이면 CSS 순서에 따라 지기도 한다 (ghost + text-danger 가 회색으로 보였다)

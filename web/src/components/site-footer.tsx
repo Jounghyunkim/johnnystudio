@@ -1,4 +1,3 @@
-import { Settings } from "lucide-react";
 import Link from "next/link";
 
 import { getProfile } from "@/lib/content";
@@ -65,17 +64,8 @@ export function SiteFooter() {
         <span>
           © {year} {profile.name}
         </span>
-        {/* 오른쪽 아래: 설정 화면(사용자 현황·앱 설정·캐시 지우기)과 테마 */}
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href="/settings/"
-            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-line px-3.5 text-xs font-medium text-fg-subtle transition-colors hover:border-line-strong hover:text-fg"
-          >
-            <Settings aria-hidden="true" className="size-3.5" />
-            설정
-          </Link>
-          <ThemeChoice />
-        </div>
+        {/* 오른쪽 아래: 테마 (설정 버튼은 헤더 오른쪽 위로 옮겼다, 2026-11-28) */}
+        <ThemeChoice />
       </Container>
     </footer>
   );

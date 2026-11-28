@@ -6,7 +6,7 @@
  * - 회원이 쓴 글은 React 가 글자로만 그린다 (HTML 로 넣지 않는다).
  * - 파일은 8MB 조각으로 올린다 (Cloudflare 요청 크기 한도, Next 개발 서버 프록시 10MB).
  */
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
 import { type ApiError, type ApiResult, toApiError } from "./auth";
 import type { GalleryImage, ListingPage } from "./listing";
@@ -454,4 +454,28 @@ export async function loadRemote<T>(key: string, loader: () => Promise<ApiResult
 export function setRemote<T>(key: string, data: T): void {
   cache.set(key, { status: "ready", data });
   emit();
+}
+
+/** 불러 둔 값을 지운다 */
+export function clearRemote(key: string): void {
+  if (cache.delete(key)) emit();
+}
+
+let meOwner: string | null = null;
+
+/**
+ * 로그인한 회원의 Store 정보("me": 표시 이름·권한·한도)를 불러 두고 읽는다. 헤더의 계정 버튼(표시 이름)이 모든 페이지에서 부른다.
+ * 페이지를 새로 읽지 않고 로그인한 사람이 바뀌면(로그아웃 → 다른 계정) 이전 사람의 값을 먼저 지운다 (다른 사람의 표시 이름·권한이 남지 않게).
+ * 같은 값을 보기만 하는 화면(계정 화면 등)은 useRemote<StoreMe>("me") 를 쓴다
+ */
+export function useStoreMe(userId: string | null): Remote<StoreMe> | undefined {
+  useEffect(() => {
+    if (!userId) return;
+    if (meOwner !== userId) {
+      meOwner = userId;
+      clearRemote("me");
+    }
+    void loadRemote("me", storeApi.me);
+  }, [userId]);
+  return useRemote<StoreMe>(userId ? "me" : null);
 }

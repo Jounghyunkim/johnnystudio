@@ -7,9 +7,8 @@
  *   AppPanel       앱 설정: 화면 테마, 로그인 이메일 기억, 운영자에게는 운영 설정(읽기 전용)
  *   GeneralPanel   일반 설정: 브라우저 캐시 지우기, 이 브라우저에 저장된 값 지우기
  */
-import { ClipboardCheck, LoaderCircle, LogIn, Pencil, RefreshCw, Trash2, UserRound } from "lucide-react";
-import Link from "next/link";
-import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { ClipboardCheck, LoaderCircle, LogIn, RefreshCw, Trash2, UserRound } from "lucide-react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
 import { loginHref, useSession } from "@/lib/auth";
 import { useBookmarks, useBrowserBookmarkCount, useIsClient } from "@/lib/bookmarks";
@@ -17,12 +16,13 @@ import { formatBytes } from "@/lib/format";
 import { forgetRememberedEmail, useRememberedEmail } from "@/lib/remember-email";
 import { SERVICE_STATUS_LABELS } from "@/lib/showroom";
 import { type SiteStats, type StoredEntry, clearBrowserCache, removeStored, siteApi, useStoredEntries } from "@/lib/site";
-import { APP_STATUS_LABELS, type Remote, type StoreMe, loadRemote, localDate, setRemote, storeApi, useRemote } from "@/lib/store";
+import { APP_STATUS_LABELS, type StoreMe, loadRemote, localDate, storeApi, useRemote } from "@/lib/store";
 import { useTheme } from "@/lib/theme";
 
-import { ErrorBox, Loading, dialogClass, inputClass, panelClass } from "../store/store-ui";
+import { ErrorBox, Loading, dialogClass, panelClass } from "../store/store-ui";
 import { ThemeChoice } from "../theme-toggle";
 import { BarRows, type Range, RangePicker, SignupChart, StatusBar } from "./admin-charts";
+import { DisplayName } from "../display-name";
 import { ButtonLink, buttonClass, cx } from "../ui";
 
 const MB = 1024 * 1024;
@@ -64,122 +64,6 @@ function Stat({ label, value, note }: { label: string; value: number; note?: str
 }
 
 // ── 사용자 현황 ──
-
-/**
- * Store·Showroom 표시 이름 보기·바꾸기. 이미 정했으면 이름만 바꾸고(PATCH, 약관에 다시 동의하지 않는다),
- * 처음이면 이용약관 동의·만 14세 확인과 함께 정한다 (POST, 앱 올리기 화면의 PublisherForm 과 같은 API)
- */
-function DisplayName({ me }: { me: Remote<StoreMe> | undefined }) {
-  const [editing, setEditing] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-  const ids = { name: useId(), hint: useId(), terms: useId(), age: useId() };
-
-  if (!me || me.status === "loading") return <>…</>;
-  if (me.status === "error") return <span className="text-fg-muted">불러오지 못했습니다</span>;
-  const data = me.data;
-  const p = data.publisher;
-
-  async function submit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const f = new FormData(e.currentTarget);
-    const name = String(f.get("display_name") ?? "");
-    setBusy(true);
-    setError(null);
-    const r = p
-      ? await storeApi.renamePublisher(name)
-      : await storeApi.setPublisher({ display_name: name, agree_terms: f.get("agree_terms") === "on", age_14: f.get("age_14") === "on" });
-    setBusy(false);
-    if (!r.ok) return setError(r.message);
-    setRemote<StoreMe>("me", { ...data, publisher: r.data.publisher });
-    setEditing(false);
-    setSaved(true);
-  }
-
-  if (!editing) {
-    return (
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span>
-          {p ? p.display_name : <span className="text-fg-muted">정하지 않음</span>}
-          {p?.blocked && <span className="text-fg-muted"> (이용 제한 중이라 바꿀 수 없습니다)</span>}
-        </span>
-        {!p?.blocked && (
-          <button
-            type="button"
-            onClick={() => {
-              setEditing(true);
-              setSaved(false);
-              setError(null);
-            }}
-            className={buttonClass("ghost", "sm")}
-          >
-            <Pencil aria-hidden="true" className="size-4" />
-            {p ? "바꾸기" : "정하기"}
-            <span className="sr-only">: 표시 이름</span>
-          </button>
-        )}
-        {saved && (
-          <span role="status" className="basis-full text-xs text-fg-subtle">
-            표시 이름을 저장했습니다. 앱·서비스 화면에 바로 보입니다.
-          </span>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <form onSubmit={submit} className="space-y-3">
-      <label htmlFor={ids.name} className="sr-only">
-        표시 이름
-      </label>
-      <input
-        id={ids.name}
-        name="display_name"
-        required
-        minLength={2}
-        maxLength={30}
-        defaultValue={p?.display_name ?? ""}
-        aria-describedby={ids.hint}
-        className={cx(inputClass, "h-10 w-full max-w-xs")}
-      />
-      <p id={ids.hint} className="text-xs leading-relaxed text-fg-subtle">
-        2~30자. 앱·서비스 화면에 &lsquo;올린 사람&rsquo;·&lsquo;소개한 사람&rsquo;으로 바로 보입니다. 운영자로 오해할 수 있는 이름은 쓸 수 없습니다.
-      </p>
-      {!p && (
-        <div className="space-y-2 text-sm text-fg">
-          <label htmlFor={ids.terms} className="flex items-start gap-3">
-            <input id={ids.terms} name="agree_terms" type="checkbox" required className="mt-1 size-4 accent-accent" />
-            <span>
-              <Link href="/store/terms/" target="_blank" className="underline underline-offset-4">
-                Store·Showroom 이용약관
-              </Link>
-              에 동의합니다.
-            </span>
-          </label>
-          <label htmlFor={ids.age} className="flex items-start gap-3">
-            <input id={ids.age} name="age_14" type="checkbox" required className="mt-1 size-4 accent-accent" />
-            <span>만 14세 이상입니다.</span>
-          </label>
-        </div>
-      )}
-      {error && (
-        <p role="alert" className="text-sm text-danger">
-          {error}
-        </p>
-      )}
-      <div className="flex flex-wrap gap-2">
-        <button type="submit" disabled={busy} className={cx(buttonClass("primary", "sm"), "disabled:opacity-60")}>
-          {busy && <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />}
-          {p ? "저장" : "동의하고 저장"}
-        </button>
-        <button type="button" onClick={() => setEditing(false)} className={buttonClass("ghost", "sm")}>
-          취소
-        </button>
-      </div>
-    </form>
-  );
-}
 
 function AdminStats() {
   const { stats } = useViewer();
@@ -341,10 +225,10 @@ export function UsersPanel() {
           <Rows
             rows={[
               ["이메일", user.email],
+              ["표시 이름", <DisplayName key="name" me={me} />],
               ["가입한 날", localDate(user.created_at)],
               ["마지막 로그인", localDate(user.last_login_at, true)],
               ["로그인 방법", user.has_password ? "이메일 + 비밀번호, 메일 링크" : "메일 링크 (비밀번호를 정하지 않았습니다)"],
-              ["Store·Showroom 표시 이름", <DisplayName key="name" me={me} />],
               ["권한", me?.status === "ready" ? (admin ? "운영자" : "회원") : "…"],
               ["즐겨찾기 (계정에 저장)", place === "account" && status === "ready" ? `${slugs.length}개` : status === "error" ? "불러오지 못했습니다" : "…"],
             ]}

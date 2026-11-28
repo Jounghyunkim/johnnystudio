@@ -68,6 +68,8 @@
 - [x] 작품 유형: '데스크톱 툴' → '데스크톱 앱', '안드로이드 앱'(Google Play 주소·APK) 추가 ([ADR-0016](04_architecture/adr/0016-android-app-type.md)) (2026-11-27)
 - [x] 메뉴 'Story ▾'(Library · Life Log · Blog · 영상 · 사진 · 글 · 하드웨어), 유형별 페이지 `/story/<유형>/`, Library 는 앱·서비스만 ([ADR-0018](04_architecture/adr/0018-story-menu.md)) (2026-11-27)
 - [x] Story 아래 페이지에 현재 위치(`Story › 영상`)와 Story 탭 (ADR-0018 결정 5) (2026-11-28)
+- [x] 헤더 오른쪽 위를 연두색으로 통일(테마 · ★ My Studio 와 개수 · 계정과 표시 이름 · ⚙ 설정). 설정 버튼을 바닥글에서 헤더로 (2026-11-28)
+- [x] 계정 정보에 표시 이름(보기·바꾸기). 'Store·Showroom 표시 이름'을 '표시 이름' 하나로 (2026-11-28)
 - [ ] Store 의 'takescreenshot' 이름을 작품 파일과 같은 'TakeScreenShot' 으로 (Library 에서 불러온 뒤 이름이 바뀌어 보인다)
 - [ ] 대표 작품(`featured`) 고르기 (관리 화면 `/admin/` 으로)
 - [ ] 앱 9개의 설치 파일(180MB, 지금 `.local/files/`)을 서버 설정(deploy/README §2-1) 뒤 `/opt/johnnystudio/files/` 로 옮기기: `rsync -a .local/files/ /opt/johnnystudio/files/`
@@ -193,7 +195,7 @@
 
 ### 그 밖의 Phase 2
 
-- [x] 설정 화면 `/settings/` (바닥글 오른쪽 아래 버튼): 사용자 현황(운영자 전체 현황은 개수만 + 차트: 가입 추이·마지막 로그인·상태·내려받기 상위), 표시 이름 바꾸기, 앱 설정(테마·이메일 기억, 운영 설정 읽기 전용), 캐시 지우기(`Clear-Site-Data`)·저장 값 지우기 ([기능 명세](02_planning/features/settings.md)) (2026-11-26)
+- [x] 설정 화면 `/settings/` (헤더 오른쪽 위 ⚙ 버튼, 2026-11-28 바닥글에서 옮김): 사용자 현황(운영자 전체 현황은 개수만 + 차트: 가입 추이·마지막 로그인·상태·내려받기 상위), 표시 이름 바꾸기, 앱 설정(테마·이메일 기억, 운영 설정 읽기 전용), 캐시 지우기(`Clear-Site-Data`)·저장 값 지우기 ([기능 명세](02_planning/features/settings.md)) (2026-11-26)
 - [ ] 브랜치 `feat/store-showroom-admin-settings` (`beae0dd`) 를 main 에 합치기
 - [ ] (원하면) 운영 설정을 화면에서 바꾸기 (설정 테이블 + ADR 먼저)
 - [x] 회원 즐겨찾기를 계정(DB)에: 다른 브라우저·기기에서도 같은 My Studio, 로그인하면 브라우저 목록을 옮김 ([ADR-0017](04_architecture/adr/0017-member-bookmarks.md)) (2026-11-27)
